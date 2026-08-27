@@ -1,0 +1,17 @@
+# baslik: Özgür Yazılım
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+Özgür yazılımın tanımındaki temel özgürlük sayısı kaçtır? | 2 | 3 | 4 | 5 | 3
+GNU projesini başlatan kişi kimdir? | Richard Stallman | Linus Torvalds | Bill Gates | Tim Berners-Lee | 1
+Özgür yazılım için doğru olan ifade hangisidir? | Her zaman ücretsizdir | Kaynak kodu görülebilir ve değiştirilebilir | Sadece Linux'ta çalışır | Ticari kullanımı yasaktır | 2
+GPL neyi ifade eder? | Bir programlama dili | Bir özgür yazılım lisansı | Bir işletim sistemi | Bir dosya biçimi | 2
+Photoshop yerine kullanılabilecek, dijital çizim ve boyamaya odaklı özgür program hangisidir? | Krita | VLC | Audacity | Thunderbird | 1
+Fotoğraf düzenleme için kullanılan özgür yazılım hangisidir? | GIMP | Blender | Inkscape | Kdenlive | 1
+Microsoft Office yerine kullanılabilecek özgür ofis paketi hangisidir? | LibreOffice | Notepad | WordPad | Pages | 1
+3B modelleme ve animasyon için kullanılan özgür yazılım hangisidir? | Blender | Krita | Audacity | OBS | 1
+Vektörel çizim için kullanılan özgür yazılım hangisidir? | Inkscape | GIMP | Krita | Scribus | 1
+Ses kaydı ve düzenlemesi için kullanılan özgür yazılım hangisidir? | Audacity | VLC | Firefox | Blender | 1
+Değiştirilmiş sürümlerin de aynı özgür lisansla dağıtılmasını şart koşan yaklaşıma ne denir? | Copyleft | Copyright | Patent | Ticari marka | 1
+Ubuntu, Fedora ve Debian neyin örnekleridir? | Linux dağıtımı | Tarayıcı | Ofis paketi | Derleyici | 1
+Kaynak kodu herkese açık projelerin en çok barındırıldığı platform hangisidir? | GitHub | Instagram | Netflix | Spotify | 1
+Özgür yazılım hareketini destekleyen vakfın kısaltması nedir? | FSF | NASA | IEEE | ISO | 1

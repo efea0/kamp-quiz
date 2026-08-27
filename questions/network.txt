@@ -1,0 +1,17 @@
+# baslik: Ağ Temelleri
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+Bir cihazın ağ üzerindeki adresini belirten şey nedir? | IP adresi | URL | Port | Protokol | 1
+DNS'in temel görevi nedir? | Alan adını IP adresine çevirmek | Dosya indirmek | Şifre üretmek | Virüs taramak | 1
+HTTP protokolü varsayılan olarak hangi portu kullanır? | 21 | 25 | 80 | 443 | 3
+HTTPS varsayılan olarak hangi portu kullanır? | 80 | 443 | 8080 | 22 | 2
+127.0.0.1 adresi neyi ifade eder? | Yönlendiriciyi | Cihazın kendisini | İnternet çıkışını | DNS sunucusunu | 2
+192.168.1.5 gibi adresler ne tür adreslerdir? | Genel (public) | Özel yerel ağ (private) | Yayın (broadcast) | Rastgele | 2
+IPv4 adresi kaç bittir? | 16 | 32 | 64 | 128 | 2
+TCP ile UDP arasındaki temel fark nedir? | TCP verinin ulaştığını garanti eder | UDP daha güvenlidir | TCP şifreli, UDP değil | Aralarında fark yoktur | 1
+MAC adresi neyi tanımlar? | Ağ kartı donanımını | Kullanıcıyı | Web sitesini | Dosyayı | 1
+ping komutu ağ testinde ne yapar? | Dosya kopyalar | Hedefe paket gönderip cevap süresini ölçer | Şifre kırar | Port kapatır | 2
+Wi-Fi ağının görünen adına ne denir? | SSID | MAC | DHCP | NAT | 1
+Cihazlara otomatik IP adresi dağıtan servis hangisidir? | DNS | DHCP | FTP | SSH | 2
+Yerel ağı internete bağlayan cihaz genellikle hangisidir? | Yönlendirici (router) | Yazıcı | Monitör | Klavye | 1
+Uzak bir makineye güvenli terminal bağlantısı kurmak için kullanılan protokol hangisidir? | FTP | SSH | HTTP | SMTP | 2
