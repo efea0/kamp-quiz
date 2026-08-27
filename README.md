@@ -1,16 +1,123 @@
 <img src="assets/banner.svg" alt="Kamp Quiz Motoru" width="880">
 
-Konsolda çalışan bilgi yarışması. Java ile, hiçbir dış kütüphane kullanmadan,
-sıfırdan yazılıyor. Sorular düz metin dosyalarında durur — koda dokunmadan
-yeni soru paketi eklenebilir.
+Bilgi yarışması motoru. Java ile, hiçbir dış kütüphane kullanmadan sıfırdan yazılıyor.
+İki şekilde oynanır: **terminalde** tek kişilik, ya da **web modunda** — aynı Wi-Fi'daki
+herkes telefonundan katılır. Sorular düz metin dosyalarında durur, koda dokunmadan
+yeni paket eklenebilir.
 
-```bash
-git clone https://github.com/efea0/java-demo-try.git
-cd java-demo-try
-./run.sh          # Windows: run.bat
-```
+---
+
+## Kurulum ve çalıştırma
 
 Tek gereksinim **Java 17 veya üzeri**. Maven yok, Gradle yok, internet gerekmez.
+
+### Java kurulu mu?
+
+Her üç sistemde de aynı komut:
+
+```
+java -version
+```
+
+`command not found` diyorsa Java yok. Kurulumu:
+
+| Sistem | Komut / yöntem |
+|---|---|
+| **Windows** | `winget install Microsoft.OpenJDK.21` — ya da [adoptium.net](https://adoptium.net) üzerinden `.msi` indir |
+| **macOS** | `brew install openjdk@21` — Homebrew yoksa [adoptium.net](https://adoptium.net) üzerinden `.pkg` indir |
+| **Linux (Debian/Ubuntu)** | `sudo apt install openjdk-21-jdk` |
+| **Linux (Fedora)** | `sudo dnf install java-21-openjdk-devel` |
+
+### Projeyi indir
+
+Üç sistemde de aynı:
+
+```
+git clone https://github.com/efea0/java-demo-try.git
+cd java-demo-try
+```
+
+### Çalıştır
+
+**Windows** (PowerShell veya cmd):
+
+```
+run.bat
+```
+
+**macOS ve Linux:**
+
+```bash
+chmod +x run.sh    # sadece ilk seferde
+./run.sh
+```
+
+> **macOS notu:** ilk çalıştırmada `zsh: permission denied` alırsan `chmod +x run.sh` komutunu atlamışsındır.
+
+Betikleri kullanmak istemezsen elle de derleyebilirsin:
+
+```bash
+# macOS / Linux
+javac -encoding UTF-8 -d out $(find src -name "*.java")
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
+```
+
+```
+:: Windows
+dir /s /b src\*.java > sources.txt
+javac -encoding UTF-8 -d out @sources.txt
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
+```
+
+---
+
+## Web modu — telefondan katılım
+
+Quiz'i yerel ağda yayınlar. Aynı Wi-Fi'daki herkes tarayıcıdan katılabilir.
+
+```bash
+./run.sh web          # macOS / Linux
+run.bat web           # Windows
+./run.sh web 9000     # port meşgulse başka port
+```
+
+Sunucu açılışta bağlantı adreslerini ekrana yazar:
+
+```
+=========================================
+  SUNUCU ÇALIŞIYOR
+=========================================
+  Bu bilgisayarda : http://localhost:8080
+  Aynı Wi-Fi'dan  : http://192.168.1.42:8080
+
+  Katılımcılar yukarıdaki adresi tarayıcıya yazsın.
+  Durdurmak için: Ctrl+C
+=========================================
+```
+
+Katılımcılar telefonlarından `http://192.168.1.42:8080` adresine girer, adını yazar,
+kategori seçer ve oynar. Herkesin oturumu ayrıdır — farklı kategori, farklı soru,
+farklı hız. Skorlar ortak lider tablosunda toplanır.
+
+### IP adresini elle bulmak
+
+Sunucu adresi yazmazsa:
+
+| Sistem | Komut |
+|---|---|
+| **Windows** | `ipconfig` → "IPv4 Address" satırı |
+| **macOS** | `ipconfig getifaddr en0` (Wi-Fi) veya `ipconfig getifaddr en1` |
+| **Linux** | `ip addr show` veya `hostname -I` |
+
+### Bağlanamıyorlarsa
+
+| Belirti | Sebep ve çözüm |
+|---|---|
+| Windows'ta ilk açılışta uyarı penceresi | Güvenlik duvarı izni — **"Özel ağlarda izin ver"** işaretle |
+| macOS'ta bağlantı yok | Sistem Ayarları → Ağ → Güvenlik Duvarı → gelen bağlantılara izin ver |
+| Linux'ta bağlantı yok | `sudo ufw allow 8080/tcp` |
+| Hiçbiri işe yaramıyor | Ağ **client isolation** kullanıyor olabilir (okul/kurum Wi-Fi'larında yaygın). Telefonun hotspot'unu aç, laptopu ona bağla, tekrar dene |
+| `Address already in use` | Port meşgul — `./run.sh web 9000` |
 
 ---
 
@@ -94,9 +201,10 @@ Biçim ve kurallar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
 <img src="assets/mimari.svg" alt="Katmanlı mimari şeması" width="880">
 
-Proje üç katmana ayrılmıştır ve bu ayrım kasıtlıdır: `quiz.core` içinde tek bir
-`System.out.println` yoktur. İş mantığı ekranı tanımadığı için, konsol arayüzünün
-yerine tarayıcı arayüzü koyduğumuzda motor kodu hiç değişmeyecek.
+Proje katmanlara ayrılmıştır ve bu ayrım kasıtlıdır: `quiz.core` içinde tek bir
+`System.out.println` yoktur. İş mantığı ekranı tanımadığı için, konsol arayüzü ile
+web arayüzü **aynı motoru** kullanır — `Quiz` ve `Scoreboard` sınıflarına web modu
+için tek satır eklenmedi.
 
 ```
 src/quiz/
@@ -106,7 +214,11 @@ src/quiz/
 │   ├── QuestionBank.java   questions/*.txt okur, bozuk satırı atlar
 │   ├── Quiz.java           sıra, karıştırma, skor
 │   └── Scoreboard.java     scores.txt'ye yazar, sıralar
-└── cli/ConsoleUI.java      ekran ve klavye
+├── cli/ConsoleUI.java      konsol arayüzü
+└── web/
+    ├── WebServer.java      HTTP yönlendirme, oturumlar
+    ├── Html.java           sayfa şablonu ve stil
+    └── GameSession.java    tek oyuncunun web durumu
 ```
 
 ## Davranış notları
@@ -116,6 +228,8 @@ src/quiz/
 - Sorular her oturumda karıştırılır
 - Skorlar `scores.txt`'ye eklenir, eskiler silinmez
 - Tüm dosya okuma/yazma işlemleri UTF-8'e sabitlenmiştir
+- Web modunda her oyuncunun oturumu ayrıdır; aynı anda onlarca kişi oynayabilir
+- Cevap gönderimi POST-Redirect-GET desenini kullanır: sayfa yenilenince cevap tekrar gitmez
 
 ## Yol haritası
 
@@ -129,7 +243,8 @@ src/quiz/
 | ✔ | 6 | Soruların dosyadan okunması |
 | ✔ | 7 | Lider tablosu |
 | ✔ | 8 | Katkı rehberi ve PR şablonu |
-| ☐ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
+| ✔ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
+| ☐ | 10 | Süre sınırı, oda kodu, canlı yarış modu |
 
 ## Katkı
 

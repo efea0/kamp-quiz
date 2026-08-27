@@ -7,4 +7,4 @@ mkdir -p out
 javac -encoding UTF-8 -d out $(find src -name "*.java")
 
 echo "[2/2] Calistiriliyor..."
-java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp "$@"

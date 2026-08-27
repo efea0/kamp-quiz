@@ -18,7 +18,7 @@
   <line x1="1" y1="48" x2="879" y2="48" stroke="#30363d"/>
 
   <text class="mono title" x="32" y="103">KAMP QUIZ MOTORU</text>
-  <text class="mono sub"   x="32" y="128">Konsolda çalışan bilgi yarışması. Sorular dosyadan okunur, skorlar diskte kalır.</text>
+  <text class="mono sub"   x="32" y="128">Terminalde ya da tarayıcıda. Aynı Wi-Fi'daki herkes telefonundan katılır.</text>
 
   <text class="mono cmd"   x="32" y="162">$ ./run.sh</text>
   <rect class="cursor" x="121" y="150" width="9" height="16" opacity="0.85"/>
@@ -38,7 +38,7 @@
     <text x="451" y="199" text-anchor="middle">sıfır bağımlılık</text>
 
     <rect x="536" y="182" width="164" height="26" rx="13" fill="#161b22" stroke="#30363d"/>
-    <text x="618" y="199" text-anchor="middle">katkıya açık</text>
+    <text x="618" y="199" text-anchor="middle">web modu</text>
   </g>
 
   <!-- sag tarafta mini soru gorseli -->

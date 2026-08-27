@@ -25,7 +25,7 @@ git checkout -b soru/tarih-paketi
 #    (aşağıdaki biçime bak)
 
 # 5) Test et - senin soruların yükleniyor mu?
-./run.sh
+./run.sh          # Windows'ta: run.bat
 
 # 6) Değişikliği kaydet ve gönder
 git add questions/tarih.txt
@@ -84,13 +84,17 @@ src/quiz/
 │   ├── QuestionBank.java  # Dosyadan soru okuma
 │   ├── Quiz.java          # Quiz mantığı, skor
 │   └── Scoreboard.java    # Lider tablosu
-└── cli/
-    └── ConsoleUI.java # Ekrana basma, klavyeden okuma
+├── cli/
+│   └── ConsoleUI.java # Terminal arayüzü
+└── web/
+    ├── WebServer.java     # HTTP yönlendirme, oturum yönetimi
+    ├── Html.java          # Sayfa şablonu ve CSS
+    └── GameSession.java   # Tek oyuncunun web durumu
 ```
 
 **Altın kural:** `core/` içine **asla** `System.out.println` yazma.
-İş mantığı ekranı bilmemeli. Böylece aynı mantığı yarın web arayüzünde
-de kullanabiliriz.
+İş mantığı ekranı bilmemeli. Bu kural sayesinde web arayüzü eklenirken
+`Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmadı.
 
 ### Kod yazım kuralları
 
@@ -103,7 +107,8 @@ de kullanabiliriz.
 ### Göndermeden önce
 
 ```bash
-./run.sh          # derleniyor ve çalışıyor mu?
+./run.sh          # macOS/Linux — Windows'ta: run.bat
+./run.sh web      # web modu da açılıyor mu?
 git status        # istemediğin dosya eklenmiş mi?
 ```
 
@@ -117,9 +122,13 @@ Kod yazmadan önce bir **Issue** aç, konuşalım. Aynı işi iki kişi yapması
 
 ## 4. Sık karşılaşılan sorunlar
 
-| Sorun | Çözüm |
-|---|---|
-| `./run.sh: Permission denied` | `chmod +x run.sh` |
-| Türkçe karakterler bozuk görünüyor | Windows'ta `run.bat` kullan (o `chcp 65001` yapıyor) |
-| `Soru klasörü bulunamadı` | Programı projenin ana klasöründen çalıştır |
-| `git push` reddedildi | Önce `git pull origin main` yapıp çakışmaları çöz |
+| Sorun | Sistem | Çözüm |
+|---|---|---|
+| `Permission denied` | macOS/Linux | `chmod +x run.sh` |
+| `zsh: command not found: java` | macOS | `brew install openjdk@21` |
+| `'javac' is not recognized` | Windows | JDK kurulu değil ya da PATH'te yok — `winget install Microsoft.OpenJDK.21` |
+| Türkçe karakterler bozuk | Windows | `run.bat` kullan (`chcp 65001` yapıyor) |
+| `Soru klasörü bulunamadı` | hepsi | Programı projenin ana klasöründen çalıştır |
+| `Address already in use` | hepsi | Port meşgul: `./run.sh web 9000` |
+| Telefon bağlanamıyor | hepsi | Güvenlik duvarı izni ver; olmazsa telefon hotspot'u üzerinden dene |
+| `git push` reddedildi | hepsi | Önce `git pull origin main` yapıp çakışmaları çöz |
