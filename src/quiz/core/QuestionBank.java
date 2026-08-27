@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -106,6 +108,29 @@ public class QuestionBank {
 
         // Insan 1'den sayar, dizi 0'dan. Cevirme burada yapilir.
         return new Question(text, options, humanNumber - 1, category);
+    }
+
+    /**
+     * Sorularda gecen kategorileri, tekrarsiz ve ilk gorulme sirasiyla verir.
+     * Hem konsol hem web arayuzu bunu kullanir.
+     */
+    public static List<String> categoriesOf(List<Question> questions) {
+        Set<String> unique = new LinkedHashSet<>();
+        for (Question q : questions) {
+            unique.add(q.getCategory());
+        }
+        return new ArrayList<>(unique);
+    }
+
+    /** Sadece belirli bir kategorideki sorulari suzer. */
+    public static List<Question> byCategory(List<Question> questions, String category) {
+        List<Question> result = new ArrayList<>();
+        for (Question q : questions) {
+            if (q.getCategory().equals(category)) {
+                result.add(q);
+            }
+        }
+        return result;
     }
 
     /** Dosyada '# baslik: ...' satiri varsa onun degerini bulur. */

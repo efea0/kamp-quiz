@@ -22,13 +22,13 @@
   <text class="mono cls" x="48" y="102">ConsoleUI</text>
   <text class="mono note" x="48" y="119">ekran + klavye</text>
 
-  <rect x="346" y="56" width="290" height="72" rx="8" fill="#161b22" stroke="#6e7681" stroke-dasharray="5 4"/>
-  <text class="mono pkg" x="362" y="82" fill="#8b949e">quiz.web</text>
-  <text class="mono cls" x="362" y="102" fill="#6e7681">HttpServer · tarayıcı arayüzü</text>
-  <text class="mono note" x="362" y="119">Adım 9 — henüz yazılmadı</text>
+  <rect x="346" y="56" width="290" height="72" rx="8" fill="#161b22" stroke="#58a6ff"/>
+  <text class="mono pkg" x="362" y="82">quiz.web</text>
+  <text class="mono cls" x="362" y="102">WebServer · Html · GameSession</text>
+  <text class="mono note" x="362" y="119">tarayıcı — telefondan erişilir</text>
 
-  <text class="mono lbl" x="660" y="98">arayüz değişir,</text>
-  <text class="mono lbl" x="660" y="114">motor aynı kalır</text>
+  <text class="mono lbl" x="660" y="98">iki arayüz,</text>
+  <text class="mono lbl" x="660" y="114">tek motor</text>
 
   <!-- IS MANTIGI -->
   <rect x="32" y="176" width="604" height="86" rx="8" fill="#161b22" stroke="#3fb950"/>
@@ -54,7 +54,7 @@
 
   <!-- oklar -->
   <line x1="177" y1="128" x2="177" y2="172" stroke="#6e7681" marker-end="url(#arrow)"/>
-  <line x1="491" y1="128" x2="491" y2="172" stroke="#6e7681" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <line x1="491" y1="128" x2="491" y2="172" stroke="#6e7681" marker-end="url(#arrow)"/>
   <line x1="177" y1="262" x2="177" y2="296" stroke="#6e7681" marker-end="url(#arrow)"/>
   <line x1="668" y1="202" x2="640" y2="202" stroke="#6e7681" marker-end="url(#arrow)"/>
   <line x1="640" y1="252" x2="668" y2="252" stroke="#6e7681" marker-end="url(#arrow)"/>

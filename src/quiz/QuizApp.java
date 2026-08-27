@@ -4,15 +4,14 @@ import quiz.cli.ConsoleUI;
 import quiz.core.QuestionBank;
 import quiz.core.Quiz;
 import quiz.core.Scoreboard;
+import quiz.web.WebServer;
 import quiz.model.Question;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 /**
  * Programin giris noktasi.
@@ -22,6 +21,8 @@ public class QuizApp {
 
     private static final Path QUESTIONS_DIR = Path.of("questions");
     private static final Path SCORES_FILE = Path.of("scores.txt");
+
+    private static final int DEFAULT_PORT = 8080;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -47,11 +48,26 @@ public class QuizApp {
         System.out.println(allQuestions.size() + " soru yüklendi.");
         System.out.println();
 
-        // 2) Oyuncu adi
+        // 2) Web modu mu, konsol modu mu?
+        //    ./run.sh web        -> tarayicidan oynanir
+        //    ./run.sh web 9000   -> baska port
+        if (args.length > 0 && args[0].equalsIgnoreCase("web")) {
+            int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
+            try {
+                new WebServer(allQuestions, new Scoreboard(SCORES_FILE), port).start();
+            } catch (IOException e) {
+                System.out.println("Sunucu başlatılamadı: " + e.getMessage());
+                System.out.println("Port " + port + " başka bir program tarafından kullanılıyor olabilir.");
+                System.out.println("Farklı bir port dene:  ./run.sh web 9000");
+            }
+            return;   // sunucu arka planda calismaya devam eder
+        }
+
+        // 3) Konsol modu: oyuncu adi
         String playerName = ui.askText("Adın nedir? (boş bırak = Misafir): ", "Misafir");
 
         // 3) Kategori secimi
-        List<String> categories = categoriesOf(allQuestions);
+        List<String> categories = QuestionBank.categoriesOf(allQuestions);
         System.out.println();
         System.out.println("Kategoriler:");
         System.out.println("   0) Hepsi karışık");
@@ -62,7 +78,7 @@ public class QuizApp {
 
         List<Question> selected = (categoryChoice == 0)
                 ? allQuestions
-                : filterByCategory(allQuestions, categories.get(categoryChoice - 1));
+                : QuestionBank.byCategory(allQuestions, categories.get(categoryChoice - 1));
 
         // 4) Kac soru sorulsun?
         System.out.println();
@@ -92,22 +108,13 @@ public class QuizApp {
         scanner.close();
     }
 
-    /** Sorularda gecen kategorileri, tekrarsiz ve gorulme sirasiyla verir. */
-    private static List<String> categoriesOf(List<Question> questions) {
-        Set<String> unique = new LinkedHashSet<>();
-        for (Question q : questions) {
-            unique.add(q.getCategory());
+    /** Komut satirindan gelen port degerini dogrular. */
+    private static int parsePort(String text) {
+        try {
+            int port = Integer.parseInt(text.trim());
+            return (port >= 1024 && port <= 65535) ? port : DEFAULT_PORT;
+        } catch (NumberFormatException e) {
+            return DEFAULT_PORT;
         }
-        return new ArrayList<>(unique);
-    }
-
-    private static List<Question> filterByCategory(List<Question> questions, String category) {
-        List<Question> result = new ArrayList<>();
-        for (Question q : questions) {
-            if (q.getCategory().equals(category)) {
-                result.add(q);
-            }
-        }
-        return result;
     }
 }
