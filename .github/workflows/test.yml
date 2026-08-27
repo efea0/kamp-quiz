@@ -1,0 +1,25 @@
+# Her push ve pull request'te projeyi derler ve kendi testlerini çalıştırır.
+# Böylece bir katkı bir şeyi bozarsa, birleştirilmeden önce görünür.
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Derle ve test et
+        run: |
+          chmod +x run.sh
+          ./run.sh test
