@@ -1,0 +1,18 @@
+# Derlenmiş Java dosyaları (kaynak koddan tekrar üretilebilir, repoya girmez)
+*.class
+out/
+bin/
+target/
+build/
+
+# IDE ayar klasörleri (herkesin kendi bilgisayarına özel)
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# İşletim sistemi çöpleri
+.DS_Store
+Thumbs.db
