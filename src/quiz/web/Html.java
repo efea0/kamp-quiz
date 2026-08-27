@@ -404,6 +404,14 @@ final class Html {
             .missmeta { margin: 10px 0 0; font-size: 0.8rem; color: var(--muted); }
             .missmeta b { color: var(--red); }
 
+            .notice {
+              border: 2px solid var(--gold); border-radius: var(--radius);
+              background: rgba(255, 200, 0, 0.1); color: var(--text);
+              padding: 14px 16px; margin-bottom: 18px; font-size: 0.875rem;
+            }
+            code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                   font-size: 0.85em; color: var(--blue); }
+
             .center { text-align: center; }
             a { color: var(--blue); }
             a.plain { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 0.9rem; }
