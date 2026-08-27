@@ -42,6 +42,10 @@ public class WebServer {
     /** Oyuncu oturumlari. Ayni anda birden fazla istek geldigi icin es zamanli harita. */
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
 
+    /** Acik odalar: kod -> oda. */
+    private final Map<String, Room> rooms = new ConcurrentHashMap<>();
+    private final java.util.Random random = new java.util.Random();
+
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
                      Scoreboard scoreboard, int port) {
         this.allQuestions = allQuestions;
@@ -69,6 +73,10 @@ public class WebServer {
         server.createContext("/", this::handleHome);
         server.createContext("/start", this::handleStart);
         server.createContext("/ayarla", this::handleCustom);
+        server.createContext("/kur", this::handleHostSetup);
+        server.createContext("/oda", this::handleHostPanel);
+        server.createContext("/ekran", this::handleScreen);
+        server.createContext("/katil", this::handleJoin);
         server.createContext("/quiz", this::handleQuiz);
         server.createContext("/cevap", this::handleAnswer);
         server.createContext("/devam", this::handleContinue);
@@ -120,6 +128,19 @@ public class WebServer {
                   <h1>Hangi testi çözelim?</h1>
                   <p class="muted small">%d soruluk havuz · hızlı cevap daha çok puan getirir</p>
 
+                  <form method="POST" action="/katil" class="joinbox">
+                    <label class="field" for="kod">Oda kodun varsa</label>
+                    <div class="joinrow">
+                      <input type="text" id="kod" name="kod" inputmode="numeric" maxlength="4"
+                             pattern="[0-9]{4}" placeholder="0000" class="codeinput" required>
+                      <input type="text" name="isim" maxlength="20" required
+                             autocomplete="off" placeholder="Adın">
+                      <button class="btn blue" type="submit">Katıl</button>
+                    </div>
+                  </form>
+
+                  <p class="divider"><span>ya da tek başına</span></p>
+
                   <form method="POST" action="/start" style="margin-top:22px">
                     <label class="field" for="isim">Adın</label>
                     <input type="text" id="isim" name="isim" maxlength="20" required
@@ -131,12 +152,217 @@ public class WebServer {
 
                   <div class="actions">
                     <a class="btn ghost" href="/ayarla">Kendin ayarla</a>
+                    <a class="plain center" href="/kur">Oda kur (sunum modu)</a>
                     <a class="plain center" href="/tablo">Lider tablosu</a>
                   </div>
                 </div>
                 """.formatted(allQuestions.size(), cards);
 
         sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
+    }
+
+    // ------------------------------------------------------------------ odalar
+
+    /** Hocanin oda actigi sayfa: hazir testlerden birini secer. */
+    private void handleHostSetup(HttpExchange exchange) throws IOException {
+        if ("POST".equals(exchange.getRequestMethod())) {
+            QuizSet set = findSet(readForm(exchange).get("set"));
+            if (set == null) {
+                redirect(exchange, "/kur");
+                return;
+            }
+            Room room = new Room(newRoomCode(), set);
+            rooms.put(room.getCode(), room);
+            redirect(exchange, "/oda?kod=" + room.getCode());
+            return;
+        }
+
+        StringBuilder cards = new StringBuilder();
+        for (QuizSet set : sets) {
+            cards.append("      <button class=\"setcard\" type=\"submit\" name=\"set\" value=\"")
+                 .append(Html.escape(set.getName())).append("\">")
+                 .append("<b>").append(Html.escape(set.getName())).append("</b>")
+                 .append("<small>").append(Html.escape(set.getDescription())).append("</small>")
+                 .append("<em>").append(set.totalQuestions()).append(" soru · ")
+                 .append(set.getTimeLimitSeconds()).append(" sn</em>")
+                 .append("</button>\n");
+        }
+
+        String body = """
+                <div class="screen">
+                  <p class="eyebrow">Sunum modu</p>
+                  <h1>Oda kur</h1>
+                  <p class="muted small">Bir test seç. Katılımcılara 4 haneli bir kod vereceğiz.</p>
+
+                  <form method="POST" action="/kur" style="margin-top:20px">
+                    <div class="setlist">
+                %s        </div>
+                  </form>
+
+                  <div class="actions">
+                    <a class="plain center" href="/">Ana sayfaya dön</a>
+                  </div>
+                </div>
+                """.formatted(cards);
+
+        sendHtml(exchange, 200, Html.page("Oda kur", body));
+    }
+
+    /** Hocanin paneli: kod, katilimcilar ve projeksiyon baglantisi. */
+    private void handleHostPanel(HttpExchange exchange) throws IOException {
+        Room room = rooms.get(query(exchange, "kod"));
+        if (room == null) {
+            redirect(exchange, "/kur");
+            return;
+        }
+
+        StringBuilder list = new StringBuilder();
+        if (room.playerCount() == 0) {
+            list.append("      <p class=\"muted center small\">Henüz kimse katılmadı.</p>\n");
+        } else {
+            for (GameSession player : room.standings()) {
+                list.append("      <div class=\"row\"><span class=\"who\">")
+                    .append(Html.escape(player.getPlayerName()))
+                    .append("</span><span class=\"sub\">")
+                    .append(progressLabel(player))
+                    .append("</span><span class=\"pts\">")
+                    .append(player.getQuiz().getPoints()).append("</span></div>\n");
+            }
+        }
+
+        String body = """
+                <div class="screen">
+                  <p class="eyebrow">%s</p>
+                  <h1>Oda açık</h1>
+                  <div class="code">%s</div>
+                  <p class="muted small center">Katılımcılar ana sayfada bu kodu ve adını yazsın.</p>
+
+                  <div class="stats" style="margin-top:22px">
+                    <div class="stat"><b>%d</b><span>Katılımcı</span></div>
+                    <div class="stat"><b>%d</b><span>Soru</span></div>
+                  </div>
+
+                  <div class="rank">
+                %s      </div>
+
+                  <div class="actions">
+                    <a class="btn blue" href="/ekran?kod=%s">Projeksiyon ekranı</a>
+                    <a class="plain center" href="/">Ana sayfa</a>
+                  </div>
+                </div>
+                """.formatted(
+                Html.escape(room.getSet().getName()),
+                room.getCode(),
+                room.playerCount(),
+                room.getSet().totalQuestions(),
+                list,
+                room.getCode());
+
+        sendHtml(exchange, 200, Html.page("Oda " + room.getCode(), body,
+                "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
+    }
+
+    /** Buyuk ekranda gosterilen canli siralama. Kendi kendine yenilenir. */
+    private void handleScreen(HttpExchange exchange) throws IOException {
+        Room room = rooms.get(query(exchange, "kod"));
+        if (room == null) {
+            redirect(exchange, "/kur");
+            return;
+        }
+
+        StringBuilder list = new StringBuilder();
+        List<GameSession> standings = room.standings();
+        if (standings.isEmpty()) {
+            list.append("      <p class=\"muted center\">Katılımcılar bekleniyor...</p>\n");
+        } else {
+            int rank = 1;
+            for (GameSession player : standings) {
+                list.append("      <div class=\"row\"><span class=\"pos\">").append(rank++)
+                    .append("</span><span class=\"who\">").append(Html.escape(player.getPlayerName()))
+                    .append("</span><span class=\"sub\">").append(progressLabel(player))
+                    .append("</span><span class=\"pts\">").append(player.getQuiz().getPoints())
+                    .append("</span></div>\n");
+            }
+        }
+
+        String body = """
+                <div class="screen wide">
+                  <div class="screenhead">
+                    <div>
+                      <p class="eyebrow">%s</p>
+                      <h1>Canlı Sıralama</h1>
+                    </div>
+                    <div class="codebox">
+                      <span>Katılım kodu</span>
+                      <b>%s</b>
+                    </div>
+                  </div>
+
+                  <div class="rank big">
+                %s      </div>
+
+                  <p class="muted small center" style="margin-top:20px">%d katılımcı · %s</p>
+                </div>
+                """.formatted(
+                Html.escape(room.getSet().getName()),
+                room.getCode(),
+                list,
+                room.playerCount(),
+                room.everyoneFinished() ? "test bitti" : "devam ediyor");
+
+        sendHtml(exchange, 200, Html.page("Ekran " + room.getCode(), body,
+                "  <meta http-equiv=\"refresh\" content=\"3\">\n"));
+    }
+
+    /** Katilimci oda koduyla girer. */
+    private void handleJoin(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            redirect(exchange, "/");
+            return;
+        }
+
+        Map<String, String> form = readForm(exchange);
+        Room room = rooms.get(form.getOrDefault("kod", "").trim());
+        if (room == null) {
+            sendHtml(exchange, 404, Html.page("Oda bulunamadı", """
+                    <div class="screen">
+                      <div class="card center">
+                        <h1>Oda bulunamadı</h1>
+                        <p class="muted">Kodu kontrol et. Oda kapanmış da olabilir.</p>
+                      </div>
+                      <div class="actions"><a class="btn" href="/">Geri dön</a></div>
+                    </div>
+                    """));
+            return;
+        }
+
+        String name = cleanName(form.get("isim"));
+        GameSession session = new GameSession(name, room.newQuiz(allQuestions), room.getCode());
+        room.addPlayer(session);
+
+        String sessionId = UUID.randomUUID().toString();
+        sessions.put(sessionId, session);
+        setSessionCookie(exchange, sessionId);
+        redirect(exchange, "/quiz");
+    }
+
+    /** "Soru 3/15" ya da "bitti" seklinde ilerleme etiketi. */
+    private static String progressLabel(GameSession player) {
+        Quiz quiz = player.getQuiz();
+        return quiz.hasNext()
+                ? quiz.getQuestionNumber() + "/" + quiz.getTotal()
+                : "bitti " + quiz.getScore() + "/" + quiz.getTotal();
+    }
+
+    /** Kullanilmayan 4 haneli bir oda kodu uretir. */
+    private String newRoomCode() {
+        for (int deneme = 0; deneme < 200; deneme++) {
+            String code = String.format("%04d", random.nextInt(10000));
+            if (!rooms.containsKey(code)) {
+                return code;
+            }
+        }
+        throw new IllegalStateException("Boş oda kodu bulunamadı.");
     }
 
     /** Kendi kategorini, soru sayini ve sureni sectigin sayfa. */
@@ -201,13 +427,7 @@ public class WebServer {
         }
 
         Map<String, String> form = readForm(exchange);
-        String name = form.getOrDefault("isim", "").trim();
-        if (name.isEmpty()) {
-            name = "Misafir";
-        }
-        if (name.length() > 20) {
-            name = name.substring(0, 20);
-        }
+        String name = cleanName(form.get("isim"));
 
         List<Question> pool;
         int count;
@@ -237,10 +457,8 @@ public class WebServer {
         quiz.setTimeLimitSeconds(seconds);
 
         String sessionId = UUID.randomUUID().toString();
-        sessions.put(sessionId, new GameSession(name, quiz));
-
-        exchange.getResponseHeaders().add("Set-Cookie",
-                COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
+        sessions.put(sessionId, new GameSession(name, quiz, null));
+        setSessionCookie(exchange, sessionId);
         redirect(exchange, "/quiz");
     }
 
@@ -535,6 +753,34 @@ public class WebServer {
     }
 
     // ------------------------------------------------------------- yardimcilar
+
+    /** URL'deki ?anahtar=deger degerini okur. */
+    private static String query(HttpExchange exchange, String key) {
+        String raw = exchange.getRequestURI().getRawQuery();
+        if (raw == null) {
+            return "";
+        }
+        for (String pair : raw.split("&")) {
+            int eq = pair.indexOf('=');
+            if (eq > 0 && key.equals(pair.substring(0, eq))) {
+                return URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return "";
+    }
+
+    private static String cleanName(String raw) {
+        String name = raw == null ? "" : raw.trim();
+        if (name.isEmpty()) {
+            name = "Misafir";
+        }
+        return name.length() > 20 ? name.substring(0, 20) : name;
+    }
+
+    private void setSessionCookie(HttpExchange exchange, String sessionId) {
+        exchange.getResponseHeaders().add("Set-Cookie",
+                COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
+    }
 
     /** Tarayicidan gelen cerezle oturumu bulur. */
     private GameSession currentSession(HttpExchange exchange) {
