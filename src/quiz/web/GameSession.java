@@ -21,18 +21,24 @@ class GameSession {
 
     private final String playerName;
     private final Quiz quiz;
+    private final String roomCode;   // oda disinda oynayanlarda null
 
     /** Cevap verildikten sonra gosterilecek sonuc; "Devam" ile temizlenir. */
     private Feedback feedback;
     private boolean scoreSaved;
 
-    GameSession(String playerName, Quiz quiz) {
+    GameSession(String playerName, Quiz quiz, String roomCode) {
         this.playerName = playerName;
         this.quiz = quiz;
+        this.roomCode = roomCode;
     }
 
     String getPlayerName() {
         return playerName;
+    }
+
+    String getRoomCode() {
+        return roomCode;
     }
 
     Quiz getQuiz() {

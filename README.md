@@ -109,6 +109,17 @@ Sunucu adresi yazmazsa:
 | **macOS** | `ipconfig getifaddr en0` (Wi-Fi) veya `ipconfig getifaddr en1` |
 | **Linux** | `ip addr show` veya `hostname -I` |
 
+### Sunum modu — oda kodu
+
+Sınıfça oynamak için:
+
+1. Hoca `/kur` sayfasından bir test seçer, **4 haneli oda kodu** üretilir
+2. `/ekran?kod=XXXX` projeksiyona açılır — canlı sıralama 3 saniyede bir yenilenir
+3. Katılımcılar ana sayfada kodu ve adını yazıp katılır
+
+Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** —
+yan yana oturanlar birbirinin ekranından kopyalayamaz.
+
 ### Bağlanamıyorlarsa
 
 | Belirti | Sebep ve çözüm |
@@ -266,7 +277,7 @@ Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
 | ✔ | 8 | Katkı rehberi ve PR şablonu |
 | ✔ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
 | ✔ | 10 | Süre sınırı, hız puanı ve açıklama alanı |
-| ☐ | 11 | Oda kodu ve projeksiyon ekranı |
+| ✔ | 11 | Oda kodu ve projeksiyon ekranı |
 | ☐ | 12 | AI ile soru paketi üretme |
 
 ## Katkı

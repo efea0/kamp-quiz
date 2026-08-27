@@ -11,6 +11,14 @@ final class Html {
 
     /** Her sayfanin ortak iskeleti. */
     static String page(String title, String body) {
+        return page(title, body, "");
+    }
+
+    /**
+     * head bolumune ek satir koyabilen surum.
+     * Otomatik yenilenen ekranlar icin: meta http-equiv="refresh"
+     */
+    static String page(String title, String body, String headExtra) {
         return """
                 <!DOCTYPE html>
                 <html lang="tr">
@@ -20,11 +28,11 @@ final class Html {
                   <meta name="theme-color" content="#131f24">
                   <title>%s</title>
                   <link rel="stylesheet" href="/style.css">
-                </head>
+                %s</head>
                 <body>
                 %s</body>
                 </html>
-                """.formatted(escape(title), body);
+                """.formatted(escape(title), headExtra, body);
     }
 
     /**
@@ -310,6 +318,54 @@ final class Html {
             .rank .who { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .rank .pts { font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
             .rank .sub { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+
+            /* ---------- oda kodu ve projeksiyon ---------- */
+
+            .joinbox { margin: 22px 0 4px; }
+            .joinrow { display: flex; gap: 10px; align-items: stretch; }
+            .joinrow input { margin-bottom: 0; }
+            .joinrow .btn { width: auto; flex: 0 0 auto; padding-inline: 22px; }
+            .codeinput {
+              flex: 0 0 6.5ch; text-align: center;
+              font-weight: 800; font-size: 1.2rem; letter-spacing: 3px;
+              font-variant-numeric: tabular-nums;
+            }
+
+            .divider {
+              display: flex; align-items: center; gap: 14px;
+              color: var(--muted); font-size: 0.75rem; font-weight: 800;
+              letter-spacing: 1.2px; text-transform: uppercase;
+              margin: 26px 0 16px;
+            }
+            .divider::before, .divider::after {
+              content: ""; flex: 1; height: 2px; background: var(--line-soft);
+            }
+
+            .code {
+              font-size: 3.6rem; font-weight: 800; text-align: center;
+              letter-spacing: 10px; color: var(--blue);
+              font-variant-numeric: tabular-nums;
+              margin: 14px 0 6px; padding-left: 10px;
+            }
+
+            .screenhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+            .codebox {
+              text-align: right; border: 2px solid var(--line); border-bottom-width: var(--shadow);
+              border-radius: 14px; padding: 10px 16px; background: var(--surface);
+            }
+            .codebox span {
+              display: block; font-size: 0.65rem; font-weight: 800;
+              letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted);
+            }
+            .codebox b {
+              font-size: 1.9rem; font-weight: 800; letter-spacing: 5px; color: var(--blue);
+              font-variant-numeric: tabular-nums;
+            }
+
+            .screen.wide { max-width: 900px; }
+            .rank.big .row { padding: 16px 20px; font-size: 1.15rem; }
+            .rank.big .pos { flex: 0 0 40px; font-size: 1.3rem; }
+            .rank.big .pts { font-size: 1.4rem; }
 
             .center { text-align: center; }
             a { color: var(--blue); }
