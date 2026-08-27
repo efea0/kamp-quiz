@@ -1,0 +1,138 @@
+package quiz.core;
+
+import quiz.model.Question;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+/**
+ * Soru bankasi: questions/ klasorundeki .txt dosyalarini okuyup
+ * Question nesnelerine cevirir.
+ *
+ * Dosya formati (her satir bir soru):
+ *     Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
+ *
+ * - dogruNo INSANIN saydigi gibi 1'den baslar (1 = ilk sik)
+ * - '#' ile baslayan satirlar yorumdur, atlanir
+ * - Bos satirlar atlanir
+ * - '# baslik: Genel Kultur' satiri kategoriye gorunen bir ad verir
+ */
+public class QuestionBank {
+
+    private static final String TITLE_PREFIX = "baslik:";
+
+    private QuestionBank() {
+        // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
+    }
+
+    /** Klasordeki TUM .txt dosyalarini okur. */
+    public static List<Question> loadFromDirectory(Path directory) throws IOException {
+        if (!Files.isDirectory(directory)) {
+            throw new IOException("Soru klasoru bulunamadi: " + directory.toAbsolutePath());
+        }
+
+        List<Question> all = new ArrayList<>();
+        try (Stream<Path> files = Files.list(directory)) {
+            List<Path> txtFiles = files
+                    .filter(p -> p.toString().toLowerCase().endsWith(".txt"))
+                    .sorted()
+                    .toList();
+
+            for (Path file : txtFiles) {
+                all.addAll(loadFromFile(file));
+            }
+        }
+        return all;
+    }
+
+    /** Tek bir dosyayi okur. Bozuk satirlari atlar ama uyari basar. */
+    public static List<Question> loadFromFile(Path file) throws IOException {
+        List<Question> questions = new ArrayList<>();
+        List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+
+        // Once dosyanin basligini ara; yoksa dosya adindan uret.
+        String category = findTitle(lines).orElseGet(() -> categoryOf(file));
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;   // yorum veya bos satir -> atla
+            }
+
+            try {
+                questions.add(parseLine(line, category));
+            } catch (IllegalArgumentException e) {
+                // Tek bozuk satir yuzunden tum quiz cokmesin.
+                System.out.println("  [UYARI] " + file.getFileName()
+                        + " -> " + (i + 1) + ". satir atlandi: " + e.getMessage());
+            }
+        }
+        return questions;
+    }
+
+    /** Bir metin satirini Question nesnesine cevirir. */
+    private static Question parseLine(String line, String category) {
+        String[] parts = line.split("\\|");
+
+        if (parts.length < 4) {
+            throw new IllegalArgumentException(
+                    "En az 'soru | sik1 | sik2 | dogruNo' bicimi gerekli.");
+        }
+
+        String text = parts[0].trim();
+
+        // Ilk parca soru, son parca dogru cevap numarasi; aradakiler siklar.
+        int optionCount = parts.length - 2;
+        String[] options = new String[optionCount];
+        for (int i = 0; i < optionCount; i++) {
+            options[i] = parts[i + 1].trim();
+        }
+
+        String lastPart = parts[parts.length - 1].trim();
+        int humanNumber;
+        try {
+            humanNumber = Integer.parseInt(lastPart);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "Son sutun bir sayi olmali, gelen deger: '" + lastPart + "'");
+        }
+
+        // Insan 1'den sayar, dizi 0'dan. Cevirme burada yapilir.
+        return new Question(text, options, humanNumber - 1, category);
+    }
+
+    /** Dosyada '# baslik: ...' satiri varsa onun degerini bulur. */
+    private static Optional<String> findTitle(List<String> lines) {
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (!line.startsWith("#")) {
+                continue;
+            }
+            String withoutHash = line.substring(1).trim();
+            if (withoutHash.toLowerCase().startsWith(TITLE_PREFIX)) {
+                String title = withoutHash.substring(TITLE_PREFIX.length()).trim();
+                if (!title.isEmpty()) {
+                    return Optional.of(title);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** "genel-kultur.txt" -> "genel kultur" */
+    private static String categoryOf(Path file) {
+        String name = file.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        if (dot > 0) {
+            name = name.substring(0, dot);
+        }
+        return name.replace('-', ' ').replace('_', ' ');
+    }
+}

@@ -1,0 +1,10 @@
+# MATEMATİK SORU PAKETİ
+# baslik: Matematik
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+7 x 8 kaçtır? | 54 | 56 | 63 | 48 | 2
+Bir üçgenin iç açıları toplamı kaç derecedir? | 90 | 180 | 270 | 360 | 2
+144 sayısının karekökü kaçtır? | 11 | 12 | 13 | 14 | 2
+Pi sayısının virgülden sonraki ilk iki basamağı nedir? | 14 | 41 | 15 | 12 | 1
+2 üzeri 10 kaçtır? | 512 | 1000 | 1024 | 2048 | 3
+Bir karenin çevresi 20 ise bir kenarı kaçtır? | 4 | 5 | 6 | 10 | 2

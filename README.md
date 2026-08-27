@@ -1,61 +1,71 @@
 # Kamp Quiz Motoru
 
-Konsolda calisan, Java ile yazilmis bilgi yarismasi uygulamasi.
-Kamp boyunca adim adim gelistiriliyor ve **katkiya aciktir**.
+Konsolda çalışan, Java ile sıfırdan yazılmış bilgi yarışması uygulaması.
+Sorular dosyadan okunur, skorlar kaydedilir, lider tablosu tutulur.
 
-## Gereksinimler
+**Katkıya açıktır** — Java bilmeden de soru paketi ekleyebilirsin.
+Bkz. [CONTRIBUTING.md](CONTRIBUTING.md)
 
-- Java 17 veya uzeri (`java -version` ile kontrol et)
-
-## Calistirma
-
-Linux / macOS / Git Bash:
+## Hızlı başlangıç
 
 ```bash
-./run.sh
+git clone https://github.com/efea0/java-demo-try.git
+cd java-demo-try
+./run.sh            # Windows'ta: run.bat
 ```
 
-Windows (cmd veya PowerShell):
+Tek gereksinim: **Java 17 veya üzeri** (`java -version` ile kontrol et).
+Ek kütüphane, Maven, internet gerekmez.
 
-```
-javac -d out src\QuizApp.java
-java -cp out QuizApp
-```
+## Neler yapıyor?
 
-## Proje yapisi
+- `questions/` klasöründeki tüm `.txt` paketlerini otomatik yükler
+- Kategori seçtirir, soru sayısını sorar, soruları karıştırır
+- Yanlış girişleri affeder (harf girersen program çökmez, tekrar sorar)
+- Cevap sonrası doğruyu gösterir
+- Skoru `scores.txt`'ye kaydeder ve ilk 5'i listeler
+
+## Proje yapısı
 
 ```
 .
-├── src/          # Java kaynak kodlari (elle yazdigimiz her sey burada)
-├── out/          # Derlenmis .class dosyalari (otomatik uretilir, repoya girmez)
-├── run.sh        # Derle + calistir kisayolu
-└── README.md
+├── src/quiz/
+│   ├── QuizApp.java        # giriş noktası (main)
+│   ├── model/Question.java # soru verisi
+│   ├── core/               # iş mantığı (ekranı bilmez)
+│   │   ├── QuestionBank.java
+│   │   ├── Quiz.java
+│   │   └── Scoreboard.java
+│   └── cli/ConsoleUI.java  # ekran ve klavye
+├── questions/              # soru paketleri (katkı buraya)
+├── run.sh / run.bat        # derle + çalıştır
+└── CONTRIBUTING.md         # katkı rehberi
 ```
 
-## Yol haritasi
+Mimari kuralı: **`core/` ekranı bilmez.** İş mantığı ile arayüz ayrıdır,
+böylece aynı motor yarın web arayüzünde de çalışabilir.
 
-- [x] Adim 1 - Proje iskeleti ve ilk calisan program
-- [x] Adim 2 - `Question` sinifi (OOP: sinif, nesne, encapsulation)
-- [ ] Adim 3 - Soru listesi
-- [ ] Adim 4 - Kullanicidan cevap alma
-- [ ] Adim 5 - Skor sistemi
-- [ ] Adim 6 - Sorulari dosyadan okuma
-- [ ] Adim 7 - Lider tablosu
-- [ ] Adim 8 - Katki rehberi
+## Yol haritası
 
-## Katkida bulunmak
+- [x] Adım 1 — Proje iskeleti, ilk çalışan program
+- [x] Adım 2 — `Question` sınıfı (OOP: sınıf, nesne, kapsülleme)
+- [x] Adım 3 — Paket yapısı ve katmanlı mimari
+- [x] Adım 4 — Klavyeden cevap alma, hatalı girdiye dayanıklılık
+- [x] Adım 5 — Skor sistemi ve sonuç ekranı
+- [x] Adım 6 — Soruları dosyadan okuma (katkı noktası)
+- [x] Adım 7 — Lider tablosu (`scores.txt`)
+- [x] Adım 8 — Katkı rehberi ve PR şablonu
+- [ ] Adım 9 — Web sunucusu: telefondan bağlanılan canlı quiz
 
-Bu proje herkesin branch acip katki verebilecegi sekilde tasarlaniyor.
-Detayli rehber Adim 8'de eklenecek. Ozet akis:
+## Katkıda bulunmak
 
 ```bash
-git checkout main
-git pull origin main
-git checkout -b ozellik/senin-ozelligin
-# ... degisiklikleri yap ...
-git add .
-git commit -m "Aciklayici bir mesaj"
-git push -u origin ozellik/senin-ozelligin
+git checkout main && git pull origin main
+git checkout -b soru/kendi-paketin
+# questions/ altına .txt ekle
+./run.sh
+git add . && git commit -m "Açıklayıcı mesaj"
+git push -u origin soru/kendi-paketin
 ```
 
-Sonrasinda GitHub uzerinden Pull Request acilir.
+Detaylar ve soru dosyası biçimi: [CONTRIBUTING.md](CONTRIBUTING.md)
