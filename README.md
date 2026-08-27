@@ -134,20 +134,44 @@ arayüzü eklenirken `Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmad
 quize girmez: ekranda düzenlenebilir hâlde gelir, elle ya da "AI ile düzenle"
 kutusuyla değiştirilir, kaydetmeden önce doğrulanır.
 
-**API anahtarı koda yazılmaz**, ortam değişkeninden okunur ve HTTP başlığıyla
-gönderilir:
+**API anahtarı koda yazılmaz.** En güvenli yol, anahtarı sadece kendine okunur
+bir dosyaya koymak — program bu dosyayı kendiliğinden bulur:
 
 ```bash
-# Google Gemini
+mkdir -p ~/.config/kamp-quiz
+printf '%s' "ANAHTARIN" > ~/.config/kamp-quiz/gemini.key
+chmod 600 ~/.config/kamp-quiz/gemini.key      # sadece sen okuyabilirsin
+```
+
+OpenRouter için dosya adı `openrouter.key`. **İkisi de varsa önce Gemini
+denenir; kota dolduğunda ya da hata verdiğinde OpenRouter'a otomatik geçilir.**
+
+Ortam değişkeni de çalışır ama daha zayıftır — `export` satırı kabuk geçmişine
+(`~/.bash_history`) düşer ve `env` çıktısında görünür:
+
+```bash
 export GEMINI_API_KEY="..."
-
-# ya da OpenRouter (daha ucuz modeller)
 export OPENROUTER_API_KEY="..."
-export OPENROUTER_MODEL="saglayici/model"
-
-export QUIZ_ADMIN_KEY="birparola"    # /uret sayfasını kilitler, önerilir
+export OPENROUTER_MODEL="saglayici/model"      # model kimliğini sen seç
+export GEMINI_API_KEY_FILE="/yol/anahtar"      # dosya yolunu elle vermek için
+export QUIZ_ADMIN_KEY="birparola"              # /uret sayfasını kilitler
 ./run.sh web
 ```
+
+Sunucu açılışta hangi servisleri kullanacağını yazar ve anahtar dosyanı
+başkaları da okuyabiliyorsa uyarır:
+
+```
+  Soru üretici : Gemini · gemini-2.5-flash  →  OpenRouter · deepseek/deepseek-chat
+  UYARI        : Anahtar dosyası başkaları tarafından okunabilir: ...
+```
+
+**Anahtarı kimler görebilir?** Depoda anahtar yok, dolayısıyla projeye katkı
+veren kimse göremez. Linux'ta bir sürecin ortam değişkenleri
+(`/proc/<pid>/environ`) **yalnızca o sürecin sahibi ve root** tarafından
+okunabilir — aynı makinedeki başka bir kullanıcı okuyamaz. Yine de anahtarı
+sadece kendi kontrolündeki bir bilgisayarda tanımla, kamp için ayrı bir anahtar
+üret ve kamp bitince iptal et.
 
 Anahtar tanımlı değilse uygulama normal çalışır, yalnızca `/uret` kapalı görünür.
 

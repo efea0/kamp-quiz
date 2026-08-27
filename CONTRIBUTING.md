@@ -111,8 +111,10 @@ src/quiz/
 └── test/SelfTest.java     # Kendi kendini sınama
 ```
 
-**API anahtarları:** hiçbir anahtar depoya girmez. Ortam değişkeninden okunur
-(`GEMINI_API_KEY`, `OPENROUTER_API_KEY`). Koda anahtar yazan bir PR kabul edilmez.
+**API anahtarları:** hiçbir anahtar depoya girmez. Anahtar ya
+`~/.config/kamp-quiz/gemini.key` gibi bir dosyadan (izin 600) ya da ortam
+değişkeninden okunur. Koda, örnek dosyaya veya teste anahtar yazan bir PR
+kabul edilmez.
 
 **Altın kural:** `core/` içine **asla** `System.out.println` yazma.
 İş mantığı ekranı bilmemeli. Bu kural sayesinde web arayüzü eklenirken

@@ -120,6 +120,7 @@ public class WebServer {
         server.start();
 
         printAddresses();
+        printAiStatus();
     }
 
     // ---------------------------------------------------------------- sayfalar
@@ -312,14 +313,18 @@ public class WebServer {
                       <div class="card">
                         <p class="muted small">Bu özellik bir Google Gemini API anahtarı gerektirir.
                         Anahtar <b>koda yazılmaz</b>, ortam değişkeninden okunur:</p>
-                        <pre class="code-block">export GEMINI_API_KEY="buraya-anahtar"
+                        <p class="muted small">En güvenli yol, anahtarı bir dosyaya koymak
+                        ve dosyayı sadece kendine okunur yapmak:</p>
+                        <pre class="code-block">mkdir -p ~/.config/kamp-quiz
+printf '%s' "ANAHTAR" > ~/.config/kamp-quiz/gemini.key
+chmod 600 ~/.config/kamp-quiz/gemini.key
 ./run.sh web</pre>
-                        <p class="muted small">Ya da OpenRouter (daha ucuz modeller):</p>
-                        <pre class="code-block">export OPENROUTER_API_KEY="buraya-anahtar"
-export OPENROUTER_MODEL="saglayici/model"
-./run.sh web</pre>
-                        <p class="muted small">Windows PowerShell'de <code>export</code> yerine
-                        <code>$env:AD="deger"</code> yazılır. Anahtarı asla depoya ekleme.</p>
+                        <p class="muted small">Program bu dosyayı kendiliğinden bulur.
+                        OpenRouter için dosya adı <code>openrouter.key</code>. İkisi de varsa
+                        önce Gemini denenir, hata verirse OpenRouter'a geçilir.</p>
+                        <p class="muted small">Ortam değişkeni de çalışır
+                        (<code>GEMINI_API_KEY</code>) ama kabuk geçmişine düşebilir.
+                        Anahtarı asla depoya ekleme.</p>
                       </div>
                       <div class="actions"><a class="btn" href="/">Ana sayfa</a></div>
                     </div>
@@ -1376,6 +1381,22 @@ export OPENROUTER_MODEL="saglayici/model"
         System.out.println("  Katılımcılar yukarıdaki adresi tarayıcıya yazsın.");
         System.out.println("  Durdurmak için: Ctrl+C");
         System.out.println("=========================================");
+    }
+
+    /** Uretim ozelliginin durumunu ve varsa uyarilari basar. */
+    private void printAiStatus() {
+        if (generator.isEnabled()) {
+            System.out.println("  Soru üretici : " + generator.describe());
+            if (adminKey.isEmpty()) {
+                System.out.println("  UYARI        : /uret parolasız. QUIZ_ADMIN_KEY tanımla.");
+            }
+        }
+        for (String warning : generator.getWarnings()) {
+            System.out.println("  UYARI        : " + warning);
+        }
+        if (generator.isEnabled() || !generator.getWarnings().isEmpty()) {
+            System.out.println("=========================================");
+        }
     }
 
     /** Bilgisayarin yerel agdaki IPv4 adreslerini bulur. */
