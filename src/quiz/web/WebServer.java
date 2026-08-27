@@ -54,6 +54,15 @@ public class WebServer {
 
     /** Acik odalar: kod -> oda. */
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
+
+    /**
+     * Uretim sayfasinin parolasi. QUIZ_ADMIN_KEY tanimliysa /uret kilitlenir.
+     * Anahtar zaten hicbir sayfada gorunmuyor; bu kilit, agdaki baskalarinin
+     * senin API kotani harcamasini engellemek icin.
+     */
+    private final String adminKey = System.getenv("QUIZ_ADMIN_KEY") == null
+            ? "" : System.getenv("QUIZ_ADMIN_KEY").trim();
+    private final java.util.Set<String> adminTokens = ConcurrentHashMap.newKeySet();
     private final java.util.Random random = new java.util.Random();
 
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
@@ -305,15 +314,37 @@ public class WebServer {
                         Anahtar <b>koda yazılmaz</b>, ortam değişkeninden okunur:</p>
                         <pre class="code-block">export GEMINI_API_KEY="buraya-anahtar"
 ./run.sh web</pre>
-                        <p class="muted small">Windows PowerShell için:</p>
-                        <pre class="code-block">$env:GEMINI_API_KEY="buraya-anahtar"
-run.bat web</pre>
-                        <p class="muted small">Anahtarı <b>aistudio.google.com</b> üzerinden alabilirsin.
-                        Anahtarı asla depoya ekleme.</p>
+                        <p class="muted small">Ya da OpenRouter (daha ucuz modeller):</p>
+                        <pre class="code-block">export OPENROUTER_API_KEY="buraya-anahtar"
+export OPENROUTER_MODEL="saglayici/model"
+./run.sh web</pre>
+                        <p class="muted small">Windows PowerShell'de <code>export</code> yerine
+                        <code>$env:AD="deger"</code> yazılır. Anahtarı asla depoya ekleme.</p>
                       </div>
                       <div class="actions"><a class="btn" href="/">Ana sayfa</a></div>
                     </div>
                     """));
+            return;
+        }
+
+        // Parola tanimliysa once giris istenir.
+        if (!adminKey.isEmpty() && !isAdmin(exchange)) {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                String given = readForm(exchange).getOrDefault("parola", "");
+                if (java.security.MessageDigest.isEqual(
+                        given.getBytes(StandardCharsets.UTF_8),
+                        adminKey.getBytes(StandardCharsets.UTF_8))) {
+                    String token = UUID.randomUUID().toString();
+                    adminTokens.add(token);
+                    exchange.getResponseHeaders().add("Set-Cookie",
+                            "qadmin=" + token + "; Path=/; Max-Age=28800; SameSite=Lax");
+                    redirect(exchange, "/uret");
+                    return;
+                }
+                sendHtml(exchange, 200, Html.page("Giriş", adminForm("Parola yanlış.")));
+                return;
+            }
+            sendHtml(exchange, 200, Html.page("Giriş", adminForm(null)));
             return;
         }
 
@@ -366,10 +397,56 @@ run.bat web</pre>
         }
     }
 
+    /** Cerezdeki yonetici belirteci gecerli mi? */
+    private boolean isAdmin(HttpExchange exchange) {
+        List<String> cookies = exchange.getRequestHeaders().get("Cookie");
+        if (cookies == null) {
+            return false;
+        }
+        for (String header : cookies) {
+            for (String cookie : header.split(";")) {
+                String[] pair = cookie.trim().split("=", 2);
+                if (pair.length == 2 && "qadmin".equals(pair[0]) && adminTokens.contains(pair[1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private String adminForm(String error) {
+        String warning = error == null ? ""
+                : "  <div class=\"verdict bad\"><h3><span>" + Html.escape(error) + "</span></h3></div>\n";
+        return """
+                <div class="screen">
+                  <p class="eyebrow">Soru üretici</p>
+                  <h1>Parola gerekli</h1>
+                  <p class="muted small">Bu sayfa API kotası harcadığı için korumalı.</p>
+                %s
+                  <form method="POST" action="/uret">
+                    <div class="card">
+                      <label class="field" for="parola">Parola</label>
+                      <input type="password" id="parola" name="parola" required
+                             autocomplete="off" style="margin-bottom:0">
+                    </div>
+                    <div class="actions">
+                      <button class="btn" type="submit">Giriş</button>
+                      <a class="plain center" href="/">Ana sayfa</a>
+                    </div>
+                  </form>
+                </div>
+                """.formatted(warning);
+    }
+
     private String generateForm(String error) {
         String warning = error == null ? ""
                 : "  <div class=\"verdict bad\"><h3><span>Olmadı</span></h3>"
                   + "<div class=\"why\">" + Html.escape(error) + "</div></div>\n";
+
+        if (adminKey.isEmpty()) {
+            warning += "  <div class=\"notice\">Bu sayfa parolasız. Ağdaki herkes kota "
+                     + "harcayabilir. Korumak için QUIZ_ADMIN_KEY ortam değişkenini tanımla.</div>\n";
+        }
 
         return """
                 <div class="screen">
@@ -409,7 +486,7 @@ run.bat web</pre>
                     </div>
                   </form>
                 </div>
-                """.formatted(Html.escape(generator.getModel()), warning);
+                """.formatted(Html.escape(generator.describe()), warning);
     }
 
     /** Uretilen taslagi gosterir: elle duzenlenebilir, AI ile de duzenlenebilir. */

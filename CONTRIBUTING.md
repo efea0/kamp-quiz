@@ -11,8 +11,8 @@ yeni bir soru paketi eklemek — 5 dakika sürer.
 
 ```bash
 # 1) Projeyi bilgisayarına indir (bir kez yapılır)
-git clone https://github.com/efea0/java-demo-try.git
-cd java-demo-try
+git clone https://github.com/efea0/kamp-quiz.git
+cd kamp-quiz
 
 # 2) Her zaman güncel main'den başla
 git checkout main
@@ -101,11 +101,18 @@ src/quiz/
 │   └── Scoreboard.java    # Lider tablosu
 ├── cli/
 │   └── ConsoleUI.java # Terminal arayüzü
-└── web/
-    ├── WebServer.java     # HTTP yönlendirme, oturum yönetimi
-    ├── Html.java          # Sayfa şablonu ve CSS
-    └── GameSession.java   # Tek oyuncunun web durumu
+├── web/
+│   ├── WebServer.java     # HTTP yönlendirme, oturum ve oda yönetimi
+│   ├── Room.java          # Oda kodu ve katılımcılar
+│   ├── QrCode.java        # Sıfırdan QR kodlayıcı
+│   ├── Html.java          # Sayfa şablonu ve CSS
+│   └── GameSession.java   # Tek oyuncunun web durumu
+├── ai/                    # Soru üretimi (Gemini / OpenRouter)
+└── test/SelfTest.java     # Kendi kendini sınama
 ```
+
+**API anahtarları:** hiçbir anahtar depoya girmez. Ortam değişkeninden okunur
+(`GEMINI_API_KEY`, `OPENROUTER_API_KEY`). Koda anahtar yazan bir PR kabul edilmez.
 
 **Altın kural:** `core/` içine **asla** `System.out.println` yazma.
 İş mantığı ekranı bilmemeli. Bu kural sayesinde web arayüzü eklenirken
@@ -122,10 +129,13 @@ src/quiz/
 ### Göndermeden önce
 
 ```bash
-./run.sh          # macOS/Linux — Windows'ta: run.bat
+./run.sh test     # ZORUNLU — 200'den fazla denetim, hepsi geçmeli
+./run.sh          # elle de bir tur oyna
 ./run.sh web      # web modu da açılıyor mu?
 git status        # istemediğin dosya eklenmiş mi?
 ```
+
+`./run.sh test` kırmızı veriyorsa gönderme. Hangi denetimin kaldığını yazar.
 
 `out/` ve `scores.txt` repoya **girmemeli** (zaten `.gitignore`'da).
 

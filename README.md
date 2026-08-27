@@ -1,87 +1,34 @@
 <img src="assets/banner.svg" alt="Kamp Quiz Motoru" width="880">
 
-Bilgi yarışması motoru. Java ile, hiçbir dış kütüphane kullanmadan sıfırdan yazılıyor.
-İki şekilde oynanır: **terminalde** tek kişilik, ya da **web modunda** — aynı Wi-Fi'daki
-herkes telefonundan katılır. Sorular düz metin dosyalarında durur, koda dokunmadan
-yeni paket eklenebilir.
+**Sınıfça oynanan bilgi yarışması.** Hoca laptopunda sunucuyu başlatır, öğrenciler
+kendi telefonlarından bir QR kod okutup katılır, cevaplar geldikçe projeksiyondaki
+sıralama canlı döner.
+
+Kahoot ya da Wayground'un yaptığı işi yapar — ama **internete, hesaba ve tek bir
+dış kütüphaneye ihtiyaç duymadan**, sadece aynı Wi-Fi üzerinden. Java ile sıfırdan
+yazıldı; tek gereksinimi Java 17.
+
+| Soru | Cevap | Projeksiyon |
+|---|---|---|
+| <img src="assets/ekran-soru.png" alt="Soru ekranı" width="240"> | <img src="assets/ekran-cevap.png" alt="Cevap değerlendirmesi" width="240"> | <img src="assets/ekran-projeksiyon.png" alt="Canlı sıralama" width="240"> |
 
 ---
 
-## Kurulum ve çalıştırma
-
-Tek gereksinim **Java 17 veya üzeri**. Maven yok, Gradle yok, internet gerekmez.
-
-### Java kurulu mu?
-
-Her üç sistemde de aynı komut:
-
-```
-java -version
-```
-
-`command not found` diyorsa Java yok. Kurulumu:
-
-| Sistem | Komut / yöntem |
-|---|---|
-| **Windows** | `winget install Microsoft.OpenJDK.21` — ya da [adoptium.net](https://adoptium.net) üzerinden `.msi` indir |
-| **macOS** | `brew install openjdk@21` — Homebrew yoksa [adoptium.net](https://adoptium.net) üzerinden `.pkg` indir |
-| **Linux (Debian/Ubuntu)** | `sudo apt install openjdk-21-jdk` |
-| **Linux (Fedora)** | `sudo dnf install java-21-openjdk-devel` |
-
-### Projeyi indir
-
-Üç sistemde de aynı:
-
-```
-git clone https://github.com/efea0/java-demo-try.git
-cd java-demo-try
-```
-
-### Çalıştır
-
-**Windows** (PowerShell veya cmd):
-
-```
-run.bat
-```
-
-**macOS ve Linux:**
+## 2 dakikada dene
 
 ```bash
-chmod +x run.sh    # sadece ilk seferde
-./run.sh
+git clone https://github.com/efea0/kamp-quiz.git
+cd kamp-quiz
+./run.sh              # Windows: run.bat
 ```
 
-> **macOS notu:** ilk çalıştırmada `zsh: permission denied` alırsan `chmod +x run.sh` komutunu atlamışsındır.
-
-Betikleri kullanmak istemezsen elle de derleyebilirsin:
+Terminalde tek kişilik oynarsın. Sınıfça oynamak için:
 
 ```bash
-# macOS / Linux
-javac -encoding UTF-8 -d out $(find src -name "*.java")
-java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
+./run.sh web          # Windows: run.bat web
 ```
 
-```
-:: Windows
-dir /s /b src\*.java > sources.txt
-javac -encoding UTF-8 -d out @sources.txt
-java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
-```
-
----
-
-## Web modu — telefondan katılım
-
-Quiz'i yerel ağda yayınlar. Aynı Wi-Fi'daki herkes tarayıcıdan katılabilir.
-
-```bash
-./run.sh web          # macOS / Linux
-run.bat web           # Windows
-./run.sh web 9000     # port meşgulse başka port
-```
-
-Sunucu açılışta bağlantı adreslerini ekrana yazar:
+Sunucu açılışta bağlantı adresini yazar:
 
 ```
 =========================================
@@ -89,245 +36,178 @@ Sunucu açılışta bağlantı adreslerini ekrana yazar:
 =========================================
   Bu bilgisayarda : http://localhost:8080
   Aynı Wi-Fi'dan  : http://192.168.1.42:8080
-
-  Katılımcılar yukarıdaki adresi tarayıcıya yazsın.
-  Durdurmak için: Ctrl+C
 =========================================
 ```
 
-Katılımcılar telefonlarından `http://192.168.1.42:8080` adresine girer, adını yazar,
-kategori seçer ve oynar. Herkesin oturumu ayrıdır — farklı kategori, farklı soru,
-farklı hız. Skorlar ortak lider tablosunda toplanır.
+## Sınıfça oynamak — 3 adım
 
-### IP adresini elle bulmak
+1. **Oda kur:** `http://<adres>:8080/kur` → bir test seç → 4 haneli kod üretilir
+2. **Projeksiyona aç:** `/ekran?kod=1234` → canlı sıralama 3 saniyede bir yenilenir
+3. **Katıl:** öğrenciler ana sayfadan kodu yazar, ya da ekrandaki **QR kodu okutur**
 
-Sunucu adresi yazmazsa:
+Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** — yan yana
+oturanlar birbirinin ekranından kopyalayamaz.
 
-| Sistem | Komut |
+Test bitince `/rapor?kod=1234` en çok yanlış yapılan soruları sıralar:
+hangi konuyu tekrar anlatmak gerektiği doğrudan görünür.
+
+## Neler var
+
+| | |
 |---|---|
-| **Windows** | `ipconfig` → "IPv4 Address" satırı |
-| **macOS** | `ipconfig getifaddr en0` (Wi-Fi) veya `ipconfig getifaddr en1` |
-| **Linux** | `ip addr show` veya `hostname -I` |
+| **81 soru, 7 kategori** | Ağ, Linux, donanım, özgür yazılım, Java, genel kültür, matematik |
+| **6 hazır test** | 10 / 15 / 20 soruluk, süresi ayarlı paketler |
+| **Hız puanı** | Doğru cevap 500 puan, kalan süreye göre +500'e kadar bonus |
+| **Açıklamalar** | Cevaptan sonra "neden bu cevap" gösterilir — 67 soruda mevcut |
+| **Tekrar modu** | Sadece yanlışlarından oluşan ikinci bir tur |
+| **Yanlış raporu** | Hocaya, hangi sorunun kaç kişiyi düşürdüğü |
+| **QR kod** | Java'da sıfırdan üretiliyor, dış servis yok |
+| **AI ile soru üretme** | Konu yaz, paket üretsin; düzenle, sonra kaydet |
+| **İki arayüz** | Terminal ve tarayıcı, aynı motoru kullanır |
 
-### Sunum modu — oda kodu
+## Soru eklemek — katkının en kolay yolu
 
-Sınıfça oynamak için:
+Java bilmene gerek yok. `questions/` klasörüne bir `.txt` dosyası ekle:
 
-1. Hoca `/kur` sayfasından bir test seçer, **4 haneli oda kodu** üretilir
-2. `/ekran?kod=XXXX` projeksiyona açılır — canlı sıralama 3 saniyede bir yenilenir
-3. Katılımcılar ana sayfada kodu ve adını yazıp katılır — ya da ekrandaki
-   **QR kodu** okutur (kod hiçbir dış servis kullanmadan Java'da üretiliyor)
-4. Test bitince `/rapor?kod=XXXX` en çok yanlış yapılan soruları sıralar
+```
+# baslik: Tarih
 
-Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** —
-yan yana oturanlar birbirinin ekranından kopyalayamaz.
+İstanbul hangi yıl fethedildi? | 1453 | 1071 | 1299 | 1923 | 1
+> Fatih Sultan Mehmet döneminde, 29 Mayıs 1453'te fethedildi.
+```
 
-### AI ile soru paketi üretme
-
-`/uret` sayfasından bir konu yazıp paket ürettirebilirsin. Üretilen taslak
-**doğrudan quize girmez** — önce ekranda düzenlenebilir hâlde gösterilir:
-
-- Satırları elle düzeltebilirsin
-- "AI ile düzenle" kutusuna istek yazıp yeniden yazdırabilirsin
-  (*"soruları kolaylaştır"*, *"3. soruyu değiştir"*)
-- "Pakete kaydet" önce taslağı doğrular; geçerli soru çıkmazsa hiçbir şey yazılmaz
-
-Bu özellik bir Google Gemini API anahtarı ister. **Anahtar koda yazılmaz**,
-ortam değişkeninden okunur ve HTTP başlığıyla gönderilir (URL'ye konsaydı
-sunucu kayıtlarına sızabilirdi):
+Kurallar: ayırıcı `|`, son sütun doğru şıkkın numarası (**1'den** başlar),
+`>` satırı o sorunun açıklamasıdır (isteğe bağlı ama çok değerli).
 
 ```bash
-export GEMINI_API_KEY="..."      # zorunlu
-export GEMINI_MODEL="..."        # isteğe bağlı, varsayılan gemini-2.5-flash
-./run.sh web
+git checkout -b soru/tarih-paketi
+# dosyayı ekle
+./run.sh test          # bozmadığından emin ol
+./run.sh               # kendi sorularını gör
+git commit -am "Tarih soru paketi eklendi"
+git push -u origin soru/tarih-paketi
 ```
 
-```powershell
-$env:GEMINI_API_KEY="..."
-run.bat web
+Ayrıntılar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
+
+## Test
+
+```bash
+./run.sh test
 ```
 
-Anahtar tanımlı değilse uygulama normal çalışır, yalnızca `/uret` sayfası
-"kapalı" görünür. Anahtarı **asla depoya ekleme.**
+Dış test kütüphanesi yok; `src/quiz/test/SelfTest.java` soruları, puanlamayı,
+kapsüllemeyi ve hazır testleri denetler. Değişikliğini göndermeden önce çalıştır.
 
-> **Not:** Üretilen sorular insan gözüyle kontrol edilmelidir. Kaydedilen
-> dosyaya bunu hatırlatan bir yorum satırı otomatik eklenir.
-> Sunucu yerel ağa açık olduğu için, ağa bağlanabilen herkes bu sayfayı
-> kullanabilir — güvenmediğin bir ağda `/uret`'i kullanma.
+## Proje yapısı
 
-### Bağlanamıyorlarsa
-
-| Belirti | Sebep ve çözüm |
-|---|---|
-| Windows'ta ilk açılışta uyarı penceresi | Güvenlik duvarı izni — **"Özel ağlarda izin ver"** işaretle |
-| macOS'ta bağlantı yok | Sistem Ayarları → Ağ → Güvenlik Duvarı → gelen bağlantılara izin ver |
-| Linux'ta bağlantı yok | `sudo ufw allow 8080/tcp` |
-| Hiçbiri işe yaramıyor | Ağ **client isolation** kullanıyor olabilir (okul/kurum Wi-Fi'larında yaygın). Telefonun hotspot'unu aç, laptopu ona bağla, tekrar dene |
-| `Address already in use` | Port meşgul — `./run.sh web 9000` |
-
----
-
-## Nasıl görünüyor
-
-Aşağıdaki çıktı gerçek bir oturumdan alınmıştır:
-
-```
-=========================================
-         KAMP QUIZ MOTORU  v1.0
-=========================================
-
-81 soru yüklendi.
-
-Adın nedir? (boş bırak = Misafir): Efe
-
-Kategoriler:
-   0) Hepsi karışık
-   1) Donanım Temelleri
-   2) Genel Kültür
-   3) Linux Temelleri
-   4) Matematik
-   5) Ağ Temelleri
-   6) Özgür Yazılım
-   7) Yazılım Temelleri
-Seçimin: 5
-Kaç soru sorulsun? (1-14): 3
-
-Soru 1/3   [Ağ Temelleri]
-Cihazlara otomatik IP adresi dağıtan servis hangisidir?
-
-   1) DNS
-   2) DHCP
-   3) FTP
-   4) SSH
-
-Cevabın (1-4): 2
-  [+] DOĞRU!
-
-...
-
-=========================================
-  SONUÇ - Efe
-  Skor: 2/3  (%67)
-  Fena değil, biraz daha çalışma.
-=========================================
-
-*** LIDER TABLOSU ***
------------------------------------------
-  1. Efe              2/3   %67   27.08.2026 21:53
-```
-
----
-
-## Soru paketleri
-
-Kamp müfredatına göre hazırlandı. Toplam **81 soru**, hepsi giriş seviyesi.
-
-| Paket | Dosya | Soru | İçerik |
-|---|---|---:|---|
-| Ağ Temelleri | `network.txt` | 14 | IP, DNS, port, TCP/UDP, DHCP, SSH |
-| Linux Temelleri | `linux.txt` | 15 | temel komutlar, dizin yapısı, izinler, sudo |
-| Donanım Temelleri | `donanim.txt` | 14 | CPU, RAM, depolama, anakart, portlar |
-| Özgür Yazılım | `ozgur-yazilim.txt` | 14 | GNU/GPL, copyleft, Krita, GIMP, Blender |
-| Yazılım Temelleri | `yazilim-temelleri.txt` | 10 | Java, Git, temel kavramlar |
-| Genel Kültür | `genel-kultur.txt` | 8 | coğrafya, sanat, bilim |
-| Matematik | `matematik.txt` | 6 | dört işlem, geometri, üs |
-
-Yeni paket eklemek bir `.txt` dosyası yazmak kadar kolay:
-
-```
-# baslik: Siber Güvenlik
-Kimlik doğrulamada ikinci adıma ne denir? | 2FA | VPN | DNS | SSL | 1
-> Şifreye ek olarak ikinci bir doğrulama gerekir: SMS kodu, uygulama ya da donanım anahtarı.
-```
-
-`>` ile başlayan satır o sorunun açıklamasıdır; cevaptan sonra oyuncuya gösterilir.
-
-Biçim ve kurallar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
-
----
-
-## Mimari
-
-<img src="assets/mimari.svg" alt="Katmanlı mimari şeması" width="880">
-
-Proje katmanlara ayrılmıştır ve bu ayrım kasıtlıdır: `quiz.core` içinde tek bir
-`System.out.println` yoktur. İş mantığı ekranı tanımadığı için, konsol arayüzü ile
-web arayüzü **aynı motoru** kullanır — `Quiz` ve `Scoreboard` sınıflarına web modu
-için tek satır eklenmedi.
+<img src="assets/mimari.svg" alt="Katmanlı mimari" width="880">
 
 ```
 src/quiz/
 ├── QuizApp.java            giriş noktası, parçaları bağlar
 ├── model/Question.java     soru verisi, kendi geçerliliğini korur
-├── core/
+├── core/                   iş mantığı — ekranı hiç bilmez
 │   ├── QuestionBank.java   questions/*.txt okur, bozuk satırı atlar
-│   ├── Quiz.java           sıra, karıştırma, skor
+│   ├── Quiz.java           sıra, süre, puan, cevap geçmişi
+│   ├── QuizSet.java        hazır test tanımı
 │   └── Scoreboard.java     scores.txt'ye yazar, sıralar
-├── cli/ConsoleUI.java      konsol arayüzü
-└── web/
-    ├── WebServer.java      HTTP yönlendirme, oturumlar
-    ├── Html.java           sayfa şablonu ve stil
-    └── GameSession.java    tek oyuncunun web durumu
+├── cli/ConsoleUI.java      terminal arayüzü
+├── web/                    tarayıcı arayüzü
+│   ├── WebServer.java      JDK'nın HttpServer'ı, oturumlar, odalar
+│   ├── QrCode.java         sıfırdan QR kodlayıcı
+│   └── Html.java           sayfa şablonu ve stil
+├── ai/QuestionGenerator.java   Gemini / OpenRouter ile soru üretimi
+└── test/SelfTest.java      kendi kendini sınama
+
+questions/   soru paketleri  ← katkı buraya
+sets/        hazır test tanımları
 ```
 
-## Puanlama
+**Değişmez kural:** `core/` içinde tek bir `System.out.println` yoktur. İş mantığı
+ekranı tanımadığı için terminal ve web arayüzü **aynı motoru** paylaşır — web
+arayüzü eklenirken `Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmadı.
 
-Wayground'daki gibi hız ödüllendirilir:
+## AI ile soru üretme (isteğe bağlı)
 
-| | Puan |
+`/uret` sayfasından konu yazıp paket ürettirebilirsin. Üretilen taslak doğrudan
+quize girmez: ekranda düzenlenebilir hâlde gelir, elle ya da "AI ile düzenle"
+kutusuyla değiştirilir, kaydetmeden önce doğrulanır.
+
+**API anahtarı koda yazılmaz**, ortam değişkeninden okunur ve HTTP başlığıyla
+gönderilir:
+
+```bash
+# Google Gemini
+export GEMINI_API_KEY="..."
+
+# ya da OpenRouter (daha ucuz modeller)
+export OPENROUTER_API_KEY="..."
+export OPENROUTER_MODEL="saglayici/model"
+
+export QUIZ_ADMIN_KEY="birparola"    # /uret sayfasını kilitler, önerilir
+./run.sh web
+```
+
+Anahtar tanımlı değilse uygulama normal çalışır, yalnızca `/uret` kapalı görünür.
+
+## Kurulum ayrıntıları
+
+<details>
+<summary>Java kurulu değilse</summary>
+
+| Sistem | Komut |
 |---|---|
-| Doğru cevap | 500 taban puan |
-| Hız bonusu | Kalan süreye orantılı, en fazla +500 |
-| Yanlış cevap | 0 |
-| Süre dolması | 0 — cevap yanlış sayılır |
+| **Windows** | `winget install Microsoft.OpenJDK.21` ya da [adoptium.net](https://adoptium.net) |
+| **macOS** | `brew install openjdk@21` ya da [adoptium.net](https://adoptium.net) |
+| **Debian/Ubuntu** | `sudo apt install openjdk-21-jdk` |
+| **Fedora** | `sudo dnf install java-21-openjdk-devel` |
 
-Soru başına en fazla **1000 puan**. Süre web modunda seçilir (10 / 20 / 45 saniye)
-ve ekranda geri sayım çubuğu döner; süre bitince cevap otomatik gönderilir.
+macOS ve Linux'ta ilk seferde: `chmod +x run.sh`
+</details>
 
-Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
+<details>
+<summary>Telefonlar bağlanamıyorsa</summary>
 
-## Davranış notları
+| Belirti | Çözüm |
+|---|---|
+| Windows'ta uyarı penceresi | Güvenlik duvarı — "Özel ağlarda izin ver" |
+| macOS'ta bağlantı yok | Sistem Ayarları → Ağ → Güvenlik Duvarı → gelen bağlantılara izin |
+| Linux'ta bağlantı yok | `sudo ufw allow 8080/tcp` |
+| Hiçbiri olmuyor | Ağ **client isolation** kullanıyor olabilir (okul Wi-Fi'larında yaygın). Telefon hotspot'u aç, laptopu ona bağla |
+| `Address already in use` | `./run.sh web 9000` |
 
-- Bozuk bir soru satırı quizi çökertmez; o satır atlanır ve uyarı basılır
+IP adresini bulmak: `ipconfig` (Windows), `ipconfig getifaddr en0` (macOS), `hostname -I` (Linux)
+</details>
+
+<details>
+<summary>Nasıl çalışıyor?</summary>
+
+- Sorular her oyunda karıştırılır; bozuk bir soru satırı quizi çökertmez, atlanır
 - Sayı yerine harf girilirse program çökmez, soruyu tekrar sorar
-- Sorular her oturumda karıştırılır
-- Skorlar `scores.txt`'ye eklenir, eskiler silinmez
-- Tüm dosya okuma/yazma işlemleri UTF-8'e sabitlenmiştir
-- Web modunda her oyuncunun oturumu ayrıdır; aynı anda onlarca kişi oynayabilir
-- Cevap gönderimi POST-Redirect-GET desenini kullanır: sayfa yenilenince cevap tekrar gitmez
+- Cevap gönderimi POST-Redirect-GET kullanır: sayfa yenilenince cevap tekrar gitmez
 - Sayfayı yenilemek geri sayımı sıfırlamaz; süre soru başına bir kez başlar
-- Açıklaması olan sorularda cevaptan sonra "neden" metni gösterilir
-- Sonuç ekranında yanlışları tekrar çözme turu sunulur; bu tur oda sıralamasını etkilemez
-- Hazır testler hem web hem terminal arayüzünde seçilebilir
+- Tekrar turu oda sıralamasını etkilemez
+- Tüm dosya okuma/yazma UTF-8'e sabitlenmiştir
+- 25 eşzamanlı oyuncuyla test edildi: 25/25, hata yok
+</details>
 
 ## Yol haritası
 
-| | Adım | Konu |
-|---|---|---|
-| ✔ | 1 | Proje iskeleti, ilk çalışan program |
-| ✔ | 2 | `Question` sınıfı — sınıf, nesne, kapsülleme |
-| ✔ | 3 | Paket yapısı ve katmanlı mimari |
-| ✔ | 4 | Klavye girdisi ve hatalı girdiye dayanıklılık |
-| ✔ | 5 | Skor sistemi |
-| ✔ | 6 | Soruların dosyadan okunması |
-| ✔ | 7 | Lider tablosu |
-| ✔ | 8 | Katkı rehberi ve PR şablonu |
-| ✔ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
-| ✔ | 10 | Süre sınırı, hız puanı ve açıklama alanı |
-| ✔ | 11 | Oda kodu ve projeksiyon ekranı |
-| ✔ | 12 | AI ile soru paketi üretme ve düzenleme |
-| ✔ | 13 | Yanlış raporu, tekrar modu, QR kod ile katılım |
+| | Adım |
+|---|---|
+| ✔ | Proje iskeleti, `Question` sınıfı, katmanlı mimari |
+| ✔ | Dosyadan soru okuma, skor, lider tablosu |
+| ✔ | Web arayüzü — telefondan katılım |
+| ✔ | Süre sınırı, hız puanı, soru açıklamaları |
+| ✔ | Hazır test setleri |
+| ✔ | Oda kodu, projeksiyon ekranı, QR kod |
+| ✔ | Yanlış raporu, tekrar modu |
+| ✔ | AI ile soru üretme ve düzenleme |
+| ☐ | Takım modu |
+| ☐ | Senkron canlı mod (herkes aynı soruda) |
 
 ## Katkı
 
-Java bilmeden de katkı verebilirsin — bir soru paketi eklemek 5 dakika sürer.
-
-```bash
-git checkout main && git pull origin main
-git checkout -b soru/kendi-paketin
-# questions/ altına .txt ekle, ./run.sh ile test et
-git commit -am "Siber güvenlik soru paketi eklendi"
-git push -u origin soru/kendi-paketin
-```
-
-Ayrıntılar: [CONTRIBUTING.md](CONTRIBUTING.md)
+Soru paketi, yeni özellik, hata düzeltmesi — hepsi açık.
+Başlamadan önce **[CONTRIBUTING.md](CONTRIBUTING.md)** dosyasına bak.
