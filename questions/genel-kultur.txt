@@ -1,0 +1,13 @@
+# GENEL KÜLTÜR SORU PAKETİ
+# baslik: Genel Kültür
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+# doğruNo 1'den başlar (1 = ilk şık). '#' ile başlayan satırlar yorumdur.
+
+Türkiye'nin en uzun nehri hangisidir? | Kızılırmak | Fırat | Sakarya | Dicle | 1
+Dünyanın en büyük okyanusu hangisidir? | Atlas | Hint | Pasifik | Arktik | 3
+Mona Lisa tablosunu kim yapmıştır? | Van Gogh | Picasso | Leonardo da Vinci | Michelangelo | 3
+Bir yılda kaç hafta vardır? | 48 | 50 | 52 | 54 | 3
+Güneş sistemindeki en büyük gezegen hangisidir? | Satürn | Jüpiter | Neptün | Dünya | 2
+İstanbul Boğazı hangi iki denizi birleştirir? | Ege - Akdeniz | Karadeniz - Marmara | Marmara - Ege | Karadeniz - Akdeniz | 2
+İnsan vücudundaki en büyük organ hangisidir? | Kalp | Beyin | Deri | Karaciğer | 3
+Nobel Ödülü hangi ülkeler tarafından verilir? | Norveç ve İsveç | Almanya | Fransa | ABD | 1

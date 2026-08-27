@@ -1,0 +1,14 @@
+# YAZILIM TEMELLERİ SORU PAKETİ
+# baslik: Yazılım Temelleri
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+Java'da bir programın başladığı metodun adı nedir? | start() | main() | run() | init() | 2
+Java'da dizilerin ilk elemanının indeksi kaçtır? | 0 | 1 | -1 | Değişir | 1
+Aşağıdakilerden hangisi bir tam sayı tipidir? | String | boolean | int | double | 3
+Java kodunu bytecode'a çeviren araç hangisidir? | java | javac | jvm | jar | 2
+Bir değişkene değer atamak için hangi işaret kullanılır? | == | = | => | := | 2
+Bir sınıfın dışarıdan erişilemeyen alanları hangi kelimeyle işaretlenir? | public | private | static | final | 2
+Git'te yeni bir dal oluşturup ona geçmenin komutu nedir? | git branch -d | git checkout -b | git merge | git clone | 2
+Bir metodun geriye değer döndürmediğini belirten anahtar kelime nedir? | void | null | empty | none | 1
+Bir kez atandıktan sonra değeri değiştirilemeyen değişken nasıl tanımlanır? | static | const | final | fixed | 3
+HTML, CSS ve JavaScript'ten hangisi sayfanın iskeletini oluşturur? | CSS | JavaScript | HTML | SQL | 3

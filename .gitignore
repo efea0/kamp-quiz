@@ -16,3 +16,7 @@ build/
 # İşletim sistemi çöpleri
 .DS_Store
 Thumbs.db
+
+# Oyun sirasinda uretilen skor dosyasi (herkesin kendi bilgisayarina ozel)
+scores.txt
+sources.txt

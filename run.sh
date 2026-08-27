@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-# Projeyi derleyip calistirir.
-# Kullanim: ./run.sh
-set -e   # herhangi bir komut hata verirse hemen dur
+# Projeyi derleyip calistirir.  Kullanim: ./run.sh
+set -e
 
 echo "[1/2] Derleniyor..."
 mkdir -p out
-javac -d out $(find src -name "*.java")
+javac -encoding UTF-8 -d out $(find src -name "*.java")
 
 echo "[2/2] Calistiriliyor..."
-echo
-java -cp out QuizApp
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out quiz.QuizApp
