@@ -6,8 +6,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Google Gemini ile soru paketi uretir ve duzenler.
@@ -35,58 +40,125 @@ public class QuestionGenerator {
     private static final String OPENROUTER_BASE = "https://openrouter.ai/api/v1";
     private static final String OPENROUTER_MODEL = "deepseek/deepseek-chat";
 
+    /** Anahtar dosyalarinin varsayilan yeri. */
+    private static final Path KEY_DIR =
+            Path.of(System.getProperty("user.home"), ".config", "kamp-quiz");
+
     /** Hangi servise konusuyoruz. */
     public enum Provider { GEMINI, OPENROUTER }
 
-    private final Provider provider;
-    private final String apiKey;
-    private final String baseUrl;
-    private final String model;
+    /** Tek bir servis tanimi. */
+    private record Endpoint(Provider provider, String apiKey, String baseUrl, String model) {
+        String label() {
+            return (provider == Provider.OPENROUTER ? "OpenRouter" : "Gemini") + " · " + model;
+        }
+    }
+
+    /**
+     * Denenecek servisler, SIRAYLA. Ilki basarisiz olursa ikincisine gecilir.
+     * Varsayilan sira: once Gemini (ucretsiz kota), sonra OpenRouter.
+     */
+    private final List<Endpoint> endpoints;
+
+    /** Baslangicta kullaniciya gosterilecek uyarilar (or. dosya izinleri). */
+    private final List<String> warnings = new ArrayList<>();
+
     private final HttpClient http;
 
     public QuestionGenerator() {
-        this(resolveProvider());
-    }
+        List<Endpoint> found = new ArrayList<>();
 
-    private QuestionGenerator(Provider provider) {
-        this.provider = provider;
-        if (provider == Provider.OPENROUTER) {
-            this.apiKey = trim(System.getenv("OPENROUTER_API_KEY"));
-            this.baseUrl = stripSlash(envOr("OPENROUTER_BASE_URL", OPENROUTER_BASE));
-            this.model = envOr("OPENROUTER_MODEL", OPENROUTER_MODEL);
-        } else {
-            this.apiKey = trim(System.getenv("GEMINI_API_KEY"));
-            this.baseUrl = stripSlash(envOr("GEMINI_BASE_URL", GEMINI_BASE));
-            this.model = envOr("GEMINI_MODEL", GEMINI_MODEL);
+        String geminiKey = resolveKey("GEMINI_API_KEY", "gemini.key", warnings);
+        if (!geminiKey.isEmpty()) {
+            found.add(new Endpoint(Provider.GEMINI, geminiKey,
+                    stripSlash(envOr("GEMINI_BASE_URL", GEMINI_BASE)),
+                    envOr("GEMINI_MODEL", GEMINI_MODEL)));
         }
-        this.http = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(15))
-                .build();
+
+        String routerKey = resolveKey("OPENROUTER_API_KEY", "openrouter.key", warnings);
+        if (!routerKey.isEmpty()) {
+            found.add(new Endpoint(Provider.OPENROUTER, routerKey,
+                    stripSlash(envOr("OPENROUTER_BASE_URL", OPENROUTER_BASE)),
+                    envOr("OPENROUTER_MODEL", OPENROUTER_MODEL)));
+        }
+
+        // AI_PROVIDER yazilmissa o servis basa alinir.
+        String preferred = trim(System.getenv("AI_PROVIDER")).toLowerCase();
+        if (!preferred.isEmpty()) {
+            Provider first = preferred.startsWith("openrouter") || preferred.startsWith("openai")
+                    ? Provider.OPENROUTER : Provider.GEMINI;
+            found.sort((a, b) -> Boolean.compare(b.provider() == first, a.provider() == first));
+        }
+
+        this.endpoints = List.copyOf(found);
+        this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     }
 
-    /** Test icin: saglayici, anahtar, adres ve modeli dogrudan verir. */
+    /** Test icin: tek bir servisi dogrudan verir. */
     QuestionGenerator(Provider provider, String apiKey, String baseUrl, String model) {
-        this.provider = provider;
-        this.apiKey = trim(apiKey);
-        this.baseUrl = stripSlash(baseUrl);
-        this.model = model;
+        this.endpoints = List.of(new Endpoint(provider, trim(apiKey), stripSlash(baseUrl), model));
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     }
 
     /**
-     * Hangi saglayici kullanilacak?
-     * AI_PROVIDER acikca yazilmissa o; yazilmamissa hangi anahtar tanimliysa o.
+     * Anahtari sirayla arar:
+     *   1) XXX_API_KEY_FILE  -> gosterilen dosyanin icerigi
+     *   2) XXX_API_KEY       -> ortam degiskeninin kendisi
+     *   3) ~/.config/kamp-quiz/<varsayilan dosya>
+     *
+     * Dosyadan okumak ortam degiskeninden daha guvenlidir: ortam degiskeni
+     * kabuk gecmisine dusebilir ve `env` ciktisinda gorunur; dosya ise 600
+     * izniyle korunabilir.
      */
-    private static Provider resolveProvider() {
-        String explicit = trim(System.getenv("AI_PROVIDER")).toLowerCase();
-        if (explicit.startsWith("gemini")) {
-            return Provider.GEMINI;
+    private static String resolveKey(String envName, String defaultFile, List<String> warnings) {
+        String fromFileEnv = trim(System.getenv(envName + "_FILE"));
+        if (!fromFileEnv.isEmpty()) {
+            return readKeyFile(Path.of(fromFileEnv), warnings, true);
         }
-        if (explicit.startsWith("openrouter") || explicit.startsWith("openai")) {
-            return Provider.OPENROUTER;
+
+        String direct = trim(System.getenv(envName));
+        if (!direct.isEmpty()) {
+            return direct;
         }
-        return trim(System.getenv("OPENROUTER_API_KEY")).isEmpty()
-                ? Provider.GEMINI : Provider.OPENROUTER;
+
+        Path defaultPath = KEY_DIR.resolve(defaultFile);
+        if (Files.isReadable(defaultPath)) {
+            return readKeyFile(defaultPath, warnings, false);
+        }
+        return "";
+    }
+
+    /** Anahtar dosyasini okur ve izinlerini denetler. */
+    private static String readKeyFile(Path path, List<String> warnings, boolean required) {
+        try {
+            String key = Files.readString(path, StandardCharsets.UTF_8).strip();
+            if (key.isEmpty()) {
+                warnings.add("Anahtar dosyası boş: " + path);
+                return "";
+            }
+            checkPermissions(path, warnings);
+            return key;
+        } catch (IOException e) {
+            if (required) {
+                warnings.add("Anahtar dosyası okunamadı: " + path + " (" + e.getMessage() + ")");
+            }
+            return "";
+        }
+    }
+
+    /** Dosyayi baskalari da okuyabiliyorsa uyarir. */
+    private static void checkPermissions(Path path, List<String> warnings) {
+        try {
+            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
+            boolean open = perms.contains(PosixFilePermission.GROUP_READ)
+                    || perms.contains(PosixFilePermission.OTHERS_READ);
+            if (open) {
+                warnings.add("Anahtar dosyası başkaları tarafından okunabilir: " + path
+                        + "  ->  düzeltmek için:  chmod 600 " + path);
+            }
+        } catch (UnsupportedOperationException | IOException e) {
+            // Windows'ta POSIX izinleri yok; sessizce gec.
+        }
     }
 
     private static String trim(String value) {
@@ -102,22 +174,29 @@ public class QuestionGenerator {
         return (value == null || value.isBlank()) ? fallback : value;
     }
 
-    /** Anahtar tanimli mi? Degilse uretim ozelligi kapali gosterilir. */
+    /** En az bir servis tanimli mi? Degilse uretim ozelligi kapali gosterilir. */
     public boolean isEnabled() {
-        return !apiKey.isEmpty();
+        return !endpoints.isEmpty();
     }
 
-    public String getModel() {
-        return model;
-    }
-
-    public Provider getProvider() {
-        return provider;
-    }
-
-    /** Ekranda gosterilecek kisa etiket. */
+    /** Ekranda gosterilecek etiket: "Gemini · model  →  OpenRouter · model" */
     public String describe() {
-        return (provider == Provider.OPENROUTER ? "OpenRouter" : "Gemini") + " · " + model;
+        if (endpoints.isEmpty()) {
+            return "tanımsız";
+        }
+        StringBuilder out = new StringBuilder();
+        for (Endpoint endpoint : endpoints) {
+            if (!out.isEmpty()) {
+                out.append("  →  ");
+            }
+            out.append(endpoint.label());
+        }
+        return out.toString();
+    }
+
+    /** Baslangic uyarilari (anahtar dosyasi izinleri gibi). */
+    public List<String> getWarnings() {
+        return List.copyOf(warnings);
     }
 
     /** Verilen konuda yeni bir soru paketi metni uretir. */
@@ -170,31 +249,51 @@ public class QuestionGenerator {
         return callModel(prompt);
     }
 
-    /** Modele istek gonderir ve metin cevabini dondurur. */
+    /**
+     * Tanimli servisleri SIRAYLA dener. Ilki hata verirse (kota dolmus,
+     * servis kapali, model bulunamadi) sessizce ikincisine gecer.
+     * Hepsi basarisiz olursa toplu hata mesaji doner.
+     */
     private String callModel(String prompt) throws IOException {
         if (!isEnabled()) {
             throw new IOException("API anahtarı tanımlı değil.");
         }
 
+        StringBuilder problems = new StringBuilder();
+        for (Endpoint endpoint : endpoints) {
+            try {
+                return callEndpoint(endpoint, prompt);
+            } catch (IOException e) {
+                if (!problems.isEmpty()) {
+                    problems.append(" | ");
+                }
+                problems.append(endpoint.label()).append(": ").append(e.getMessage());
+            }
+        }
+        throw new IOException(problems.toString());
+    }
+
+    /** Tek bir servise istek gonderir. */
+    private String callEndpoint(Endpoint endpoint, String prompt) throws IOException {
         String escaped = Json.escape(prompt);
         String body;
         HttpRequest.Builder builder;
 
-        if (provider == Provider.OPENROUTER) {
+        if (endpoint.provider() == Provider.OPENROUTER) {
             // OpenAI uyumlu bicim; OpenRouter disindaki cogu servis de bunu kullanir.
             body = """
                     {"model":"%s","messages":[{"role":"user","content":"%s"}],"temperature":0.7}
-                    """.formatted(Json.escape(model), escaped);
-            builder = HttpRequest.newBuilder(URI.create(baseUrl + "/chat/completions"))
-                    .header("Authorization", "Bearer " + apiKey);
+                    """.formatted(Json.escape(endpoint.model()), escaped);
+            builder = HttpRequest.newBuilder(URI.create(endpoint.baseUrl() + "/chat/completions"))
+                    .header("Authorization", "Bearer " + endpoint.apiKey());
         } else {
             body = """
                     {"contents":[{"parts":[{"text":"%s"}]}],
                      "generationConfig":{"temperature":0.7,"maxOutputTokens":4096}}
                     """.formatted(escaped);
-            builder = HttpRequest.newBuilder(
-                            URI.create(baseUrl + "/v1beta/models/" + model + ":generateContent"))
-                    .header("x-goog-api-key", apiKey);
+            builder = HttpRequest.newBuilder(URI.create(endpoint.baseUrl()
+                            + "/v1beta/models/" + endpoint.model() + ":generateContent"))
+                    .header("x-goog-api-key", endpoint.apiKey());
         }
 
         // Anahtar HER IKI SAGLAYICIDA DA basliga konur, URL'ye degil.
@@ -210,28 +309,28 @@ public class QuestionGenerator {
             response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("İstek yarıda kesildi.", e);
+            throw new IOException("İstek yarıda kesildi.");
         } catch (IOException e) {
-            // Ag hatasi mesajinda adres gecebilir; yine de anahtari maskeliyoruz.
-            throw new IOException("Modele ulaşılamadı: " + maskele(e.getMessage()));
+            throw new IOException("ulaşılamadı (" + maskele(e.getMessage(), endpoint.apiKey()) + ")");
         }
 
         if (response.statusCode() != 200) {
             List<String> messages = Json.valuesOf(response.body(), "message");
             String detail = messages.isEmpty() ? kisalt(response.body()) : messages.get(0);
-            throw new IOException("Model hatası (HTTP " + response.statusCode() + "): " + maskele(detail));
+            throw new IOException("HTTP " + response.statusCode() + " "
+                    + maskele(detail, endpoint.apiKey()));
         }
 
         // Gemini metni "text", OpenAI uyumlu servisler "content" altinda dondurur.
-        String key = provider == Provider.OPENROUTER ? "content" : "text";
+        String key = endpoint.provider() == Provider.OPENROUTER ? "content" : "text";
         List<String> parts = Json.valuesOf(response.body(), key);
         parts.removeIf(String::isBlank);
         if (parts.isEmpty()) {
-            throw new IOException("Model boş cevap döndürdü.");
+            throw new IOException("boş cevap döndü");
         }
 
-        // OpenAI bicimi tek parca dondurur; Gemini parcalara bolebilir.
-        String text = provider == Provider.OPENROUTER ? parts.get(0) : String.join("", parts);
+        String text = endpoint.provider() == Provider.OPENROUTER
+                ? parts.get(0) : String.join("", parts);
         return temizle(text);
     }
 
@@ -252,7 +351,7 @@ public class QuestionGenerator {
     }
 
     /** Bir metinde anahtar gecerse gizler. Son savunma hatti. */
-    private String maskele(String text) {
+    private static String maskele(String text, String apiKey) {
         if (text == null) {
             return "bilinmeyen hata";
         }
