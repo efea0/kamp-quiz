@@ -120,6 +120,39 @@ Sınıfça oynamak için:
 Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** —
 yan yana oturanlar birbirinin ekranından kopyalayamaz.
 
+### AI ile soru paketi üretme
+
+`/uret` sayfasından bir konu yazıp paket ürettirebilirsin. Üretilen taslak
+**doğrudan quize girmez** — önce ekranda düzenlenebilir hâlde gösterilir:
+
+- Satırları elle düzeltebilirsin
+- "AI ile düzenle" kutusuna istek yazıp yeniden yazdırabilirsin
+  (*"soruları kolaylaştır"*, *"3. soruyu değiştir"*)
+- "Pakete kaydet" önce taslağı doğrular; geçerli soru çıkmazsa hiçbir şey yazılmaz
+
+Bu özellik bir Google Gemini API anahtarı ister. **Anahtar koda yazılmaz**,
+ortam değişkeninden okunur ve HTTP başlığıyla gönderilir (URL'ye konsaydı
+sunucu kayıtlarına sızabilirdi):
+
+```bash
+export GEMINI_API_KEY="..."      # zorunlu
+export GEMINI_MODEL="..."        # isteğe bağlı, varsayılan gemini-2.5-flash
+./run.sh web
+```
+
+```powershell
+$env:GEMINI_API_KEY="..."
+run.bat web
+```
+
+Anahtar tanımlı değilse uygulama normal çalışır, yalnızca `/uret` sayfası
+"kapalı" görünür. Anahtarı **asla depoya ekleme.**
+
+> **Not:** Üretilen sorular insan gözüyle kontrol edilmelidir. Kaydedilen
+> dosyaya bunu hatırlatan bir yorum satırı otomatik eklenir.
+> Sunucu yerel ağa açık olduğu için, ağa bağlanabilen herkes bu sayfayı
+> kullanabilir — güvenmediğin bir ağda `/uret`'i kullanma.
+
 ### Bağlanamıyorlarsa
 
 | Belirti | Sebep ve çözüm |
@@ -278,7 +311,7 @@ Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
 | ✔ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
 | ✔ | 10 | Süre sınırı, hız puanı ve açıklama alanı |
 | ✔ | 11 | Oda kodu ve projeksiyon ekranı |
-| ☐ | 12 | AI ile soru paketi üretme |
+| ✔ | 12 | AI ile soru paketi üretme ve düzenleme |
 
 ## Katkı
 

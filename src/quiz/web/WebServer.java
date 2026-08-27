@@ -2,9 +2,11 @@ package quiz.web;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import quiz.ai.QuestionGenerator;
 import quiz.core.QuestionBank;
 import quiz.core.Quiz;
 import quiz.core.QuizSet;
+import quiz.core.QuizSetLoader;
 import quiz.core.Scoreboard;
 import quiz.model.Question;
 
@@ -14,6 +16,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,9 +38,14 @@ public class WebServer {
 
     private static final String COOKIE_NAME = "qsid";
 
-    private final List<Question> allQuestions;
-    private final List<QuizSet> sets;
+    /** Uretilen paket kaydedilince yeniden yuklendigi icin final degil. */
+    private volatile List<Question> allQuestions;
+    private volatile List<QuizSet> sets;
+
+    private final Path questionsDir;
+    private final Path setsDir;
     private final Scoreboard scoreboard;
+    private final QuestionGenerator generator;
     private final int port;
 
     /** Oyuncu oturumlari. Ayni anda birden fazla istek geldigi icin es zamanli harita. */
@@ -47,11 +56,20 @@ public class WebServer {
     private final java.util.Random random = new java.util.Random();
 
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
-                     Scoreboard scoreboard, int port) {
+                     Path questionsDir, Path setsDir, Scoreboard scoreboard, int port) {
         this.allQuestions = allQuestions;
         this.sets = sets;
+        this.questionsDir = questionsDir;
+        this.setsDir = setsDir;
         this.scoreboard = scoreboard;
+        this.generator = new QuestionGenerator();
         this.port = port;
+    }
+
+    /** Yeni paket kaydedildikten sonra sorulari ve setleri diskten tazeler. */
+    private void reloadContent() throws IOException {
+        this.allQuestions = QuestionBank.loadFromDirectory(questionsDir);
+        this.sets = QuizSetLoader.loadFromDirectory(setsDir);
     }
 
     /** Adiyla bir hazir seti bulur. */
@@ -77,6 +95,7 @@ public class WebServer {
         server.createContext("/oda", this::handleHostPanel);
         server.createContext("/ekran", this::handleScreen);
         server.createContext("/katil", this::handleJoin);
+        server.createContext("/uret", this::handleGenerate);
         server.createContext("/quiz", this::handleQuiz);
         server.createContext("/cevap", this::handleAnswer);
         server.createContext("/devam", this::handleContinue);
@@ -153,12 +172,258 @@ public class WebServer {
                   <div class="actions">
                     <a class="btn ghost" href="/ayarla">Kendin ayarla</a>
                     <a class="plain center" href="/kur">Oda kur (sunum modu)</a>
+                    <a class="plain center" href="/uret">AI ile soru paketi üret</a>
                     <a class="plain center" href="/tablo">Lider tablosu</a>
                   </div>
                 </div>
                 """.formatted(allQuestions.size(), cards);
 
         sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
+    }
+
+    // ------------------------------------------------------------ AI uretici
+
+    /** Soru paketi uretme, AI ile duzenleme ve kaydetme sayfasi. */
+    private void handleGenerate(HttpExchange exchange) throws IOException {
+        if (!generator.isEnabled()) {
+            sendHtml(exchange, 200, Html.page("AI kapalı", """
+                    <div class="screen">
+                      <p class="eyebrow">Soru üretici</p>
+                      <h1>AI özelliği kapalı</h1>
+                      <div class="card">
+                        <p class="muted small">Bu özellik bir Google Gemini API anahtarı gerektirir.
+                        Anahtar <b>koda yazılmaz</b>, ortam değişkeninden okunur:</p>
+                        <pre class="code-block">export GEMINI_API_KEY="buraya-anahtar"
+./run.sh web</pre>
+                        <p class="muted small">Windows PowerShell için:</p>
+                        <pre class="code-block">$env:GEMINI_API_KEY="buraya-anahtar"
+run.bat web</pre>
+                        <p class="muted small">Anahtarı <b>aistudio.google.com</b> üzerinden alabilirsin.
+                        Anahtarı asla depoya ekleme.</p>
+                      </div>
+                      <div class="actions"><a class="btn" href="/">Ana sayfa</a></div>
+                    </div>
+                    """));
+            return;
+        }
+
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendHtml(exchange, 200, Html.page("Soru üret", generateForm(null)));
+            return;
+        }
+
+        Map<String, String> form = readForm(exchange);
+        String action = form.getOrDefault("islem", "uret");
+        String title = form.getOrDefault("baslik", "").trim();
+
+        try {
+            switch (action) {
+                case "duzenle" -> {
+                    String draft = form.getOrDefault("taslak", "");
+                    String instruction = form.getOrDefault("talimat", "").trim();
+                    if (instruction.isEmpty()) {
+                        sendHtml(exchange, 200, Html.page("Taslak",
+                                draftEditor(title, draft, "Ne değiştirmemi istediğini yaz.")));
+                        return;
+                    }
+                    String revised = generator.revise(draft, instruction);
+                    sendHtml(exchange, 200, Html.page("Taslak", draftEditor(title, revised, null)));
+                }
+                case "kaydet" -> {
+                    String draft = form.getOrDefault("taslak", "");
+                    Path saved = saveDraft(title, draft);
+                    reloadContent();
+                    sendHtml(exchange, 200, Html.page("Kaydedildi", savedScreen(title, saved)));
+                }
+                default -> {
+                    String topic = form.getOrDefault("konu", "").trim();
+                    if (topic.isEmpty()) {
+                        sendHtml(exchange, 200, Html.page("Soru üret", generateForm("Bir konu yaz.")));
+                        return;
+                    }
+                    int count = Math.max(3, Math.min(25, parseIntOr(form.get("adet"), 10)));
+                    String level = form.getOrDefault("seviye", "giriş");
+                    String draft = generator.generate(topic, count, level);
+                    sendHtml(exchange, 200, Html.page("Taslak",
+                            draftEditor(title.isEmpty() ? topic : title, draft, null)));
+                }
+            }
+        } catch (IOException e) {
+            sendHtml(exchange, 200, Html.page("Hata", generateForm(e.getMessage())));
+        } catch (IllegalArgumentException e) {
+            sendHtml(exchange, 200, Html.page("Hata",
+                    draftEditor(title, form.getOrDefault("taslak", ""), e.getMessage())));
+        }
+    }
+
+    private String generateForm(String error) {
+        String warning = error == null ? ""
+                : "  <div class=\"verdict bad\"><h3><span>Olmadı</span></h3>"
+                  + "<div class=\"why\">" + Html.escape(error) + "</div></div>\n";
+
+        return """
+                <div class="screen">
+                  <p class="eyebrow">Soru üretici · %s</p>
+                  <h1>Yeni paket üret</h1>
+                %s
+                  <form method="POST" action="/uret">
+                    <input type="hidden" name="islem" value="uret">
+                    <div class="card">
+                      <label class="field" for="konu">Konu</label>
+                      <input type="text" id="konu" name="konu" required autocomplete="off"
+                             placeholder="örn. Siber güvenlik temelleri">
+
+                      <label class="field" for="baslik">Paket adı</label>
+                      <input type="text" id="baslik" name="baslik" autocomplete="off"
+                             placeholder="boş bırakırsan konu adı kullanılır">
+
+                      <label class="field" for="adet">Soru sayısı</label>
+                      <select id="adet" name="adet">
+                        <option value="5">5 soru</option>
+                        <option value="10" selected>10 soru</option>
+                        <option value="15">15 soru</option>
+                        <option value="20">20 soru</option>
+                      </select>
+
+                      <label class="field" for="seviye">Seviye</label>
+                      <select id="seviye" name="seviye" style="margin-bottom:0">
+                        <option value="giriş" selected>Giriş</option>
+                        <option value="orta">Orta</option>
+                        <option value="ileri">İleri</option>
+                      </select>
+                    </div>
+
+                    <div class="actions">
+                      <button class="btn" type="submit">Üret</button>
+                      <a class="plain center" href="/">Ana sayfa</a>
+                    </div>
+                  </form>
+                </div>
+                """.formatted(Html.escape(generator.getModel()), warning);
+    }
+
+    /** Uretilen taslagi gosterir: elle duzenlenebilir, AI ile de duzenlenebilir. */
+    private String draftEditor(String title, String draft, String error) {
+        String warning = error == null ? ""
+                : "  <div class=\"verdict bad\"><h3><span>Olmadı</span></h3>"
+                  + "<div class=\"why\">" + Html.escape(error) + "</div></div>\n";
+
+        int lines = 0;
+        for (String line : draft.split("\n")) {
+            String t = line.trim();
+            if (!t.isEmpty() && !t.startsWith("#") && !t.startsWith(">")) {
+                lines++;
+            }
+        }
+
+        // Kutu icerige gore buyusun; sabit yukseklik bos alan birakiyor.
+        int rows = Math.max(8, Math.min(26, draft.split("\\n").length + 2));
+
+        return """
+                <div class="screen">
+                  <p class="eyebrow">Taslak · %d soru</p>
+                  <h1>%s</h1>
+                  <p class="muted small">İstediğin satırı elle düzeltebilir ya da aşağıdan AI'ya
+                  düzelttirebilirsin. Kaydetmeden önce paket doğrulanır.</p>
+                %s
+                  <form method="POST" action="/uret">
+                    <input type="hidden" name="baslik" value="%s">
+                    <textarea name="taslak" class="draft" spellcheck="false" rows="%d">%s</textarea>
+
+                    <div class="card" style="margin-top:14px">
+                      <label class="field" for="talimat">AI ile düzenle</label>
+                      <input type="text" id="talimat" name="talimat" autocomplete="off"
+                             style="margin-bottom:12px"
+                             placeholder="örn. soruları biraz kolaylaştır, 3. soruyu değiştir">
+                      <button class="btn blue" type="submit" name="islem" value="duzenle">AI ile düzenle</button>
+                    </div>
+
+                    <div class="actions">
+                      <button class="btn" type="submit" name="islem" value="kaydet">Pakete kaydet</button>
+                      <a class="plain center" href="/uret">Baştan üret</a>
+                    </div>
+                  </form>
+                </div>
+                """.formatted(lines, Html.escape(title), warning, Html.escape(title),
+                              rows, Html.escape(draft));
+    }
+
+    private String savedScreen(String title, Path file) {
+        return """
+                <div class="screen">
+                  <p class="eyebrow">Kaydedildi</p>
+                  <h1>%s hazır</h1>
+                  <div class="card">
+                    <p class="muted small">Dosya: <b>%s</b></p>
+                    <p class="muted small">Paket hemen kullanılabilir. Katkı olarak göndermek için
+                    bu dosyayı commit edip PR açman yeterli.</p>
+                  </div>
+                  <div class="actions">
+                    <a class="btn" href="/">Ana sayfa</a>
+                    <a class="btn ghost" href="/uret">Bir paket daha üret</a>
+                  </div>
+                </div>
+                """.formatted(Html.escape(title), Html.escape(file.toString()));
+    }
+
+    /**
+     * Taslagi dosyaya yazar. Once GECICI bir dosyaya yazip QuestionBank ile
+     * okutur; gecerli soru cikmazsa hicbir sey kaydedilmez.
+     */
+    private Path saveDraft(String title, String draft) throws IOException {
+        String safeTitle = title.isBlank() ? "Üretilen Paket" : title.trim();
+        String content = "# baslik: " + safeTitle + "\n"
+                + "# Bu paket AI ile üretildi, insan gözüyle kontrol edilmelidir.\n\n"
+                + draft.strip() + "\n";
+
+        Path temp = Files.createTempFile("quiz-taslak", ".txt");
+        try {
+            Files.writeString(temp, content, StandardCharsets.UTF_8);
+            int count = QuestionBank.loadFromFile(temp).size();
+            if (count == 0) {
+                throw new IllegalArgumentException(
+                        "Taslakta geçerli soru bulunamadı. Biçimi kontrol et: soru | şık | şık | şık | şık | doğruNo");
+            }
+
+            Path target = uniquePath(slug(safeTitle));
+            Files.writeString(target, content, StandardCharsets.UTF_8);
+            return target;
+        } finally {
+            Files.deleteIfExists(temp);
+        }
+    }
+
+    /** Dosya adi olarak guvenli bir metin uretir (dizin gecisi engellenir). */
+    private static String slug(String text) {
+        String lower = text.toLowerCase(java.util.Locale.forLanguageTag("tr"))
+                .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
+                .replace('ş', 's').replace('ö', 'o').replace('ç', 'c');
+        StringBuilder out = new StringBuilder();
+        for (char c : lower.toCharArray()) {
+            if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9') {
+                out.append(c);
+            } else if (!out.isEmpty() && out.charAt(out.length() - 1) != '-') {
+                out.append('-');
+            }
+        }
+        String slug = out.toString();
+        while (slug.endsWith("-")) {
+            slug = slug.substring(0, slug.length() - 1);
+        }
+        if (slug.isEmpty()) {
+            slug = "uretilen";
+        }
+        return slug.length() > 40 ? slug.substring(0, 40) : slug;
+    }
+
+    /** Ayni adda dosya varsa sonuna sayi ekler. */
+    private Path uniquePath(String slug) {
+        Path candidate = questionsDir.resolve(slug + ".txt");
+        int n = 2;
+        while (Files.exists(candidate)) {
+            candidate = questionsDir.resolve(slug + "-" + n++ + ".txt");
+        }
+        return candidate;
     }
 
     // ------------------------------------------------------------------ odalar
