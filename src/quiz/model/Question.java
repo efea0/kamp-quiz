@@ -12,8 +12,10 @@ public class Question {
     private final String[] options;     // siklar
     private final int correctIndex;     // dogru sikkin sirasi (0'dan baslar)
     private final String category;      // hangi paketten geldigi
+    private final String explanation;   // "neden bu cevap" - bos olabilir
 
-    public Question(String text, String[] options, int correctIndex, String category) {
+    public Question(String text, String[] options, int correctIndex,
+                    String category, String explanation) {
         // --- BEKCI KONTROLLERI ---
         // Bozuk bir soru asla dogamaz. Hata, quiz calisirken degil,
         // soru olusturulurken patlar. Boylece hatayi nerede yaptigimizi biliriz.
@@ -32,6 +34,7 @@ public class Question {
         this.options = options.clone();   // savunma amacli kopya (asagida anlatiliyor)
         this.correctIndex = correctIndex;
         this.category = category == null ? "genel" : category;
+        this.explanation = explanation == null ? "" : explanation.trim();
     }
 
     public String getText() {
@@ -59,5 +62,14 @@ public class Question {
     /** Sadece cevap verildikten SONRA, geri bildirim gostermek icin kullanilir. */
     public String getCorrectOption() {
         return options[correctIndex];
+    }
+
+    /** Cevabin nedeni. Bos olabilir; o zaman gosterilmez. */
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public boolean hasExplanation() {
+        return !explanation.isEmpty();
     }
 }

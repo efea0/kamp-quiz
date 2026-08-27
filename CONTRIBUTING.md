@@ -44,14 +44,29 @@ Dosya adı: `questions/konu-adi.txt` (küçük harf, Türkçe karakter yok, boş
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
 
 İstanbul hangi yıl fethedildi? | 1453 | 1071 | 1299 | 1923 | 1
+> Fatih Sultan Mehmet döneminde, 29 Mayıs 1453'te fethedildi.
+
 Cumhuriyet hangi yıl ilan edildi? | 1920 | 1921 | 1923 | 1938 | 3
+> 29 Ekim 1923. 1920 TBMM'nin açılışı, 1938 ise Atatürk'ün vefatıdır.
 ```
+
+### Açıklama satırı (`>`)
+
+Bir sorunun altına `>` ile başlayan satır eklersen, cevaptan sonra
+oyuncuya gösterilir. **Zorunlu değil ama şiddetle tavsiye edilir** —
+quizi sınavdan derse çeviren şey budur.
+
+İyi bir açıklama şunu yapar:
+- Doğru cevabın **nedenini** söyler ("çünkü...")
+- Sık karıştırılan şıkkı ayırt eder ("X ise şu işe yarar")
+- Bir cümle, en fazla iki cümle olur
 
 **Kurallar:**
 
 | Kural | Açıklama |
 |---|---|
 | Ayırıcı | Dikey çizgi `\|` |
+| Açıklama | Sorunun altına `>` ile başlayan satır (isteğe bağlı) |
 | Şık sayısı | En az 2, en fazla istediğin kadar |
 | `doğruNo` | **1'den** başlar. `1` = ilk şık |
 | Yorum satırı | `#` ile başlar, program bunu atlar |

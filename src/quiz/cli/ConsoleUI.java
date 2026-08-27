@@ -64,6 +64,8 @@ public class ConsoleUI {
     /** Quiz'i bastan sona oynatir. */
     public void play(Quiz quiz) {
         System.out.println("Başlıyoruz! Toplam " + quiz.getTotal() + " soru.");
+        System.out.println("Soru başına " + quiz.getTimeLimitSeconds()
+                + " saniye. Hızlı cevap daha çok puan getirir.");
         System.out.println("-----------------------------------------");
 
         while (quiz.hasNext()) {
@@ -81,15 +83,26 @@ public class ConsoleUI {
             }
             System.out.println();
 
+            quiz.startQuestionTimer();
             int humanAnswer = askNumber("Cevabın (1-" + options.length + "): ", 1, options.length);
 
             // Insan 1'den sayar, dizi 0'dan -> cevir
-            boolean correct = quiz.submitAnswer(humanAnswer - 1);
+            Quiz.AnswerResult result = quiz.submitAnswer(humanAnswer - 1);
 
-            if (correct) {
-                System.out.println("  [+] DOĞRU!");
+            double seconds = result.elapsedMillis() / 1000.0;
+            if (result.timedOut()) {
+                System.out.printf("  [!] Süre doldu (%.1f sn). Doğru cevap: %s%n",
+                        seconds, question.getCorrectOption());
+            } else if (result.correct()) {
+                System.out.printf("  [+] DOĞRU!  +%d puan  (%.1f sn)%n",
+                        result.earnedPoints(), seconds);
             } else {
-                System.out.println("  [-] Yanlış. Doğru cevap: " + question.getCorrectOption());
+                System.out.printf("  [-] Yanlış. Doğru cevap: %s  (%.1f sn)%n",
+                        question.getCorrectOption(), seconds);
+            }
+
+            if (question.hasExplanation()) {
+                System.out.println("      " + question.getExplanation());
             }
         }
     }
@@ -100,8 +113,9 @@ public class ConsoleUI {
         System.out.println();
         System.out.println("=========================================");
         System.out.println("  SONUÇ - " + playerName);
-        System.out.println("  Skor: " + quiz.getScore() + "/" + quiz.getTotal()
+        System.out.println("  Skor : " + quiz.getScore() + "/" + quiz.getTotal()
                 + "  (%" + percentage + ")");
+        System.out.println("  Puan : " + quiz.getPoints() + " / " + quiz.getMaxPoints());
         System.out.println("  " + comment(percentage));
         System.out.println("=========================================");
     }
@@ -125,8 +139,8 @@ public class ConsoleUI {
 
         int rank = 1;
         for (Scoreboard.Entry e : entries) {
-            System.out.printf("  %d. %-15s %2d/%-2d  %%%-3d  %s%n",
-                    rank++, e.name(), e.score(), e.total(), e.percentage(), e.date());
+            System.out.printf("  %d. %-15s %6d p   %2d/%-2d  %%%-3d  %s%n",
+                    rank++, e.name(), e.points(), e.score(), e.total(), e.percentage(), e.date());
         }
     }
 }

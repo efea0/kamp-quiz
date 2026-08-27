@@ -93,6 +93,14 @@ final class Html {
             .feedback { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-weight: 600; }
             .feedback.ok  { background: rgba(63,185,80,0.12);  color: var(--ok);  border: 1px solid rgba(63,185,80,0.4); }
             .feedback.bad { background: rgba(248,81,73,0.12);  color: var(--bad); border: 1px solid rgba(248,81,73,0.4); }
+            .why { font-weight: 400; font-size: 0.875rem; margin-top: 8px; opacity: 0.85; }
+            .timer { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+            .timer b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+            .timer.hurry b { color: var(--bad); }
+            .timebar { height: 6px; background: #0d1117; border-radius: 999px; overflow: hidden; margin-bottom: 16px; }
+            .timebar > div { height: 100%; background: var(--ok); transition: width 1s linear; }
+            .timebar.hurry > div { background: var(--bad); }
+            .points { color: var(--ok); font-weight: 600; }
             .progress { height: 6px; background: #0d1117; border-radius: 999px; overflow: hidden; margin-bottom: 20px; }
             .progress > div { height: 100%; background: var(--accent); }
             .score { font-size: 2.5rem; font-weight: 700; text-align: center; margin: 8px 0; }

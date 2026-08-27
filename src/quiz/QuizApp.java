@@ -97,7 +97,7 @@ public class QuizApp {
         // 6) Skoru kaydet ve lider tablosunu goster
         Scoreboard scoreboard = new Scoreboard(SCORES_FILE);
         try {
-            scoreboard.save(playerName, quiz.getScore(), quiz.getTotal());
+            scoreboard.save(playerName, quiz.getScore(), quiz.getTotal(), quiz.getPoints());
             ui.printLeaderboard(scoreboard.topScores(5));
         } catch (IOException e) {
             System.out.println("Skor kaydedilemedi: " + e.getMessage());

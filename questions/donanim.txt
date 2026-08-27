@@ -2,16 +2,43 @@
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
 
 Bilgisayarda işlemleri yürüten ana birim hangisidir? | RAM | CPU | GPU | SSD | 2
+> CPU komutları sırayla okur ve yürütür. Diğer parçalar ona veri taşır ya da sonucunu saklar.
+
 RAM ile ilgili doğru ifade hangisidir? | Elektrik kesilince içeriği silinir | Veriyi kalıcı saklar | Sadece oyunlarda kullanılır | İşlemcinin içindedir | 1
+> RAM uçucu (volatile) bellektir. Kaydetmeden bilgisayar kapanınca çalışmanın kaybolmasının sebebi budur.
+
 SSD'nin HDD'ye göre en belirgin avantajı nedir? | Daha ucuzdur | Daha hızlıdır | Daha büyüktür | Daha ağırdır | 2
+> HDD'de dönen bir disk ve hareket eden kafa vardır. SSD'de hareketli parça yoktur, bu yüzden çok daha hızlı ve sarsıntıya dayanıklıdır.
+
 Ekran kartının (GPU) temel görevi nedir? | Görüntü işlemek | Veri depolamak | Ağa bağlanmak | Ses üretmek | 1
+> GPU aynı işlemi binlerce piksel üzerinde paralel yapmakta uzmandır. Bu yüzden yapay zekâ eğitiminde de kullanılır.
+
 Tüm parçaların üzerine takıldığı ana devre kartına ne denir? | Anakart | Güç kaynağı | Kasa | Soğutucu | 1
+> Anakart parçalar arasındaki yolları taşır. Hangi işlemciyi takabileceğini anakartın soketi belirler.
+
 Bilgisayar açıldığında donanımı başlatan yazılım hangisidir? | İşletim sistemi | BIOS/UEFI | Sürücü | Derleyici | 2
+> BIOS/UEFI anakartta gömülüdür. Donanımı tanır, sonra işletim sistemini diskten yükler.
+
 1 GB kaç MB'tır? | 100 | 512 | 1000 | 1024 | 4
+> Bilgisayarlar ikilik sistemde sayar: 2^10 = 1024. Disk üreticileri 1000 kabul ettiği için 500 GB disk işletim sisteminde daha küçük görünür.
+
 Ekran kartı anakarta hangi yuva üzerinden takılır? | PCIe | SATA | USB | RJ45 | 1
+> PCIe yüksek hızlı genişletme yuvasıdır. SATA disk, RJ45 ağ kablosu içindir.
+
 Monitöre görüntü ve ses aktaran bağlantı hangisidir? | HDMI | USB | Ethernet | SATA | 1
+> HDMI tek kabloda hem görüntü hem ses taşır. DisplayPort da benzer iş yapar.
+
 Güç kaynağının (PSU) görevi nedir? | Veriyi saklamak | Şebeke elektriğini parçaların kullandığı gerilime çevirmek | Görüntü üretmek | Sistemi soğutmak | 2
+> Prizdeki 220V alternatif akımı 12V, 5V ve 3.3V doğru akıma çevirir. Yetersiz PSU sistemi aniden kapatır.
+
 İşlemci ile soğutucu arasına sürülen macunun amacı nedir? | Yapıştırmak | Isı aktarımını iyileştirmek | Elektrik iletmek | Toz tutmak | 2
+> İki metal yüzey mikroskobik olarak pürüzlüdür, aralarında hava kalır. Hava ısıyı kötü iletir; macun bu boşlukları doldurur.
+
 Ethernet kablosunun takıldığı port hangisidir? | RJ45 | HDMI | USB-C | VGA | 1
+> RJ45, telefon fişine benzeyen ama daha geniş olan ağ portudur.
+
 İşlemcinin içindeki çok hızlı ara belleğe ne denir? | Önbellek (cache) | Sabit disk | Sanal bellek | Yığın | 1
+> Cache, RAM'den çok daha hızlı ama çok daha küçüktür. Sık kullanılan veriyi elinin altında tutar.
+
 Aynı anda kaç işi paralel yürütebildiğini belirten CPU özelliği hangisidir? | Çekirdek sayısı | Kapasitesi | Renk derinliği | Çözünürlüğü | 1
+> Her çekirdek bağımsız çalışabilir. 8 çekirdekli bir işlemci teorik olarak 8 işi aynı anda yürütür.

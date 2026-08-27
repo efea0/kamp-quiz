@@ -1,14 +1,32 @@
-# YAZILIM TEMELLERİ SORU PAKETİ
 # baslik: Yazılım Temelleri
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
 
 Java'da bir programın başladığı metodun adı nedir? | start() | main() | run() | init() | 2
+> JVM tam olarak main adını arar. Bulamazsa "main method not found" hatası verir.
+
 Java'da dizilerin ilk elemanının indeksi kaçtır? | 0 | 1 | -1 | Değişir | 1
+> Bu yüzden ekrana yazarken i+1 kullanırız: bilgisayar 0'dan, insan 1'den sayar.
+
 Aşağıdakilerden hangisi bir tam sayı tipidir? | String | boolean | int | double | 3
+> int tam sayı, double ondalıklı sayı, boolean doğru/yanlış, String ise metindir.
+
 Java kodunu bytecode'a çeviren araç hangisidir? | java | javac | jvm | jar | 2
+> javac derler ve .class üretir; java ise o .class dosyasını çalıştırır.
+
 Bir değişkene değer atamak için hangi işaret kullanılır? | == | = | => | := | 2
+> Tek eşittir atama, çift eşittir karşılaştırmadır. Karıştırmak klasik bir hatadır.
+
 Bir sınıfın dışarıdan erişilemeyen alanları hangi kelimeyle işaretlenir? | public | private | static | final | 2
+> private, verinin dışarıdan bozulmasını engeller. Buna kapsülleme (encapsulation) denir.
+
 Git'te yeni bir dal oluşturup ona geçmenin komutu nedir? | git branch -d | git checkout -b | git merge | git clone | 2
+> -b parametresi "branch oluştur" demektir. Sadece oluşturmak için git branch, sadece geçmek için git checkout yeter.
+
 Bir metodun geriye değer döndürmediğini belirten anahtar kelime nedir? | void | null | empty | none | 1
+> void = boşluk. main metodu da void'dir çünkü geriye bir şey döndürmez.
+
 Bir kez atandıktan sonra değeri değiştirilemeyen değişken nasıl tanımlanır? | static | const | final | fixed | 3
+> Java'da const yoktur, final kullanılır. Yanlışlıkla değiştirmeye kalkarsan derleme hatası alırsın.
+
 HTML, CSS ve JavaScript'ten hangisi sayfanın iskeletini oluşturur? | CSS | JavaScript | HTML | SQL | 3
+> HTML yapı, CSS görünüm, JavaScript davranıştır. Bu projenin web arayüzünde üçü de var.
