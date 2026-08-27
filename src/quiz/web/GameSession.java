@@ -1,6 +1,7 @@
 package quiz.web;
 
 import quiz.core.Quiz;
+import quiz.model.Question;
 
 /**
  * Tek bir oyuncunun web oturumu.
@@ -9,13 +10,20 @@ import quiz.core.Quiz;
  */
 class GameSession {
 
+    /**
+     * Cevaplanmis bir sorunun sonucu.
+     * Cevap ekraninda soruyu ve siklari tekrar gosterebilmek icin
+     * sorunun kendisini de tasir.
+     */
+    record Feedback(boolean correct, boolean timedOut, int earnedPoints,
+                    Question question, int chosenIndex) {
+    }
+
     private final String playerName;
     private final Quiz quiz;
 
-    /** Bir onceki cevabin sonucu; bir sonraki sayfada gosterilip temizlenir. */
-    private String feedbackMessage;
-    private String feedbackExplanation;
-    private boolean feedbackCorrect;
+    /** Cevap verildikten sonra gosterilecek sonuc; "Devam" ile temizlenir. */
+    private Feedback feedback;
     private boolean scoreSaved;
 
     GameSession(String playerName, Quiz quiz) {
@@ -31,28 +39,16 @@ class GameSession {
         return quiz;
     }
 
-    void setFeedback(boolean correct, String message, String explanation) {
-        this.feedbackCorrect = correct;
-        this.feedbackMessage = message;
-        this.feedbackExplanation = explanation;
+    Feedback getFeedback() {
+        return feedback;
     }
 
-    /** Geri bildirimi bir kez okur ve siler; sayfa yenilenince tekrar gorunmesin. */
-    String consumeFeedback() {
-        if (feedbackMessage == null) {
-            return "";
-        }
-        String css = feedbackCorrect ? "ok" : "bad";
-        StringBuilder html = new StringBuilder();
-        html.append("    <div class=\"feedback ").append(css).append("\">")
-            .append(Html.escape(feedbackMessage));
-        if (feedbackExplanation != null && !feedbackExplanation.isEmpty()) {
-            html.append("<div class=\"why\">").append(Html.escape(feedbackExplanation)).append("</div>");
-        }
-        html.append("</div>\n");
-        feedbackMessage = null;
-        feedbackExplanation = null;
-        return html.toString();
+    void setFeedback(Feedback feedback) {
+        this.feedback = feedback;
+    }
+
+    void clearFeedback() {
+        this.feedback = null;
     }
 
     boolean isScoreSaved() {

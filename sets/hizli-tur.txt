@@ -1,0 +1,9 @@
+# baslik: Hızlı Tur
+# aciklama: 10 soruda kısa ve karışık bir tur, saniyeler kısıtlı
+# sure: 10
+Ağ Temelleri = 2
+Linux Temelleri = 2
+Donanım Temelleri = 2
+Özgür Yazılım = 2
+Yazılım Temelleri = 1
+Genel Kültür = 1

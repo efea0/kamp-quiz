@@ -1,0 +1,6 @@
+# baslik: Sistem ve Ağ
+# aciklama: Ağ, Linux ve donanım bilgini ölçen 15 soruluk teknik tur
+# sure: 20
+Ağ Temelleri = 5
+Linux Temelleri = 5
+Donanım Temelleri = 5

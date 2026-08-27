@@ -3,6 +3,8 @@ package quiz;
 import quiz.cli.ConsoleUI;
 import quiz.core.QuestionBank;
 import quiz.core.Quiz;
+import quiz.core.QuizSet;
+import quiz.core.QuizSetLoader;
 import quiz.core.Scoreboard;
 import quiz.web.WebServer;
 import quiz.model.Question;
@@ -20,6 +22,7 @@ import java.util.Scanner;
 public class QuizApp {
 
     private static final Path QUESTIONS_DIR = Path.of("questions");
+    private static final Path SETS_DIR = Path.of("sets");
     private static final Path SCORES_FILE = Path.of("scores.txt");
 
     private static final int DEFAULT_PORT = 8080;
@@ -54,7 +57,8 @@ public class QuizApp {
         if (args.length > 0 && args[0].equalsIgnoreCase("web")) {
             int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
             try {
-                new WebServer(allQuestions, new Scoreboard(SCORES_FILE), port).start();
+                List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR);
+                new WebServer(allQuestions, sets, new Scoreboard(SCORES_FILE), port).start();
             } catch (IOException e) {
                 System.out.println("Sunucu başlatılamadı: " + e.getMessage());
                 System.out.println("Port " + port + " başka bir program tarafından kullanılıyor olabilir.");
