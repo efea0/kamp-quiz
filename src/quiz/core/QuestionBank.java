@@ -24,6 +24,7 @@ import java.util.stream.Stream;
  * - '#' ile baslayan satirlar yorumdur, atlanir
  * - Bos satirlar atlanir
  * - '# baslik: Genel Kultur' satiri kategoriye gorunen bir ad verir
+ * - '>' ile baslayan satir, bir onceki sorunun aciklamasidir
  */
 public class QuestionBank {
 
@@ -61,6 +62,12 @@ public class QuestionBank {
         // Once dosyanin basligini ara; yoksa dosya adindan uret.
         String category = findTitle(lines).orElseGet(() -> categoryOf(file));
 
+        // Aciklama satiri ('>') sorudan SONRA geldigi icin soruyu hemen kurmuyoruz;
+        // bir sonraki soruya (veya dosya sonuna) kadar bekletiyoruz.
+        String pendingLine = null;
+        int pendingLineNumber = 0;
+        StringBuilder pendingExplanation = new StringBuilder();
+
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).trim();
 
@@ -68,19 +75,48 @@ public class QuestionBank {
                 continue;   // yorum veya bos satir -> atla
             }
 
-            try {
-                questions.add(parseLine(line, category));
-            } catch (IllegalArgumentException e) {
-                // Tek bozuk satir yuzunden tum quiz cokmesin.
-                System.out.println("  [UYARI] " + file.getFileName()
-                        + " -> " + (i + 1) + ". satir atlandi: " + e.getMessage());
+            if (line.startsWith(">")) {
+                if (pendingLine != null) {
+                    if (pendingExplanation.length() > 0) {
+                        pendingExplanation.append(' ');
+                    }
+                    pendingExplanation.append(line.substring(1).trim());
+                }
+                continue;
             }
+
+            // Yeni bir soru satiri geldi: bekleyeni tamamla
+            addPending(questions, pendingLine, pendingExplanation, category, file, pendingLineNumber);
+
+            pendingLine = line;
+            pendingLineNumber = i + 1;
+            pendingExplanation.setLength(0);
         }
+
+        // Dosya bitti; son bekleyeni de tamamla
+        addPending(questions, pendingLine, pendingExplanation, category, file, pendingLineNumber);
+
         return questions;
     }
 
+    /** Bekleyen soru satirini ayristirip listeye ekler. */
+    private static void addPending(List<Question> questions, String line,
+                                   StringBuilder explanation, String category,
+                                   Path file, int lineNumber) {
+        if (line == null) {
+            return;
+        }
+        try {
+            questions.add(parseLine(line, category, explanation.toString()));
+        } catch (IllegalArgumentException e) {
+            // Tek bozuk satir yuzunden tum quiz cokmesin.
+            System.out.println("  [UYARI] " + file.getFileName()
+                    + " -> " + lineNumber + ". satir atlandi: " + e.getMessage());
+        }
+    }
+
     /** Bir metin satirini Question nesnesine cevirir. */
-    private static Question parseLine(String line, String category) {
+    private static Question parseLine(String line, String category, String explanation) {
         String[] parts = line.split("\\|");
 
         if (parts.length < 4) {
@@ -107,7 +143,7 @@ public class QuestionBank {
         }
 
         // Insan 1'den sayar, dizi 0'dan. Cevirme burada yapilir.
-        return new Question(text, options, humanNumber - 1, category);
+        return new Question(text, options, humanNumber - 1, category, explanation);
     }
 
     /**

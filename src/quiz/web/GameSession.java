@@ -14,6 +14,7 @@ class GameSession {
 
     /** Bir onceki cevabin sonucu; bir sonraki sayfada gosterilip temizlenir. */
     private String feedbackMessage;
+    private String feedbackExplanation;
     private boolean feedbackCorrect;
     private boolean scoreSaved;
 
@@ -30,9 +31,10 @@ class GameSession {
         return quiz;
     }
 
-    void setFeedback(boolean correct, String message) {
+    void setFeedback(boolean correct, String message, String explanation) {
         this.feedbackCorrect = correct;
         this.feedbackMessage = message;
+        this.feedbackExplanation = explanation;
     }
 
     /** Geri bildirimi bir kez okur ve siler; sayfa yenilenince tekrar gorunmesin. */
@@ -41,9 +43,16 @@ class GameSession {
             return "";
         }
         String css = feedbackCorrect ? "ok" : "bad";
-        String html = "    <div class=\"feedback " + css + "\">" + Html.escape(feedbackMessage) + "</div>\n";
+        StringBuilder html = new StringBuilder();
+        html.append("    <div class=\"feedback ").append(css).append("\">")
+            .append(Html.escape(feedbackMessage));
+        if (feedbackExplanation != null && !feedbackExplanation.isEmpty()) {
+            html.append("<div class=\"why\">").append(Html.escape(feedbackExplanation)).append("</div>");
+        }
+        html.append("</div>\n");
         feedbackMessage = null;
-        return html;
+        feedbackExplanation = null;
+        return html.toString();
     }
 
     boolean isScoreSaved() {

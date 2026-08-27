@@ -1,17 +1,45 @@
 # baslik: Ağ Temelleri
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+# '>' ile başlayan satır, bir önceki sorunun açıklamasıdır. Yanlış cevapta gösterilir.
 
 Bir cihazın ağ üzerindeki adresini belirten şey nedir? | IP adresi | URL | Port | Protokol | 1
+> IP adresi cihazın ağdaki kimliğidir. URL bir web adresidir, port ise aynı cihaz içindeki farklı servisleri ayırır.
+
 DNS'in temel görevi nedir? | Alan adını IP adresine çevirmek | Dosya indirmek | Şifre üretmek | Virüs taramak | 1
+> DNS ağın telefon rehberidir: google.com yazarsın, DNS onu 142.250.x.x gibi bir IP'ye çevirir.
+
 HTTP protokolü varsayılan olarak hangi portu kullanır? | 21 | 25 | 80 | 443 | 3
+> 80 HTTP, 443 HTTPS, 21 FTP, 25 e-posta gönderimi (SMTP) içindir.
+
 HTTPS varsayılan olarak hangi portu kullanır? | 80 | 443 | 8080 | 22 | 2
+> HTTPS, HTTP'nin TLS ile şifrelenmiş halidir ve 443 portunu kullanır.
+
 127.0.0.1 adresi neyi ifade eder? | Yönlendiriciyi | Cihazın kendisini | İnternet çıkışını | DNS sunucusunu | 2
+> Buna loopback adresi denir; localhost ile aynı şeydir. Kendi bilgisayarını işaret eder.
+
 192.168.1.5 gibi adresler ne tür adreslerdir? | Genel (public) | Özel yerel ağ (private) | Yayın (broadcast) | Rastgele | 2
+> 192.168.x.x, 10.x.x.x ve 172.16-31.x.x aralıkları yerel ağlara ayrılmıştır; internette doğrudan yönlendirilmezler.
+
 IPv4 adresi kaç bittir? | 16 | 32 | 64 | 128 | 2
+> 32 bit, yani dört adet 8 bitlik sayı: 192.168.1.1 gibi. IPv6 ise 128 bittir.
+
 TCP ile UDP arasındaki temel fark nedir? | TCP verinin ulaştığını garanti eder | UDP daha güvenlidir | TCP şifreli, UDP değil | Aralarında fark yoktur | 1
+> TCP kaybolan paketi tekrar gönderir, sırayı korur. UDP hızlıdır ama garanti vermez; canlı yayın ve oyunlarda tercih edilir.
+
 MAC adresi neyi tanımlar? | Ağ kartı donanımını | Kullanıcıyı | Web sitesini | Dosyayı | 1
+> MAC adresi ağ kartına üretimde verilir ve genelde değişmez. IP ise bağlandığın ağa göre değişir.
+
 ping komutu ağ testinde ne yapar? | Dosya kopyalar | Hedefe paket gönderip cevap süresini ölçer | Şifre kırar | Port kapatır | 2
+> ICMP paketi gönderip cevabın kaç milisaniyede döndüğünü ölçer. Bağlantı var mı sorusunun en hızlı cevabıdır.
+
 Wi-Fi ağının görünen adına ne denir? | SSID | MAC | DHCP | NAT | 1
+> SSID, telefonun Wi-Fi listesinde gördüğün isimdir.
+
 Cihazlara otomatik IP adresi dağıtan servis hangisidir? | DNS | DHCP | FTP | SSH | 2
+> DHCP olmasaydı her cihaza IP adresini elle yazman gerekirdi. Genelde modem bu işi yapar.
+
 Yerel ağı internete bağlayan cihaz genellikle hangisidir? | Yönlendirici (router) | Yazıcı | Monitör | Klavye | 1
+> Router iki ağ arasında paket yönlendirir. Evdeki modem aynı zamanda router görevi görür.
+
 Uzak bir makineye güvenli terminal bağlantısı kurmak için kullanılan protokol hangisidir? | FTP | SSH | HTTP | SMTP | 2
+> SSH şifreli bir terminal bağlantısıdır ve 22 portunu kullanır. Eski Telnet'in aksine trafiği şifreler.

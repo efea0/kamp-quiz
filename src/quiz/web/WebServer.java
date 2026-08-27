@@ -105,6 +105,13 @@ public class WebServer {
                           <option value="20">20 soru</option>
                         </select>
 
+                        <label class="field" for="sure">Soru başına süre</label>
+                        <select id="sure" name="sure">
+                          <option value="10">10 saniye - hızlı tur</option>
+                          <option value="20" selected>20 saniye - normal</option>
+                          <option value="45">45 saniye - rahat</option>
+                        </select>
+
                         <button type="submit">Başla</button>
                       </form>
                     </div>
@@ -139,10 +146,12 @@ public class WebServer {
         }
 
         int count = parseIntOr(form.get("adet"), 10);
+        int seconds = parseIntOr(form.get("sure"), 20);
 
         Quiz quiz = new Quiz(pool);
         quiz.shuffle();
         quiz.limitTo(count);
+        quiz.setTimeLimitSeconds(seconds);
 
         String sessionId = UUID.randomUUID().toString();
         sessions.put(sessionId, new GameSession(name, quiz));
@@ -177,25 +186,54 @@ public class WebServer {
         }
 
         int percent = Math.round((quiz.getQuestionNumber() - 1) * 100f / quiz.getTotal());
+        int limit = quiz.getTimeLimitSeconds();
+
+        // Sayac soru ekrana gelince baslar.
+        quiz.startQuestionTimer();
 
         String body = """
                 %s    <div class="progress"><div style="width:%d%%"></div></div>
                     <div class="card">
                       <span class="tag">%s</span>
-                      <p class="muted">Soru %d / %d</p>
+                      <div class="timer">
+                        <span class="muted">Soru %d / %d</span>
+                        <span><b id="kalan">%d</b> <span class="muted">sn</span></span>
+                      </div>
+                      <div class="timebar" id="cubuk"><div id="dolgu" style="width:100%%"></div></div>
                       <h2>%s</h2>
-                      <form method="POST" action="/cevap">
+                      <form method="POST" action="/cevap" id="cevapForm">
                 %s          <button type="submit">Cevapla</button>
                       </form>
                     </div>
+                    <script>
+                      (function () {
+                        var toplam = %d, kalan = toplam;
+                        var sayi = document.getElementById('kalan');
+                        var dolgu = document.getElementById('dolgu');
+                        var cubuk = document.getElementById('cubuk');
+                        var form = document.getElementById('cevapForm');
+                        var sayac = setInterval(function () {
+                          kalan--;
+                          sayi.textContent = kalan < 0 ? 0 : kalan;
+                          dolgu.style.width = Math.max(0, kalan / toplam * 100) + '%%';
+                          if (kalan <= 5) { cubuk.classList.add('hurry'); }
+                          if (kalan <= 0) {
+                            clearInterval(sayac);
+                            form.submit();   // sure doldu, bos gonder
+                          }
+                        }, 1000);
+                      })();
+                    </script>
                 """.formatted(
                 session.consumeFeedback(),
                 percent,
                 Html.escape(question.getCategory()),
                 quiz.getQuestionNumber(),
                 quiz.getTotal(),
+                limit,
                 Html.escape(question.getText()),
-                radios);
+                radios,
+                limit);
 
         sendHtml(exchange, 200, Html.page("Soru " + quiz.getQuestionNumber(), body));
     }
@@ -216,10 +254,17 @@ public class WebServer {
 
         Question question = quiz.currentQuestion();
         int answer = parseIntOr(readForm(exchange).get("cevap"), -1);
-        boolean correct = quiz.submitAnswer(answer);
+        Quiz.AnswerResult result = quiz.submitAnswer(answer);
 
-        session.setFeedback(correct,
-                correct ? "Doğru!" : "Yanlış — doğru cevap: " + question.getCorrectOption());
+        String message;
+        if (result.timedOut()) {
+            message = "Süre doldu — doğru cevap: " + question.getCorrectOption();
+        } else if (result.correct()) {
+            message = "Doğru!  +" + result.earnedPoints() + " puan";
+        } else {
+            message = "Yanlış — doğru cevap: " + question.getCorrectOption();
+        }
+        session.setFeedback(result.correct(), message, question.getExplanation());
 
         // Cevaptan sonra yonlendiriyoruz ki kullanici sayfayi yenileyince
         // ayni cevap tekrar gonderilmesin (POST-Redirect-GET deseni).
@@ -237,7 +282,7 @@ public class WebServer {
         Quiz quiz = session.getQuiz();
         if (!session.isScoreSaved()) {
             try {
-                scoreboard.save(session.getPlayerName(), quiz.getScore(), quiz.getTotal());
+                scoreboard.save(session.getPlayerName(), quiz.getScore(), quiz.getTotal(), quiz.getPoints());
                 session.markScoreSaved();
             } catch (IOException e) {
                 System.out.println("Skor kaydedilemedi: " + e.getMessage());
@@ -247,8 +292,8 @@ public class WebServer {
         String body = """
                     <div class="card center">
                       <p class="muted">%s</p>
-                      <div class="score">%d / %d</div>
-                      <p class="muted">%%%d doğru</p>
+                      <div class="score">%d <span class="muted" style="font-size:1rem">puan</span></div>
+                      <p class="muted">%d / %d doğru &middot; %%%d</p>
                     </div>
                     <div class="card center">
                       <p><a href="/tablo">Lider tablosu</a></p>
@@ -256,7 +301,7 @@ public class WebServer {
                     </div>
                 """.formatted(
                 Html.escape(session.getPlayerName()),
-                quiz.getScore(), quiz.getTotal(), quiz.getPercentage());
+                quiz.getPoints(), quiz.getScore(), quiz.getTotal(), quiz.getPercentage());
 
         sendHtml(exchange, 200, Html.page("Sonuç", body));
     }
@@ -277,9 +322,9 @@ public class WebServer {
             int rank = 1;
             for (Scoreboard.Entry e : entries) {
                 rows.append("        <tr><td>").append(rank++).append("</td><td>")
-                    .append(Html.escape(e.name())).append("</td><td class=\"num\">")
+                    .append(Html.escape(e.name())).append("</td><td class=\"num points\">")
+                    .append(e.points()).append("</td><td class=\"num\">")
                     .append(e.score()).append("/").append(e.total())
-                    .append("</td><td class=\"num\">%").append(e.percentage())
                     .append("</td></tr>\n");
             }
         }
@@ -288,7 +333,7 @@ public class WebServer {
                     <div class="card">
                       <h1>Lider Tablosu</h1>
                       <table>
-                        <tr><th>#</th><th>Oyuncu</th><th class="num">Skor</th><th class="num">Yüzde</th></tr>
+                        <tr><th>#</th><th>Oyuncu</th><th class="num">Puan</th><th class="num">Doğru</th></tr>
                 %s      </table>
                     </div>
                     <p class="center"><a href="/">Ana sayfa</a></p>

@@ -15,7 +15,10 @@ import java.util.List;
  * Lider tablosu. Skorlari bir metin dosyasina yazar ve geri okur.
  * Program kapansa bile skorlar kaybolmaz.
  *
- * Dosya bicimi:  isim|dogru|toplam|tarih
+ * Dosya bicimi:  isim|dogru|toplam|tarih|puan
+ *
+ * Puan sonradan eklendi. Eski 4 sutunlu kayitlar hala okunur (puan = 0);
+ * bu yuzden yeni alan basa degil SONA eklendi.
  */
 public class Scoreboard {
 
@@ -24,7 +27,7 @@ public class Scoreboard {
      * 'record' = sadece veri tasiyan kisa sinif. Java bunun icin
      * constructor'i, getter'lari ve equals/toString'i kendisi yazar.
      */
-    public record Entry(String name, int score, int total, String date) {
+    public record Entry(String name, int score, int total, String date, int points) {
 
         public int percentage() {
             return total == 0 ? 0 : Math.round(score * 100f / total);
@@ -41,10 +44,11 @@ public class Scoreboard {
     }
 
     /** Yeni bir skoru dosyanin SONUNA ekler (eskileri silmez). */
-    public void save(String playerName, int score, int total) throws IOException {
+    public void save(String playerName, int score, int total, int points) throws IOException {
         String safeName = playerName.replace("|", "-").trim();
         String line = safeName + "|" + score + "|" + total + "|"
-                + LocalDateTime.now().format(DATE_FORMAT) + System.lineSeparator();
+                + LocalDateTime.now().format(DATE_FORMAT) + "|" + points
+                + System.lineSeparator();
 
         Files.writeString(file, line, StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,   // dosya yoksa olustur
@@ -56,8 +60,8 @@ public class Scoreboard {
         List<Entry> entries = readAll();
 
         entries.sort(Comparator
-                .comparingInt(Entry::percentage).reversed()   // once yuzde, buyukten kucuge
-                .thenComparing(Comparator.comparingInt(Entry::score).reversed()));
+                .comparingInt(Entry::points).reversed()        // once puan, buyukten kucuge
+                .thenComparing(Comparator.comparingInt(Entry::percentage).reversed()));
 
         return entries.size() > limit ? entries.subList(0, limit) : entries;
     }
@@ -74,11 +78,14 @@ public class Scoreboard {
                 continue;   // bozuk satir, atla
             }
             try {
+                // 5. sutun (puan) eski kayitlarda yok; o zaman 0 kabul edilir.
+                int points = parts.length >= 5 ? Integer.parseInt(parts[4].trim()) : 0;
                 entries.add(new Entry(
                         parts[0],
                         Integer.parseInt(parts[1].trim()),
                         Integer.parseInt(parts[2].trim()),
-                        parts[3]));
+                        parts[3],
+                        points));
             } catch (NumberFormatException e) {
                 // sayiya cevrilemeyen satiri sessizce atla
             }

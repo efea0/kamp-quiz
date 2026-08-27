@@ -191,7 +191,10 @@ Yeni paket eklemek bir `.txt` dosyası yazmak kadar kolay:
 ```
 # baslik: Siber Güvenlik
 Kimlik doğrulamada ikinci adıma ne denir? | 2FA | VPN | DNS | SSL | 1
+> Şifreye ek olarak ikinci bir doğrulama gerekir: SMS kodu, uygulama ya da donanım anahtarı.
 ```
+
+`>` ile başlayan satır o sorunun açıklamasıdır; cevaptan sonra oyuncuya gösterilir.
 
 Biçim ve kurallar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
@@ -221,6 +224,22 @@ src/quiz/
     └── GameSession.java    tek oyuncunun web durumu
 ```
 
+## Puanlama
+
+Wayground'daki gibi hız ödüllendirilir:
+
+| | Puan |
+|---|---|
+| Doğru cevap | 500 taban puan |
+| Hız bonusu | Kalan süreye orantılı, en fazla +500 |
+| Yanlış cevap | 0 |
+| Süre dolması | 0 — cevap yanlış sayılır |
+
+Soru başına en fazla **1000 puan**. Süre web modunda seçilir (10 / 20 / 45 saniye)
+ve ekranda geri sayım çubuğu döner; süre bitince cevap otomatik gönderilir.
+
+Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
+
 ## Davranış notları
 
 - Bozuk bir soru satırı quizi çökertmez; o satır atlanır ve uyarı basılır
@@ -230,6 +249,8 @@ src/quiz/
 - Tüm dosya okuma/yazma işlemleri UTF-8'e sabitlenmiştir
 - Web modunda her oyuncunun oturumu ayrıdır; aynı anda onlarca kişi oynayabilir
 - Cevap gönderimi POST-Redirect-GET desenini kullanır: sayfa yenilenince cevap tekrar gitmez
+- Sayfayı yenilemek geri sayımı sıfırlamaz; süre soru başına bir kez başlar
+- Açıklaması olan sorularda cevaptan sonra "neden" metni gösterilir
 
 ## Yol haritası
 
@@ -244,7 +265,9 @@ src/quiz/
 | ✔ | 7 | Lider tablosu |
 | ✔ | 8 | Katkı rehberi ve PR şablonu |
 | ✔ | 9 | Web arayüzü — telefondan bağlanılan canlı quiz |
-| ☐ | 10 | Süre sınırı, oda kodu, canlı yarış modu |
+| ✔ | 10 | Süre sınırı, hız puanı ve açıklama alanı |
+| ☐ | 11 | Oda kodu ve projeksiyon ekranı |
+| ☐ | 12 | AI ile soru paketi üretme |
 
 ## Katkı
 

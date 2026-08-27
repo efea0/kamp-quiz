@@ -2,17 +2,46 @@
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
 
 Linux çekirdeğini ilk geliştiren kişi kimdir? | Linus Torvalds | Bill Gates | Steve Jobs | Dennis Ritchie | 1
+> Torvalds 1991'de çekirdeği yazdı. Etrafındaki araçların çoğu Stallman'ın GNU projesinden gelir; bu yüzden GNU/Linux da denir.
+
 Bulunduğun dizinin yolunu gösteren komut hangisidir? | ls | pwd | cd | dir | 2
+> pwd = print working directory. Nerede olduğunu kaybettiğinde ilk yazacağın komut.
+
 Bir dizindeki dosyaları listeleyen komut hangisidir? | ls | mv | rm | cp | 1
+> ls = list. Gizli dosyaları da görmek için ls -a, ayrıntılar için ls -l.
+
 Dizin değiştirmek için hangi komut kullanılır? | go | cd | move | open | 2
+> cd = change directory. Bir üst klasöre çıkmak için cd .. yazılır.
+
 Yeni bir klasör oluşturan komut hangisidir? | newdir | mkdir | createdir | folder | 2
+> mkdir = make directory. İç içe klasör için mkdir -p a/b/c.
+
 Bir metin dosyasının içeriğini ekrana basan komut hangisidir? | cat | echo | grep | touch | 1
+> cat = concatenate. Uzun dosyalar için less daha rahattır, sayfa sayfa gezdirir.
+
 sudo komutu ne işe yarar? | Dosya siler | Komutu yönetici yetkisiyle çalıştırır | Sistemi kapatır | Program kurar | 2
+> sudo = substitute user do. Sistemi değiştiren işlemler için gerekir; her komutun başına yazmak iyi bir alışkanlık değildir.
+
 Linux dosya sisteminde kök dizin hangi işaretle gösterilir? | / | ~ | . | C: | 1
+> Linux'ta Windows'taki gibi C: D: sürücü harfleri yoktur; her şey tek bir / ağacının altındadır.
+
 ~ işareti hangi dizini ifade eder? | Kök dizin | Kullanıcının ev dizini | Geçici dizin | Sistem dizini | 2
+> ~ senin ev klasörün, yani /home/kullaniciadi. Tek başına cd yazmak da seni oraya götürür.
+
 Linux'ta gizli dosyaların adı neyle başlar? | Nokta (.) | Alt çizgi (_) | Tire (-) | Yıldız (*) | 1
+> .gitignore ve .bashrc gibi. Bunları görmek için ls -a gerekir.
+
 Dosya izinlerini değiştiren komut hangisidir? | chown | chmod | chgrp | perm | 2
+> chmod = change mode. run.sh dosyasını çalıştırılabilir yapmak için chmod +x run.sh yazmıştık.
+
 Bir komutun kullanım kılavuzunu açan komut hangisidir? | help | man | info | doc | 2
+> man = manual. Çıkmak için q tuşuna basılır. Bir komutu bilmiyorsan önce man dene.
+
 Çalışan süreçleri canlı olarak izleyen komut hangisidir? | top | ls | ps -a | run | 1
+> top canlı bir liste gösterir. ps ise o anki anlık görüntüyü verir.
+
 Bir dosyanın içinde metin aramak için hangi komut kullanılır? | find | grep | search | locate | 2
+> grep metnin İÇİNDE arar, find ise dosyanın KENDİSİNİ arar. İkisi sık karıştırılır.
+
 Tüm yetkilere sahip olan Linux kullanıcısının adı nedir? | admin | root | super | sudo | 2
+> root her şeyi yapabilir, silme uyarısı bile almaz. Bu yüzden günlük işlerde root olarak çalışılmaz.
