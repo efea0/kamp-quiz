@@ -1,0 +1,17 @@
+# baslik: Donanım Temelleri
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+Bilgisayarda işlemleri yürüten ana birim hangisidir? | RAM | CPU | GPU | SSD | 2
+RAM ile ilgili doğru ifade hangisidir? | Elektrik kesilince içeriği silinir | Veriyi kalıcı saklar | Sadece oyunlarda kullanılır | İşlemcinin içindedir | 1
+SSD'nin HDD'ye göre en belirgin avantajı nedir? | Daha ucuzdur | Daha hızlıdır | Daha büyüktür | Daha ağırdır | 2
+Ekran kartının (GPU) temel görevi nedir? | Görüntü işlemek | Veri depolamak | Ağa bağlanmak | Ses üretmek | 1
+Tüm parçaların üzerine takıldığı ana devre kartına ne denir? | Anakart | Güç kaynağı | Kasa | Soğutucu | 1
+Bilgisayar açıldığında donanımı başlatan yazılım hangisidir? | İşletim sistemi | BIOS/UEFI | Sürücü | Derleyici | 2
+1 GB kaç MB'tır? | 100 | 512 | 1000 | 1024 | 4
+Ekran kartı anakarta hangi yuva üzerinden takılır? | PCIe | SATA | USB | RJ45 | 1
+Monitöre görüntü ve ses aktaran bağlantı hangisidir? | HDMI | USB | Ethernet | SATA | 1
+Güç kaynağının (PSU) görevi nedir? | Veriyi saklamak | Şebeke elektriğini parçaların kullandığı gerilime çevirmek | Görüntü üretmek | Sistemi soğutmak | 2
+İşlemci ile soğutucu arasına sürülen macunun amacı nedir? | Yapıştırmak | Isı aktarımını iyileştirmek | Elektrik iletmek | Toz tutmak | 2
+Ethernet kablosunun takıldığı port hangisidir? | RJ45 | HDMI | USB-C | VGA | 1
+İşlemcinin içindeki çok hızlı ara belleğe ne denir? | Önbellek (cache) | Sabit disk | Sanal bellek | Yığın | 1
+Aynı anda kaç işi paralel yürütebildiğini belirten CPU özelliği hangisidir? | Çekirdek sayısı | Kapasitesi | Renk derinliği | Çözünürlüğü | 1

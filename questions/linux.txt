@@ -1,0 +1,18 @@
+# baslik: Linux Temelleri
+# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+
+Linux çekirdeğini ilk geliştiren kişi kimdir? | Linus Torvalds | Bill Gates | Steve Jobs | Dennis Ritchie | 1
+Bulunduğun dizinin yolunu gösteren komut hangisidir? | ls | pwd | cd | dir | 2
+Bir dizindeki dosyaları listeleyen komut hangisidir? | ls | mv | rm | cp | 1
+Dizin değiştirmek için hangi komut kullanılır? | go | cd | move | open | 2
+Yeni bir klasör oluşturan komut hangisidir? | newdir | mkdir | createdir | folder | 2
+Bir metin dosyasının içeriğini ekrana basan komut hangisidir? | cat | echo | grep | touch | 1
+sudo komutu ne işe yarar? | Dosya siler | Komutu yönetici yetkisiyle çalıştırır | Sistemi kapatır | Program kurar | 2
+Linux dosya sisteminde kök dizin hangi işaretle gösterilir? | / | ~ | . | C: | 1
+~ işareti hangi dizini ifade eder? | Kök dizin | Kullanıcının ev dizini | Geçici dizin | Sistem dizini | 2
+Linux'ta gizli dosyaların adı neyle başlar? | Nokta (.) | Alt çizgi (_) | Tire (-) | Yıldız (*) | 1
+Dosya izinlerini değiştiren komut hangisidir? | chown | chmod | chgrp | perm | 2
+Bir komutun kullanım kılavuzunu açan komut hangisidir? | help | man | info | doc | 2
+Çalışan süreçleri canlı olarak izleyen komut hangisidir? | top | ls | ps -a | run | 1
+Bir dosyanın içinde metin aramak için hangi komut kullanılır? | find | grep | search | locate | 2
+Tüm yetkilere sahip olan Linux kullanıcısının adı nedir? | admin | root | super | sudo | 2

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 390" width="880" height="390" role="img" aria-label="Proje mimarisi: cli, core ve model katmanlari">
+  <style>
+    .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .pkg   { font-size: 15px; font-weight: 700; fill: #e6edf3; }
+    .cls   { font-size: 12px; fill: #adbac7; }
+    .note  { font-size: 11px; fill: #8b949e; }
+    .lbl   { font-size: 11px; fill: #8b949e; }
+    .cap   { font-size: 12px; fill: #8b949e; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6e7681"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="879" height="389" rx="10" fill="#0d1117" stroke="#30363d"/>
+  <text class="mono note" x="32" y="34">Oklar bağımlılık yönünü gösterir: üstteki alttakini tanır, altdaki üsttekini tanımaz.</text>
+
+  <!-- SUNUM KATMANI -->
+  <rect x="32" y="56" width="290" height="72" rx="8" fill="#161b22" stroke="#58a6ff"/>
+  <text class="mono pkg" x="48" y="82">quiz.cli</text>
+  <text class="mono cls" x="48" y="102">ConsoleUI</text>
+  <text class="mono note" x="48" y="119">ekran + klavye</text>
+
+  <rect x="346" y="56" width="290" height="72" rx="8" fill="#161b22" stroke="#6e7681" stroke-dasharray="5 4"/>
+  <text class="mono pkg" x="362" y="82" fill="#8b949e">quiz.web</text>
+  <text class="mono cls" x="362" y="102" fill="#6e7681">HttpServer · tarayıcı arayüzü</text>
+  <text class="mono note" x="362" y="119">Adım 9 — henüz yazılmadı</text>
+
+  <text class="mono lbl" x="660" y="98">arayüz değişir,</text>
+  <text class="mono lbl" x="660" y="114">motor aynı kalır</text>
+
+  <!-- IS MANTIGI -->
+  <rect x="32" y="176" width="604" height="86" rx="8" fill="#161b22" stroke="#3fb950"/>
+  <text class="mono pkg" x="48" y="202">quiz.core</text>
+  <text class="mono cls" x="48" y="223">Quiz          soru sırası, karıştırma, skor</text>
+  <text class="mono cls" x="48" y="241">QuestionBank  .txt paketlerini okur ve doğrular</text>
+  <text class="mono cls" x="48" y="253" opacity="0">.</text>
+  <text class="mono cls" x="48" y="256">Scoreboard    skorları yazar, sıralar</text>
+
+  <!-- MODEL -->
+  <rect x="32" y="300" width="290" height="62" rx="8" fill="#161b22" stroke="#bc8cff"/>
+  <text class="mono pkg" x="48" y="326">quiz.model</text>
+  <text class="mono cls" x="48" y="346">Question — saf veri, kendini korur</text>
+
+  <!-- VERI DOSYALARI -->
+  <rect x="672" y="176" width="176" height="52" rx="6" fill="#161b22" stroke="#30363d"/>
+  <text class="mono cls" x="688" y="198" fill="#e6edf3">questions/*.txt</text>
+  <text class="mono note" x="688" y="215">katkı buraya gelir</text>
+
+  <rect x="672" y="244" width="176" height="52" rx="6" fill="#161b22" stroke="#30363d"/>
+  <text class="mono cls" x="688" y="266" fill="#e6edf3">scores.txt</text>
+  <text class="mono note" x="688" y="283">lider tablosu</text>
+
+  <!-- oklar -->
+  <line x1="177" y1="128" x2="177" y2="172" stroke="#6e7681" marker-end="url(#arrow)"/>
+  <line x1="491" y1="128" x2="491" y2="172" stroke="#6e7681" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <line x1="177" y1="262" x2="177" y2="296" stroke="#6e7681" marker-end="url(#arrow)"/>
+  <line x1="668" y1="202" x2="640" y2="202" stroke="#6e7681" marker-end="url(#arrow)"/>
+  <line x1="640" y1="252" x2="668" y2="252" stroke="#6e7681" marker-end="url(#arrow)"/>
+
+  <text class="mono cap" x="32" y="380">quiz.core içinde tek bir System.out.println yoktur — iş mantığı ekranı bilmez.</text>
+</svg>
