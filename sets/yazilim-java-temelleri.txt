@@ -1,0 +1,4 @@
+# baslik: Yazılım ve Java Temelleri
+# aciklama: Yazılım Temelleri paketinin tamamıyla 10 soruluk odaklı tur
+# sure: 15
+Yazılım Temelleri = 10
