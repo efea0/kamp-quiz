@@ -362,6 +362,18 @@ final class Html {
               font-variant-numeric: tabular-nums;
             }
 
+            .qr {
+              display: flex; flex-direction: column; align-items: center; gap: 8px;
+              margin: 18px 0 4px;
+            }
+            .qr svg { border-radius: 10px; display: block; }
+            .qr span {
+              font-size: 0.75rem; color: var(--muted);
+              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            }
+            .qr.small { margin: 12px 0 0; }
+            .qr.small span { font-size: 0.65rem; }
+
             .screen.wide { max-width: 900px; }
             .rank.big .row { padding: 16px 20px; font-size: 1.15rem; }
             .rank.big .pos { flex: 0 0 40px; font-size: 1.3rem; }
@@ -384,6 +396,13 @@ final class Html {
               font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
               color: var(--text); margin: 0 0 14px;
             }
+
+            /* ---------- yanlis raporu ---------- */
+
+            .missbar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+            .missbar span { display: block; height: 100%; background: var(--red); border-radius: 999px; }
+            .missmeta { margin: 10px 0 0; font-size: 0.8rem; color: var(--muted); }
+            .missmeta b { color: var(--red); }
 
             .center { text-align: center; }
             a { color: var(--blue); }

@@ -71,29 +71,55 @@ public class QuizApp {
         // 3) Konsol modu: oyuncu adi
         String playerName = ui.askText("Adın nedir? (boş bırak = Misafir): ", "Misafir");
 
-        // 3) Kategori secimi
-        List<String> categories = QuestionBank.categoriesOf(allQuestions);
-        System.out.println();
-        System.out.println("Kategoriler:");
-        System.out.println("   0) Hepsi karışık");
-        for (int i = 0; i < categories.size(); i++) {
-            System.out.println("   " + (i + 1) + ") " + categories.get(i));
+        List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR);
+        List<Question> selected;
+        int seconds = 20;
+
+        // 4) Hazir test mi, serbest tur mu?
+        int setChoice = 0;
+        if (!sets.isEmpty()) {
+            System.out.println();
+            System.out.println("Hazır testler:");
+            for (int i = 0; i < sets.size(); i++) {
+                QuizSet set = sets.get(i);
+                System.out.printf("   %d) %-28s %2d soru · %2d sn%n",
+                        i + 1, set.getName(), set.totalQuestions(), set.getTimeLimitSeconds());
+            }
+            System.out.println("   0) Kendim ayarlayayım");
+            setChoice = ui.askNumber("Seçimin: ", 0, sets.size());
         }
-        int categoryChoice = ui.askNumber("Seçimin: ", 0, categories.size());
 
-        List<Question> selected = (categoryChoice == 0)
-                ? allQuestions
-                : QuestionBank.byCategory(allQuestions, categories.get(categoryChoice - 1));
+        if (setChoice > 0) {
+            QuizSet set = sets.get(setChoice - 1);
+            selected = set.build(allQuestions);
+            seconds = set.getTimeLimitSeconds();
+        } else {
+            // 5) Serbest tur: kategori ve soru sayisi
+            List<String> categories = QuestionBank.categoriesOf(allQuestions);
+            System.out.println();
+            System.out.println("Kategoriler:");
+            System.out.println("   0) Hepsi karışık");
+            for (int i = 0; i < categories.size(); i++) {
+                System.out.println("   " + (i + 1) + ") " + categories.get(i));
+            }
+            int categoryChoice = ui.askNumber("Seçimin: ", 0, categories.size());
 
-        // 4) Kac soru sorulsun?
-        System.out.println();
-        int questionCount = ui.askNumber(
-                "Kaç soru sorulsun? (1-" + selected.size() + "): ", 1, selected.size());
+            List<Question> pool = (categoryChoice == 0)
+                    ? allQuestions
+                    : QuestionBank.byCategory(allQuestions, categories.get(categoryChoice - 1));
 
-        // 5) Quiz'i kur ve oynat
+            System.out.println();
+            int questionCount = ui.askNumber(
+                    "Kaç soru sorulsun? (1-" + pool.size() + "): ", 1, pool.size());
+            selected = new ArrayList<>(pool);
+            java.util.Collections.shuffle(selected);
+            selected = selected.subList(0, questionCount);
+        }
+
+        // 6) Quiz'i kur ve oynat
         Quiz quiz = new Quiz(selected);
         quiz.shuffle();
-        quiz.limitTo(questionCount);
+        quiz.setTimeLimitSeconds(seconds);
 
         System.out.println();
         ui.play(quiz);

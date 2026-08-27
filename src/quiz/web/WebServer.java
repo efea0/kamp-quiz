@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -96,6 +97,8 @@ public class WebServer {
         server.createContext("/ekran", this::handleScreen);
         server.createContext("/katil", this::handleJoin);
         server.createContext("/uret", this::handleGenerate);
+        server.createContext("/tekrar", this::handleRetry);
+        server.createContext("/rapor", this::handleReport);
         server.createContext("/quiz", this::handleQuiz);
         server.createContext("/cevap", this::handleAnswer);
         server.createContext("/devam", this::handleContinue);
@@ -179,6 +182,113 @@ public class WebServer {
                 """.formatted(allQuestions.size(), cards);
 
         sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
+    }
+
+    // -------------------------------------------------- tekrar modu ve rapor
+
+    /** Yanlis yapilan sorulari yeni bir tur olarak sunar. */
+    private void handleRetry(HttpExchange exchange) throws IOException {
+        String sessionId = currentSessionId(exchange);
+        GameSession previous = sessionId == null ? null : sessions.get(sessionId);
+        if (previous == null) {
+            redirect(exchange, "/");
+            return;
+        }
+
+        List<Question> wrong = previous.getQuiz().getWrongQuestions();
+        if (wrong.isEmpty()) {
+            redirect(exchange, "/sonuc");
+            return;
+        }
+
+        Quiz retry = new Quiz(wrong);
+        retry.shuffle();
+        retry.setTimeLimitSeconds(previous.getQuiz().getTimeLimitSeconds());
+
+        // Tekrar turu odanin siralamasina KATILMAZ; yoksa oda tablosu bozulurdu.
+        sessions.put(sessionId, new GameSession(previous.getPlayerName(), retry, null));
+        redirect(exchange, "/quiz");
+    }
+
+    /** Hoca icin yanlis raporu: hangi soru en cok yanlis yapildi. */
+    private void handleReport(HttpExchange exchange) throws IOException {
+        Room room = rooms.get(query(exchange, "kod"));
+        if (room == null) {
+            redirect(exchange, "/kur");
+            return;
+        }
+
+        // Soru metni -> [soruldu, yanlis]  +  temsil eden soru nesnesi
+        Map<String, int[]> counts = new LinkedHashMap<>();
+        Map<String, Question> byText = new LinkedHashMap<>();
+
+        for (GameSession player : room.standings()) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                String key = result.question().getText();
+                byText.putIfAbsent(key, result.question());
+                int[] tally = counts.computeIfAbsent(key, k -> new int[2]);
+                tally[0]++;
+                if (!result.correct()) {
+                    tally[1]++;
+                }
+            }
+        }
+
+        List<Map.Entry<String, int[]>> rows = new ArrayList<>(counts.entrySet());
+        rows.sort((a, b) -> {
+            double ra = a.getValue()[1] / (double) a.getValue()[0];
+            double rb = b.getValue()[1] / (double) b.getValue()[0];
+            return Double.compare(rb, ra);   // en cok yanlis yapilan basa
+        });
+
+        StringBuilder list = new StringBuilder();
+        if (rows.isEmpty()) {
+            list.append("      <p class=\"muted center\">Henüz cevaplanmış soru yok.</p>\n");
+        } else {
+            for (Map.Entry<String, int[]> row : rows) {
+                int asked = row.getValue()[0];
+                int wrong = row.getValue()[1];
+                int percent = Math.round(wrong * 100f / asked);
+                Question question = byText.get(row.getKey());
+
+                list.append("      <div class=\"card\" style=\"margin-bottom:12px\">")
+                    .append("<div class=\"missbar\"><span style=\"width:").append(percent)
+                    .append("%\"></span></div>")
+                    .append("<p class=\"missmeta\"><b>%").append(percent)
+                    .append(" yanlış</b> · ").append(wrong).append("/").append(asked)
+                    .append(" kişi</p>")
+                    .append("<p style=\"margin:6px 0 8px\">").append(Html.escape(question.getText()))
+                    .append("</p>")
+                    .append("<p class=\"muted small\" style=\"margin:0\">Doğru: <b>")
+                    .append(Html.escape(question.getCorrectOption())).append("</b></p>");
+                if (question.hasExplanation()) {
+                    list.append("<p class=\"muted small\" style=\"margin:6px 0 0\">")
+                        .append(Html.escape(question.getExplanation())).append("</p>");
+                }
+                list.append("</div>\n");
+            }
+        }
+
+        String body = """
+                <div class="screen wide">
+                  <p class="eyebrow">%s · oda %s</p>
+                  <h1>Yanlış raporu</h1>
+                  <p class="muted small">En çok yanlış yapılan soru başta. Dersi buradan
+                  toparlamak en verimlisi.</p>
+
+                  <div style="margin-top:20px">
+                %s      </div>
+
+                  <div class="actions">
+                    <a class="btn blue" href="/ekran?kod=%s">Canlı sıralama</a>
+                    <a class="btn ghost" href="/oda?kod=%s">Oda paneli</a>
+                  </div>
+                </div>
+                """.formatted(
+                Html.escape(room.getSet().getName()), room.getCode(), list,
+                room.getCode(), room.getCode());
+
+        sendHtml(exchange, 200, Html.page("Yanlış raporu", body));
     }
 
     // ------------------------------------------------------------ AI uretici
@@ -500,7 +610,10 @@ run.bat web</pre>
                   <p class="eyebrow">%s</p>
                   <h1>Oda açık</h1>
                   <div class="code">%s</div>
-                  <p class="muted small center">Katılımcılar ana sayfada bu kodu ve adını yazsın.</p>
+                  <p class="muted small center">Katılımcılar ana sayfada bu kodu ve adını yazsın,
+                  ya da aşağıdaki kareyi okutsun.</p>
+
+                  <div class="qr">%s<span>%s</span></div>
 
                   <div class="stats" style="margin-top:22px">
                     <div class="stat"><b>%d</b><span>Katılımcı</span></div>
@@ -512,16 +625,19 @@ run.bat web</pre>
 
                   <div class="actions">
                     <a class="btn blue" href="/ekran?kod=%s">Projeksiyon ekranı</a>
+                    <a class="btn ghost" href="/rapor?kod=%s">Yanlış raporu</a>
                     <a class="plain center" href="/">Ana sayfa</a>
                   </div>
                 </div>
                 """.formatted(
                 Html.escape(room.getSet().getName()),
                 room.getCode(),
+                joinQr(exchange, 190),
+                Html.escape(joinUrl(exchange)),
                 room.playerCount(),
                 room.getSet().totalQuestions(),
                 list,
-                room.getCode());
+                room.getCode(), room.getCode());
 
         sendHtml(exchange, 200, Html.page("Oda " + room.getCode(), body,
                 "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
@@ -560,6 +676,7 @@ run.bat web</pre>
                     <div class="codebox">
                       <span>Katılım kodu</span>
                       <b>%s</b>
+                      <div class="qr small">%s<span>%s</span></div>
                     </div>
                   </div>
 
@@ -571,6 +688,8 @@ run.bat web</pre>
                 """.formatted(
                 Html.escape(room.getSet().getName()),
                 room.getCode(),
+                joinQr(exchange, 150),
+                Html.escape(joinUrl(exchange)),
                 list,
                 room.playerCount(),
                 room.everyoneFinished() ? "test bitti" : "devam ediyor");
@@ -609,6 +728,30 @@ run.bat web</pre>
         sessions.put(sessionId, session);
         setSessionCookie(exchange, sessionId);
         redirect(exchange, "/quiz");
+    }
+
+    /**
+     * Katilim adresini uretir. Tarayicinin gonderdigi Host basligini kullanir;
+     * boylece hocanin adres cubuğunda ne yaziyorsa QR'da da o cikar.
+     * Hoca localhost uzerinden acmissa telefonlar oraya baglanamayacagi icin
+     * yerel ag adresine cevrilir.
+     */
+    private String joinUrl(HttpExchange exchange) {
+        String host = exchange.getRequestHeaders().getFirst("Host");
+        if (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
+            List<String> addresses = localAddresses();
+            host = addresses.isEmpty() ? "localhost:" + port : addresses.get(0) + ":" + port;
+        }
+        return "http://" + host + "/";
+    }
+
+    /** Katilim adresi icin QR kodu; uretilemezse bos dizge. */
+    private String joinQr(HttpExchange exchange, int pixels) {
+        try {
+            return QrCode.encode(joinUrl(exchange)).toSvg(pixels, "#0d1117", "#f0f7fa");
+        } catch (RuntimeException e) {
+            return "";
+        }
     }
 
     /** "Soru 3/15" ya da "bitti" seklinde ilerleme etiketi. */
@@ -946,7 +1089,7 @@ run.bat web</pre>
                   </div>
 
                   <div class="actions">
-                    <a class="btn blue" href="/tablo">Lider tablosu</a>
+                %s      <a class="btn blue" href="/tablo">Lider tablosu</a>
                     <a class="btn ghost" href="/">Yeniden oyna</a>
                   </div>
                 </div>
@@ -954,9 +1097,18 @@ run.bat web</pre>
                 Html.escape(session.getPlayerName()),
                 verdictTitle(quiz.getPercentage()),
                 quiz.getPoints(),
-                quiz.getScore(), quiz.getTotal(), quiz.getPercentage());
+                quiz.getScore(), quiz.getTotal(), quiz.getPercentage(),
+                retryButton(quiz));
 
         sendHtml(exchange, 200, Html.page("Sonuç", body));
+    }
+
+    /** Yanlis varsa "tekrar coz" butonu. */
+    private static String retryButton(Quiz quiz) {
+        int wrong = quiz.getWrongQuestions().size();
+        return wrong == 0 ? ""
+                : "    <a class=\"btn\" href=\"/tekrar\">" + wrong
+                  + " yanlışını tekrar çöz</a>\n";
     }
 
     private static String verdictTitle(int percentage) {
@@ -1045,6 +1197,23 @@ run.bat web</pre>
     private void setSessionCookie(HttpExchange exchange, String sessionId) {
         exchange.getResponseHeaders().add("Set-Cookie",
                 COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
+    }
+
+    /** Cerezdeki oturum kimligini dondurur. */
+    private String currentSessionId(HttpExchange exchange) {
+        List<String> cookies = exchange.getRequestHeaders().get("Cookie");
+        if (cookies == null) {
+            return null;
+        }
+        for (String header : cookies) {
+            for (String cookie : header.split(";")) {
+                String[] pair = cookie.trim().split("=", 2);
+                if (pair.length == 2 && COOKIE_NAME.equals(pair[0])) {
+                    return pair[1];
+                }
+            }
+        }
+        return null;
     }
 
     /** Tarayicidan gelen cerezle oturumu bulur. */
