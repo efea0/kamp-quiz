@@ -35,7 +35,7 @@ java -cp out QuizApp
 ## Yol haritasi
 
 - [x] Adim 1 - Proje iskeleti ve ilk calisan program
-- [ ] Adim 2 - `Soru` sinifi (OOP)
+- [x] Adim 2 - `Question` sinifi (OOP: sinif, nesne, encapsulation)
 - [ ] Adim 3 - Soru listesi
 - [ ] Adim 4 - Kullanicidan cevap alma
 - [ ] Adim 5 - Skor sistemi
