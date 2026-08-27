@@ -39,6 +39,13 @@ public class Quiz {
     private int timeLimitSeconds = DEFAULT_TIME_LIMIT_SECONDS;
     private long questionStartedAt = 0;   // 0 = sayac baslatilmadi
 
+    /**
+     * Verilen her cevabin kaydi. Iki ise yariyor:
+     *   - "yanlislarini tekrar coz" modu
+     *   - hocanin gordugu yanlis raporu
+     */
+    private final List<AnswerResult> history = new ArrayList<>();
+
     public Quiz(List<Question> questions) {
         if (questions == null || questions.isEmpty()) {
             throw new IllegalArgumentException("Quiz en az 1 soru icermeli.");
@@ -122,7 +129,10 @@ public class Quiz {
 
         currentIndex++;
         questionStartedAt = 0;
-        return new AnswerResult(correct, timedOut, earned, elapsed, question);
+
+        AnswerResult result = new AnswerResult(correct, timedOut, earned, elapsed, question);
+        history.add(result);
+        return result;
     }
 
     /** Ne kadar hizli cevaplandiysa o kadar cok bonus. */
@@ -159,6 +169,22 @@ public class Quiz {
 
     public int getPercentage() {
         return Math.round(score * 100f / questions.size());
+    }
+
+    /** Verilen cevaplarin kaydi (degistirilemez kopya). */
+    public List<AnswerResult> getHistory() {
+        return List.copyOf(history);
+    }
+
+    /** Yanlis yapilan ya da suresi dolan sorular; tekrar modu bunu kullanir. */
+    public List<Question> getWrongQuestions() {
+        List<Question> wrong = new ArrayList<>();
+        for (AnswerResult result : history) {
+            if (!result.correct()) {
+                wrong.add(result.question());
+            }
+        }
+        return wrong;
     }
 
     /** Bu quizde hangi kategoriler var? */

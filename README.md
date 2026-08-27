@@ -115,7 +115,9 @@ Sınıfça oynamak için:
 
 1. Hoca `/kur` sayfasından bir test seçer, **4 haneli oda kodu** üretilir
 2. `/ekran?kod=XXXX` projeksiyona açılır — canlı sıralama 3 saniyede bir yenilenir
-3. Katılımcılar ana sayfada kodu ve adını yazıp katılır
+3. Katılımcılar ana sayfada kodu ve adını yazıp katılır — ya da ekrandaki
+   **QR kodu** okutur (kod hiçbir dış servis kullanmadan Java'da üretiliyor)
+4. Test bitince `/rapor?kod=XXXX` en çok yanlış yapılan soruları sıralar
 
 Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** —
 yan yana oturanlar birbirinin ekranından kopyalayamaz.
@@ -295,6 +297,8 @@ Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
 - Cevap gönderimi POST-Redirect-GET desenini kullanır: sayfa yenilenince cevap tekrar gitmez
 - Sayfayı yenilemek geri sayımı sıfırlamaz; süre soru başına bir kez başlar
 - Açıklaması olan sorularda cevaptan sonra "neden" metni gösterilir
+- Sonuç ekranında yanlışları tekrar çözme turu sunulur; bu tur oda sıralamasını etkilemez
+- Hazır testler hem web hem terminal arayüzünde seçilebilir
 
 ## Yol haritası
 
@@ -312,6 +316,7 @@ Lider tablosu önce puana, eşitlikte doğru yüzdesine göre sıralanır.
 | ✔ | 10 | Süre sınırı, hız puanı ve açıklama alanı |
 | ✔ | 11 | Oda kodu ve projeksiyon ekranı |
 | ✔ | 12 | AI ile soru paketi üretme ve düzenleme |
+| ✔ | 13 | Yanlış raporu, tekrar modu, QR kod ile katılım |
 
 ## Katkı
 
