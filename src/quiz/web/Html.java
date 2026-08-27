@@ -367,6 +367,24 @@ final class Html {
             .rank.big .pos { flex: 0 0 40px; font-size: 1.3rem; }
             .rank.big .pts { font-size: 1.4rem; }
 
+            /* ---------- taslak duzenleyici ---------- */
+
+            .draft {
+              width: 100%; padding: 14px; font-size: 0.82rem; line-height: 1.6;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              background: var(--bg); color: var(--text);
+              border: 2px solid var(--line); border-radius: 12px;
+              resize: vertical; white-space: pre; overflow-x: auto;
+            }
+            .draft:focus { outline: 0; border-color: var(--blue); }
+
+            .code-block {
+              background: var(--bg); border: 2px solid var(--line); border-radius: 10px;
+              padding: 12px 14px; font-size: 0.8rem; overflow-x: auto;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              color: var(--text); margin: 0 0 14px;
+            }
+
             .center { text-align: center; }
             a { color: var(--blue); }
             a.plain { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 0.9rem; }

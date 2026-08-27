@@ -58,7 +58,8 @@ public class QuizApp {
             int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
             try {
                 List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR);
-                new WebServer(allQuestions, sets, new Scoreboard(SCORES_FILE), port).start();
+                new WebServer(allQuestions, sets, QUESTIONS_DIR, SETS_DIR,
+                        new Scoreboard(SCORES_FILE), port).start();
             } catch (IOException e) {
                 System.out.println("Sunucu başlatılamadı: " + e.getMessage());
                 System.out.println("Port " + port + " başka bir program tarafından kullanılıyor olabilir.");

@@ -20,3 +20,7 @@ Thumbs.db
 # Oyun sirasinda uretilen skor dosyasi (herkesin kendi bilgisayarina ozel)
 scores.txt
 sources.txt
+
+# API anahtarlari asla depoya girmez
+.env
+*.local.properties
