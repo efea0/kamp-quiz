@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Bir oyun odasi: hoca acar, katilimcilar 4 haneli kodla girer.
@@ -71,6 +72,14 @@ class Room {
      * es zamanli erisime uygun liste kullaniyoruz.
      */
     private final List<GameSession> players = new CopyOnWriteArrayList<>();
+
+    // --- projeksiyon ekranindaki canli tepki seridi icin ---
+
+    /** /ekran her yenilendiginde bir artar; tepki seridini sirayla dondurmek icin. */
+    private final AtomicInteger screenTick = new AtomicInteger();
+
+    /** Bir onceki /ekran yenilemesindeki puan sirasi; "kim yukseldi" hesabi icin. */
+    private volatile List<String> lastScreenOrder = List.of();
 
     Room(String code, QuizSet set, Mode mode, boolean sharedOrder) {
         this.code = code;
@@ -236,6 +245,46 @@ class Room {
                 .comparingInt((GameSession s) -> s.getQuiz().getPoints()).reversed()
                 .thenComparing(s -> s.getPlayerName()));
         return sorted;
+    }
+
+    /** Sira yukselten oyuncunun adi ve kac basamak yukseldigi. */
+    record RankClimb(String name, int gain) {
+    }
+
+    /**
+     * "Yukselen" tepkisi icin: bir onceki /ekran yenilemesine gore en cok
+     * basamak cikan oyuncu. Cagrisi ayni zamanda "onceki sira" anini
+     * gunceller — bu yuzden yalnizca projeksiyon ekraninin kendisi (bir
+     * yenilemede bir kez) cagirmali, yoksa kiyaslama anlamsizlasir.
+     */
+    synchronized RankClimb climbSinceLastScreen(List<GameSession> standings) {
+        List<String> currentOrder = new ArrayList<>();
+        for (GameSession player : standings) {
+            currentOrder.add(player.getPlayerName());
+        }
+
+        String climber = null;
+        int bestGain = 0;
+        for (int i = 0; i < currentOrder.size(); i++) {
+            int oldPos = lastScreenOrder.indexOf(currentOrder.get(i));
+            if (oldPos < 0) {
+                continue;   // yeni katilimci, kiyaslanacak eski sirasi yok
+            }
+            int gain = oldPos - i;
+            if (gain > bestGain) {
+                bestGain = gain;
+                climber = currentOrder.get(i);
+            }
+        }
+        lastScreenOrder = currentOrder;
+
+        // Tek basamaklik oynamalar surekli olur; gurultu olmasin diye en az 2 basamak arayalim.
+        return bestGain >= 2 ? new RankClimb(climber, bestGain) : null;
+    }
+
+    /** /ekran yenilendikce artan sayac; tepki seridini sirayla dondurmek icin. */
+    int nextScreenTick() {
+        return screenTick.getAndIncrement();
     }
 
     /** Herkes testi bitirdi mi? */

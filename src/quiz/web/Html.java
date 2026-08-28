@@ -397,6 +397,35 @@ final class Html {
               color: var(--text); margin: 0 0 14px;
             }
 
+            /* ---------- canli tepki seridi (/ekran) ---------- */
+
+            .reaction {
+              margin-top: 22px;
+              padding: 18px 26px;
+              border-radius: var(--radius);
+              background: var(--surface);
+              border: 2px solid var(--line);
+              border-bottom-width: var(--shadow);
+              text-align: center;
+            }
+            .reaction .tag {
+              font-size: 0.72rem; font-weight: 800; letter-spacing: 1.4px;
+              text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+            }
+            .reaction p:not(.tag) { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.2px; }
+            .reaction b.good { color: var(--green); }
+            .reaction b.bad  { color: var(--red); }
+            .reaction b.info { color: var(--blue); }
+
+            /* kapanis ozeti: tek satir yerine kucuk bir liste */
+            .reaction.summary { text-align: left; }
+            .reaction.summary ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+            .reaction.summary li {
+              display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+            }
+            .reaction.summary li span.label { color: var(--muted); font-size: 0.95rem; }
+            .reaction.summary li b { font-size: 1.3rem; font-weight: 800; text-align: right; }
+
             /* ---------- yanlis raporu ---------- */
 
             .missbar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
@@ -425,5 +454,41 @@ final class Html {
             a { color: var(--blue); }
             a.plain { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 0.9rem; }
             a.plain:hover { color: var(--text); }
+
+            /* ---------- sonuc ekrani: konu dokumu ---------- */
+
+            .catlist { display: grid; gap: 16px; margin: 4px 0 4px; }
+            .catrow-head {
+              display: flex; align-items: baseline; justify-content: space-between;
+              gap: 10px; margin-bottom: 7px;
+            }
+            .catname { font-weight: 700; font-size: 0.92rem; }
+            .catfrac {
+              font-size: 0.8rem; color: var(--muted);
+              font-variant-numeric: tabular-nums; white-space: nowrap;
+            }
+            .catbar { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+            .catbar > i { display: block; height: 100%; border-radius: 999px; background: var(--blue); }
+            .catbar.weak > i { background: var(--red); }
+            .catnote { font-size: 0.85rem; color: var(--muted); margin: 14px 0 0; }
+            .catnote b { color: var(--red); }
+
+            /* ---------- sonuc ekrani: yanlislarin gozden gecirmesi ---------- */
+
+            .revlist { margin: 26px 0 4px; }
+            .revlist > summary {
+              cursor: pointer; font-weight: 800; font-size: 0.98rem;
+              padding: 14px 4px; list-style: none;
+              border-bottom: 2px solid var(--line-soft); margin-bottom: 14px;
+            }
+            .revlist > summary::-webkit-details-marker { display: none; }
+            .revlist > summary::before { content: "\25b8  "; color: var(--blue); }
+            .revlist[open] > summary::before { content: "\25be  "; }
+            .wrongcard .wrongq { font-weight: 700; margin: 0 0 10px; }
+            .wrongcard .ans { margin: 0 0 6px; font-size: 0.92rem; }
+            .wrongcard .ans b { font-weight: 800; }
+            .wrongcard .ans.wrong b { color: var(--red); }
+            .wrongcard .ans.right b { color: var(--green); }
+            .wrongcard .why { margin: 10px 0 0; font-size: 0.88rem; color: var(--text); opacity: .85; }
             """;
 }

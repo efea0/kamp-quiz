@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -207,6 +208,7 @@ public final class RoomPages {
                   <div class="rank big">
                 %s      </div>
 
+                %s
                   <p class="muted small center" style="margin-top:20px">%d katılımcı · %s</p>
                 </div>
                 """.formatted(
@@ -215,11 +217,278 @@ public final class RoomPages {
                 ctx.joinQr(exchange, 150),
                 Html.escape(ctx.joinUrl(exchange)),
                 list,
+                reactionsBlock(room, standings),
                 room.playerCount(),
                 room.everyoneFinished() ? "test bitti" : "devam ediyor");
 
         ctx.sendHtml(exchange, 200, Html.page("Ekran " + room.getCode(), body,
                 "  <meta http-equiv=\"refresh\" content=\"3\">\n"));
+    }
+
+    // ------------------------------------------------------- canli tepki seridi
+
+    /**
+     * Siralamanin altinda gosterilen tepki seridi. Test bittiyse sabit bir
+     * kapanis ozeti, aksi halde her yenilemede farkli donen tek satirlik
+     * bir tepki uretir. Hic cevap yoksa serit tamamen gizlenir.
+     */
+    private String reactionsBlock(Room room, List<GameSession> standings) {
+        boolean anyHistory = false;
+        for (GameSession player : standings) {
+            if (!player.getQuiz().getHistory().isEmpty()) {
+                anyHistory = true;
+                break;
+            }
+        }
+        if (!anyHistory) {
+            return "";
+        }
+
+        boolean finished = room.everyoneFinished()
+                || (room.isSynchronous() && room.getPhase() == Room.Phase.BITTI);
+
+        return finished ? closingSummary(standings) : rotatingReaction(room, standings);
+    }
+
+    /** Test bitince gosterilen sabit ozet: sinif ortalamasi, en zor soru, en hizli dogru, kusursuzlar. */
+    private String closingSummary(List<GameSession> standings) {
+        Map<String, int[]> counts = new LinkedHashMap<>();   // soru metni -> [soruldu, yanlis]
+        int totalAsked = 0;
+        int totalCorrect = 0;
+        String fastestName = null;
+        long fastestMillis = Long.MAX_VALUE;
+        List<String> perfect = new ArrayList<>();
+
+        for (GameSession player : standings) {
+            Quiz quiz = player.getQuiz();
+            List<Quiz.AnswerResult> history = quiz.getHistory();
+            for (Quiz.AnswerResult result : history) {
+                totalAsked++;
+                String key = result.question().getText();
+                int[] tally = counts.computeIfAbsent(key, k -> new int[2]);
+                tally[0]++;
+                if (result.correct()) {
+                    totalCorrect++;
+                    if (result.elapsedMillis() < fastestMillis) {
+                        fastestMillis = result.elapsedMillis();
+                        fastestName = player.getPlayerName();
+                    }
+                } else {
+                    tally[1]++;
+                }
+            }
+            if (!history.isEmpty() && quiz.getScore() == quiz.getTotal()) {
+                perfect.add(player.getPlayerName());
+            }
+        }
+
+        if (totalAsked == 0) {
+            return "";
+        }
+
+        int average = Math.round(totalCorrect * 100f / totalAsked);
+
+        String hardestText = null;
+        int hardestPercent = -1;
+        for (Map.Entry<String, int[]> entry : counts.entrySet()) {
+            int asked = entry.getValue()[0];
+            int wrong = entry.getValue()[1];
+            int percent = Math.round(wrong * 100f / asked);
+            if (percent > hardestPercent) {
+                hardestPercent = percent;
+                hardestText = entry.getKey();
+            }
+        }
+
+        StringBuilder rows = new StringBuilder();
+        rows.append("        <li><span class=\"label\">Sınıf ortalaması</span><b class=\"")
+            .append(average >= 60 ? "good" : average < 35 ? "bad" : "info")
+            .append("\">%").append(average).append("</b></li>\n");
+
+        if (hardestText != null) {
+            rows.append("        <li><span class=\"label\">En çok yanlış</span><b class=\"bad\">")
+                .append(Html.escape(kisa(hardestText))).append(" · %").append(hardestPercent)
+                .append("</b></li>\n");
+        }
+        if (fastestName != null) {
+            rows.append("        <li><span class=\"label\">En hızlı doğru</span><b class=\"info\">")
+                .append(Html.escape(fastestName)).append(" · ")
+                .append(seconds(fastestMillis)).append("</b></li>\n");
+        }
+        if (!perfect.isEmpty()) {
+            rows.append("        <li><span class=\"label\">Kusursuz</span><b class=\"good\">")
+                .append(Html.escape(String.join(", ", perfect))).append("</b></li>\n");
+        }
+
+        return """
+                <div class="reaction summary">
+                  <p class="tag">Test bitti · özet</p>
+                  <ul>
+                %s      </ul>
+                </div>
+                """.formatted(rows);
+    }
+
+    /**
+     * Devam eden testte, o anki verilerden hesaplanan tepki adaylari arasindan
+     * birini secip doner. Hangisinin secilecegi odanin yenileme sayacina gore
+     * doner, boylece ekran her 3 saniyede farkli bir cumle gosterir.
+     */
+    private String rotatingReaction(Room room, List<GameSession> standings) {
+        List<String> candidates = new ArrayList<>();
+
+        // 1) Seri: en uzun ardisik dogru zinciri (en az 3 olunca anlamli).
+        String streakName = null;
+        int bestStreak = 0;
+        for (GameSession player : standings) {
+            List<Quiz.AnswerResult> history = player.getQuiz().getHistory();
+            int streak = 0;
+            for (int i = history.size() - 1; i >= 0; i--) {
+                if (history.get(i).correct()) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            if (streak > bestStreak) {
+                bestStreak = streak;
+                streakName = player.getPlayerName();
+            }
+        }
+        if (bestStreak >= 3) {
+            candidates.add("<b class=\"good\">" + Html.escape(streakName) + "</b> üst üste "
+                    + bestStreak + " doğru");
+        }
+
+        // 2) Son sorunun zorlugu: en son ortaklasa cevaplanan soruyu kac kisi bildi.
+        Map<String, Integer> lastAnsweredCount = new LinkedHashMap<>();
+        for (GameSession player : standings) {
+            List<Quiz.AnswerResult> history = player.getQuiz().getHistory();
+            if (!history.isEmpty()) {
+                String key = history.get(history.size() - 1).question().getText();
+                lastAnsweredCount.merge(key, 1, Integer::sum);
+            }
+        }
+        String currentQuestion = null;
+        int currentQuestionSeen = 0;
+        for (Map.Entry<String, Integer> entry : lastAnsweredCount.entrySet()) {
+            if (entry.getValue() > currentQuestionSeen) {
+                currentQuestionSeen = entry.getValue();
+                currentQuestion = entry.getKey();
+            }
+        }
+        if (currentQuestion != null) {
+            int asked = 0;
+            int correct = 0;
+            for (GameSession player : standings) {
+                for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                    if (result.question().getText().equals(currentQuestion)) {
+                        asked++;
+                        if (result.correct()) {
+                            correct++;
+                        }
+                    }
+                }
+            }
+            if (asked > 0) {
+                candidates.add("Son soruyu " + asked + " kişiden <b class=\""
+                        + (correct * 2 >= asked ? "good" : "bad") + "\">" + correct
+                        + "</b>'sı bildi");
+            }
+        }
+
+        // 3) O ana kadarki en hizli dogru cevap.
+        String fastestName = null;
+        long fastestMillis = Long.MAX_VALUE;
+        for (GameSession player : standings) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                if (result.correct() && result.elapsedMillis() < fastestMillis) {
+                    fastestMillis = result.elapsedMillis();
+                    fastestName = player.getPlayerName();
+                }
+            }
+        }
+        if (fastestName != null) {
+            candidates.add("En hızlı doğru: <b class=\"info\">" + Html.escape(fastestName)
+                    + "</b>, " + seconds(fastestMillis));
+        }
+
+        // 4) Sinif ortalamasi.
+        int totalAsked = 0;
+        int totalCorrect = 0;
+        for (GameSession player : standings) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                totalAsked++;
+                if (result.correct()) {
+                    totalCorrect++;
+                }
+            }
+        }
+        if (totalAsked > 0) {
+            int average = Math.round(totalCorrect * 100f / totalAsked);
+            candidates.add("Sınıf ortalaması <b class=\""
+                    + (average >= 60 ? "good" : average < 35 ? "bad" : "info")
+                    + "\">%" + average + "</b>");
+        }
+
+        // 5) Yukselen: bir onceki yenilemeye gore en cok basamak cikan oyuncu.
+        Room.RankClimb climb = room.climbSinceLastScreen(standings);
+        if (climb != null) {
+            candidates.add("<b class=\"good\">" + Html.escape(climb.name()) + "</b> " + climb.gain()
+                    + " sıra yükseldi");
+        }
+
+        // 6) En zor soru: en yuksek yanlis oranli soru (gurultu olmasin diye en az 2 kisi cevaplamis olsun).
+        Map<String, int[]> counts = new LinkedHashMap<>();
+        for (GameSession player : standings) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                int[] tally = counts.computeIfAbsent(result.question().getText(), k -> new int[2]);
+                tally[0]++;
+                if (!result.correct()) {
+                    tally[1]++;
+                }
+            }
+        }
+        String hardestText = null;
+        int hardestPercent = -1;
+        for (Map.Entry<String, int[]> entry : counts.entrySet()) {
+            int asked = entry.getValue()[0];
+            if (asked < 2) {
+                continue;
+            }
+            int wrong = entry.getValue()[1];
+            int percent = Math.round(wrong * 100f / asked);
+            if (percent > hardestPercent) {
+                hardestPercent = percent;
+                hardestText = entry.getKey();
+            }
+        }
+        if (hardestText != null && hardestPercent >= 40) {
+            candidates.add("En çok yanlış: <b class=\"bad\">" + Html.escape(kisa(hardestText))
+                    + "</b> · %" + hardestPercent);
+        }
+
+        if (candidates.isEmpty()) {
+            return "";
+        }
+
+        int pick = Math.floorMod(room.nextScreenTick(), candidates.size());
+        return """
+                <div class="reaction">
+                  <p class="tag">Canlı tepki</p>
+                  <p>%s</p>
+                </div>
+                """.formatted(candidates.get(pick));
+    }
+
+    /** Milisaniyeyi "2.3 saniye" bicimine cevirir. */
+    private static String seconds(long millis) {
+        return String.format(Locale.ROOT, "%.1f saniye", millis / 1000.0);
+    }
+
+    /** Uzun soru metnini ekrana sigacak sekilde kisaltir. */
+    private static String kisa(String text) {
+        return text.length() > 46 ? text.substring(0, 46) + "…" : text;
     }
 
     /** Hoca icin yanlis raporu: hangi soru en cok yanlis yapildi. */
