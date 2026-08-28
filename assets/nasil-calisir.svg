@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 300" width="880" height="300" role="img" aria-label="Nasıl çalışır: hoca sunucuyu başlatır, telefonlar aynı Wi-Fi üzerinden katılır, projeksiyonda canlı sıralama döner">
+  <style>
+    .m { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .s { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    .step  { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; fill: #58a6ff; }
+    .head  { font-size: 15px; font-weight: 700; fill: #e6edf3; }
+    .note  { font-size: 11.5px; fill: #8b949e; }
+    .tiny  { font-size: 10px; fill: #6e7681; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3d4b55"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="879" height="299" rx="10" fill="#0d1117" stroke="#30363d"/>
+
+  <!-- 1. laptop -->
+  <g transform="translate(40,58)">
+    <text class="m step" x="0" y="0">1 · HOCA</text>
+    <rect x="0" y="14" width="216" height="128" rx="9" fill="#161b22" stroke="#30363d"/>
+    <rect x="18" y="34" width="180" height="72" rx="5" fill="#0d1117" stroke="#37464f"/>
+    <text class="m" x="30" y="56" font-size="11" fill="#3fb950">$ ./run.sh web</text>
+    <text class="m" x="30" y="74" font-size="10" fill="#8b949e">Aynı Wi-Fi'dan:</text>
+    <text class="m" x="30" y="90" font-size="10.5" fill="#58a6ff">192.168.1.42:8080</text>
+    <rect x="70" y="114" width="76" height="7" rx="3" fill="#21262d"/>
+    <text class="s head" x="0" y="168">Laptop sunucu olur</text>
+    <text class="s note" x="0" y="188">Bir test seçer, 4 haneli</text>
+    <text class="s note" x="0" y="204">oda kodu üretilir.</text>
+  </g>
+
+  <line x1="272" y1="130" x2="316" y2="130" stroke="#3d4b55" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- 2. telefonlar -->
+  <g transform="translate(332,58)">
+    <text class="m step" x="0" y="0">2 · SINIF</text>
+
+    <rect x="0" y="14" width="56" height="100" rx="8" fill="#161b22" stroke="#30363d"/>
+    <rect x="8" y="26" width="40" height="70" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <rect x="14" y="34" width="28" height="7" rx="2" fill="#1f6feb"/>
+    <rect x="14" y="46" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="14" y="58" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="14" y="72" width="28" height="9" rx="3" fill="#238636"/>
+
+    <rect x="66" y="14" width="56" height="100" rx="8" fill="#161b22" stroke="#30363d"/>
+    <rect x="74" y="26" width="40" height="70" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <rect x="80" y="34" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="80" y="46" width="28" height="7" rx="2" fill="#1f6feb"/>
+    <rect x="80" y="58" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="80" y="72" width="28" height="9" rx="3" fill="#238636"/>
+
+    <rect x="132" y="14" width="56" height="100" rx="8" fill="#161b22" stroke="#30363d"/>
+    <rect x="140" y="26" width="40" height="70" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <rect x="146" y="34" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="146" y="46" width="28" height="7" rx="2" fill="#21262d"/>
+    <rect x="146" y="58" width="28" height="7" rx="2" fill="#1f6feb"/>
+    <rect x="146" y="72" width="28" height="9" rx="3" fill="#238636"/>
+
+    <text class="m tiny" x="196" y="70">+ 22</text>
+
+    <text class="s head" x="0" y="168">Telefondan katılır</text>
+    <text class="s note" x="0" y="188">QR okutur ya da kodu yazar.</text>
+    <text class="s note" x="0" y="204">Herkesin soruları farklı sırada.</text>
+  </g>
+
+  <line x1="560" y1="130" x2="604" y2="130" stroke="#3d4b55" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- 3. projeksiyon -->
+  <g transform="translate(620,58)">
+    <text class="m step" x="0" y="0">3 · PERDE</text>
+    <rect x="0" y="14" width="220" height="128" rx="9" fill="#161b22" stroke="#30363d"/>
+
+    <rect x="14" y="28" width="192" height="20" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <text class="m" x="22" y="42" font-size="9.5" fill="#ffc800">1</text>
+    <text class="s" x="38" y="42" font-size="10" fill="#e6edf3">Ayşe</text>
+    <text class="m" x="182" y="42" font-size="10" fill="#3fb950" text-anchor="end">5994</text>
+
+    <rect x="14" y="53" width="192" height="20" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <text class="m" x="22" y="67" font-size="9.5" fill="#8b949e">2</text>
+    <text class="s" x="38" y="67" font-size="10" fill="#e6edf3">Deniz</text>
+    <text class="m" x="182" y="67" font-size="10" fill="#3fb950" text-anchor="end">4995</text>
+
+    <rect x="14" y="78" width="192" height="20" rx="4" fill="#0d1117" stroke="#37464f"/>
+    <text class="m" x="22" y="92" font-size="9.5" fill="#8b949e">3</text>
+    <text class="s" x="38" y="92" font-size="10" fill="#e6edf3">Mert</text>
+    <text class="m" x="182" y="92" font-size="10" fill="#3fb950" text-anchor="end">3996</text>
+
+    <text class="m tiny" x="14" y="118">3 saniyede bir yenilenir</text>
+
+    <text class="s head" x="0" y="168">Canlı sıralama</text>
+    <text class="s note" x="0" y="188">Test bitince en çok yanlış</text>
+    <text class="s note" x="0" y="204">yapılan sorular raporlanır.</text>
+  </g>
+
+  <text class="m tiny" x="40" y="282">İnternet gerekmez — trafiğin tamamı yerel ağda kalır.</text>
+</svg>
