@@ -628,12 +628,15 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
     /** Hocanin oda actigi sayfa: hazir testlerden birini secer. */
     private void handleHostSetup(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
-            QuizSet set = findSet(readForm(exchange).get("set"));
+            Map<String, String> form = readForm(exchange);
+            QuizSet set = findSet(form.get("set"));
             if (set == null) {
                 redirect(exchange, "/kur");
                 return;
             }
-            Room room = new Room(newRoomCode(), set);
+            // Varsayilan: herkes ayni soruyu ayni sirada gorur (Kahoot düzeni).
+            boolean sharedOrder = !"kisiye-ozel".equals(form.get("sira"));
+            Room room = new Room(newRoomCode(), set, sharedOrder);
             rooms.put(room.getCode(), room);
             redirect(exchange, "/oda?kod=" + room.getCode());
             return;
@@ -657,6 +660,13 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                   <p class="muted small">Bir test seç. Katılımcılara 4 haneli bir kod vereceğiz.</p>
 
                   <form method="POST" action="/kur" style="margin-top:20px">
+                    <div class="card" style="margin-bottom:16px">
+                      <label class="field" for="sira">Soru sırası</label>
+                      <select id="sira" name="sira" style="margin-bottom:0">
+                        <option value="paylasik" selected>Herkese aynı — perdedeki yarış anlamlı olur</option>
+                        <option value="kisiye-ozel">Kişiye özel — yandakinden kopyalanamaz</option>
+                      </select>
+                    </div>
                     <div class="setlist">
                 %s        </div>
                   </form>
@@ -706,6 +716,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                     <div class="stat"><b>%d</b><span>Katılımcı</span></div>
                     <div class="stat"><b>%d</b><span>Soru</span></div>
                   </div>
+                  <p class="muted small center" style="margin-top:-4px">Soru sırası: <b>%s</b></p>
 
                   <div class="rank">
                 %s      </div>
@@ -723,6 +734,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 Html.escape(joinUrl(exchange)),
                 room.playerCount(),
                 room.getSet().totalQuestions(),
+                room.isSharedOrder() ? "herkese aynı" : "kişiye özel",
                 list,
                 room.getCode(), room.getCode());
 
@@ -807,7 +819,28 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
             return;
         }
 
+        // Ayni tarayici bu odada zaten oynuyorsa yeni oyuncu acma, oyununa dondur.
+        GameSession existing = currentSession(exchange);
+        if (existing != null && room.getCode().equals(existing.getRoomCode())) {
+            redirect(exchange, "/quiz");
+            return;
+        }
+
         String name = cleanName(form.get("isim"));
+        if (!room.reserveName(name)) {
+            sendHtml(exchange, 409, Html.page("İsim alınmış", """
+                    <div class="screen">
+                      <div class="card center">
+                        <h1>Bu isim alınmış</h1>
+                        <p class="muted">Odada zaten <b>%s</b> adında biri var.
+                        Başka bir isim dene.</p>
+                      </div>
+                      <div class="actions"><a class="btn" href="/">Geri dön</a></div>
+                    </div>
+                    """.formatted(Html.escape(name))));
+            return;
+        }
+
         GameSession session = new GameSession(name, room.newQuiz(allQuestions), room.getCode());
         room.addPlayer(session);
 
