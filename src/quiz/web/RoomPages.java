@@ -146,6 +146,8 @@ public final class RoomPages {
                   <div class="actions">
                     <a class="btn blue" href="/ekran?kod=%s">Projeksiyon ekranı</a>
                     <a class="btn ghost" href="/rapor?kod=%s">Yanlış raporu</a>
+                    <a class="btn ghost" href="/disaktar/oda?kod=%s">Sonuçları indir (CSV)</a>
+                    <a class="btn ghost" href="/disaktar/sorular?kod=%s">Soru analizini indir (CSV)</a>
                     <a class="plain center" href="/">Ana sayfa</a>
                   </div>
                 </div>
@@ -159,7 +161,7 @@ public final class RoomPages {
                 room.isSharedOrder() ? "herkese aynı" : "kişiye özel",
                 list,
                 hostControls(room),
-                room.getCode(), room.getCode());
+                room.getCode(), room.getCode(), room.getCode(), room.getCode());
 
         ctx.sendHtml(exchange, 200, Html.page("Oda " + room.getCode(), body,
                 "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
@@ -292,11 +294,13 @@ public final class RoomPages {
                   <div class="actions">
                     <a class="btn blue" href="/ekran?kod=%s">Canlı sıralama</a>
                     <a class="btn ghost" href="/oda?kod=%s">Oda paneli</a>
+                    <a class="btn ghost" href="/disaktar/oda?kod=%s">Sonuçları indir (CSV)</a>
+                    <a class="btn ghost" href="/disaktar/sorular?kod=%s">Soru analizini indir (CSV)</a>
                   </div>
                 </div>
                 """.formatted(
                 Html.escape(room.getSet().getName()), room.getCode(), list,
-                room.getCode(), room.getCode());
+                room.getCode(), room.getCode(), room.getCode(), room.getCode());
 
         ctx.sendHtml(exchange, 200, Html.page("Yanlış raporu", body));
     }

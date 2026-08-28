@@ -41,6 +41,7 @@ public class WebServer {
         RoomPages roomPages = new RoomPages(ctx);
         BoardPage boardPage = new BoardPage(ctx);
         GeneratePages generatePages = new GeneratePages(ctx);
+        ExportPages exportPages = new ExportPages(ctx);
 
         // ---- rota tablosu: hangi URL hangi sayfaya gidiyor ----
         server.createContext("/", homePages::handleHome);
@@ -58,6 +59,9 @@ public class WebServer {
         server.createContext("/oda", roomPages::handleHostPanel);
         server.createContext("/ekran", roomPages::handleScreen);
         server.createContext("/rapor", roomPages::handleReport);
+
+        server.createContext("/disaktar/oda", exportPages::handleRoomCsv);
+        server.createContext("/disaktar/sorular", exportPages::handleQuestionsCsv);
 
         server.createContext("/tablo", boardPage::handleBoard);
         server.createContext("/uret", generatePages::handleGenerate);
