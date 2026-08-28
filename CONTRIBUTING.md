@@ -96,25 +96,64 @@ src/quiz/
 ├── model/
 │   └── Question.java  # Veri taşıyan sınıflar. İş mantığı YOK.
 ├── core/
-│   ├── QuestionBank.java  # Dosyadan soru okuma
-│   ├── Quiz.java          # Quiz mantığı, skor
+│   ├── QuestionBank.java  # Dosyadan soru okuma (questions/*.txt)
+│   ├── QuizSetLoader.java # Hazır test okuma (sets/*.txt)
+│   ├── QuizSet.java       # Hazır test tanımı
+│   ├── Quiz.java          # Quiz mantığı, puanlama
 │   └── Scoreboard.java    # Lider tablosu
 ├── cli/
 │   └── ConsoleUI.java # Terminal arayüzü
 ├── web/
-│   ├── WebServer.java     # HTTP yönlendirme, oturum ve oda yönetimi
+│   ├── WebServer.java     # Sadece sunucu kurulumu + rota tablosu
+│   ├── ServerContext.java # Paylaşılan durum (sorular, odalar, oturumlar) + ortak yardımcılar
 │   ├── Room.java          # Oda kodu ve katılımcılar
+│   ├── GameSession.java   # Tek oyuncunun web durumu
 │   ├── QrCode.java        # Sıfırdan QR kodlayıcı
 │   ├── Html.java          # Sayfa şablonu ve CSS
-│   └── GameSession.java   # Tek oyuncunun web durumu
+│   └── pages/             # Her dosya bir grup sayfanın HTML'ini üretir
+│       ├── HomePages.java     # /  /ayarla  /start  /katil
+│       ├── QuizPages.java     # /quiz  /cevap  /devam  /sonuc  /tekrar
+│       ├── RoomPages.java     # /kur  /oda  /ekran  /rapor
+│       ├── BoardPage.java     # /tablo
+│       └── GeneratePages.java # /uret
 ├── ai/                    # Soru üretimi (Gemini / OpenRouter)
 └── test/SelfTest.java     # Kendi kendini sınama
 ```
+
+`web/` altındaki sınıflar hâlâ `quiz.web` paketindedir — `Room` ve
+`GameSession` gibi paket-içi (package-private) sınıflara erişebilmeleri
+için. Klasör ayrımı sadece dosyaları düzenli tutmak içindir, ayrı bir Java
+paketi değildir; her sayfa sınıfı `ServerContext` alan bir kurucuya sahiptir
+ve ihtiyacı olan her şeye oradan ulaşır.
 
 **API anahtarları:** hiçbir anahtar depoya girmez. Anahtar ya
 `~/.config/kamp-quiz/gemini.key` gibi bir dosyadan (izin 600) ya da ortam
 değişkeninden okunur. Koda, örnek dosyaya veya teste anahtar yazan bir PR
 kabul edilmez.
+
+### Ne değiştirmek istiyorsan hangi dosyaya bakacaksın
+
+| İstediğin değişiklik | Dosya | Zorluk |
+|---|---|---|
+| Yeni soru eklemek | `questions/*.txt` | çok kolay |
+| Hazır test tanımlamak | `sets/*.txt` | çok kolay |
+| Soru dosyası biçimini değiştirmek | `core/QuestionBank.java` | orta |
+| Hazır test dosyası biçimini değiştirmek (`# sure:`, `# zorluk:` gibi satırlar) | `core/QuizSetLoader.java` | orta |
+| Puanlama kuralını değiştirmek (taban puan, hız bonusu) | `core/Quiz.java` | orta |
+| Lider tablosunun nasıl kaydedildiğini/okunduğunu değiştirmek | `core/Scoreboard.java` | orta |
+| Terminal (konsol) arayüzünü değiştirmek | `cli/ConsoleUI.java` | orta |
+| Renk/yazı tipi değiştirmek | `web/Html.java` (CSS `Html.CSS` içinde) | kolay |
+| Hangi URL'nin hangi sayfaya gittiğini değiştirmek, yeni bir rota eklemek | `web/WebServer.java` | kolay |
+| Oturum/çerez, oda haritası gibi paylaşılan durumu değiştirmek | `web/ServerContext.java` | orta |
+| Ana sayfayı, "kendin ayarla" ya da oda kodu ile katılımı değiştirmek | `web/HomePages.java` | orta |
+| Soru ekranını, cevap sonrası ekranı ya da sonuç ekranını değiştirmek | `web/QuizPages.java` | orta |
+| Hoca panelini, projeksiyon ekranını ya da yanlış raporunu değiştirmek | `web/RoomPages.java` | orta |
+| Lider tablosu sayfasının görünümünü değiştirmek | `web/BoardPage.java` | kolay |
+| AI ile soru üretme/düzenleme akışını değiştirmek | `web/GeneratePages.java` | orta |
+| AI sağlayıcısını (Gemini/OpenRouter) ya da istemi değiştirmek | `ai/QuestionGenerator.java` | zor |
+| QR kod üretimini değiştirmek | `web/QrCode.java` | zor |
+| Senkron oda akışının (soru/cevap fazları) mantığını değiştirmek | `web/Room.java` | zor |
+| Soru nesnesine yeni bir alan eklemek | `model/Question.java` | zor (birçok yeri etkiler) |
 
 **Altın kural:** `core/` ve `model/` içine **asla** `System.out.println` yazma.
 Bu paketler ekranı bilmez. Kullanıcıya bir şey söylemen gerekiyorsa mesajı
