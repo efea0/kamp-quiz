@@ -15,6 +15,15 @@ cd kamp-quiz
 ./run.sh web            # Windows: run.bat web
 ```
 
+> **Gereksinim: Java 17 veya üzeri — JDK, sadece JRE değil.**
+> İkisinin de çalıştığını doğrula:
+> ```
+> java -version      → 17 ya da üzeri olmalı
+> javac -version     → aynı sürümü göstermeli
+> ```
+> `javac` bulunamıyorsa sistemde yalnızca JRE (çalıştırıcı) var, derleyici yok.
+> Kurulum ve PATH sorunları için aşağıdaki **Kurulum ayrıntıları** bölümüne bak.
+
 <img src="assets/nasil-calisir.svg" alt="Nasıl çalışır: hoca sunucuyu başlatır, sınıf telefondan katılır, perdede canlı sıralama döner" width="880">
 
 ---
@@ -89,6 +98,27 @@ git push -u origin soru/tarih-paketi
 
 Her pull request'te testler otomatik çalışır. Ayrıntılar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
+### Koda katkı da kolaylaştırıldı
+
+Web katmanı başlangıçta tek bir 1654 satırlık dosyaydı ve "bir butonu değiştireceğim"
+diyen birini kapıda karşılıyordu. Şimdi her sayfa grubu kendi dosyasında:
+
+| Değiştirmek istediğin | Dosya | Satır |
+|---|---|---:|
+| Renk, yazı tipi, buton biçimi | `web/Html.java` | 420 |
+| Soru ve cevap ekranı | `web/QuizPages.java` | 436 |
+| Oda paneli, projeksiyon, rapor | `web/RoomPages.java` | 344 |
+| Ana sayfa ve katılım | `web/HomePages.java` | 251 |
+| AI soru üretme sayfası | `web/GeneratePages.java` | 325 |
+| Lider tablosu | `web/BoardPage.java` | 69 |
+| Yeni sayfa eklemek | `web/WebServer.java` (rota tablosu) | 110 |
+| Puanlama, süre, sıralama kuralları | `core/Quiz.java` | 198 |
+| Soru dosyası biçimi | `core/QuestionBank.java` | 223 |
+
+Tam liste ve her satırın açıklaması CONTRIBUTING.md'de. Sayfa sınıflarının hepsi
+`ServerContext`'ten paylaşılan durumu (sorular, odalar, oturumlar) alır; yeni bir
+sayfa eklemek kendi sınıfını yazıp rota tablosuna bir satır eklemek demektir.
+
 ---
 
 <details>
@@ -96,7 +126,7 @@ Her pull request'te testler otomatik çalışır. Ayrıntılar: **[CONTRIBUTING.
 
 <br>
 
-Java kurulu mu? `java -version`
+**JDK gerekiyor, JRE yetmez.** JRE program çalıştırır; JDK derler. Bize `javac` lazım.
 
 | Sistem | Kurulum |
 |---|---|
@@ -104,6 +134,29 @@ Java kurulu mu? `java -version`
 | **macOS** | `brew install openjdk@21` ya da [adoptium.net](https://adoptium.net) |
 | **Debian/Ubuntu** | `sudo apt install openjdk-21-jdk` |
 | **Fedora** | `sudo dnf install java-21-openjdk-devel` |
+
+Kurduktan sonra **terminali kapatıp yeniden aç** — PATH ancak öyle güncellenir.
+
+<b>Windows'ta kurdum ama `java -version` hâlâ eski sürümü gösteriyor</b>
+
+Eski bir Java, yeni kurulanın önünde kalmıştır. Hangi kopyaların olduğunu gör:
+
+```powershell
+where.exe java
+where.exe javac
+Get-ChildItem "C:\Program Files\Microsoft" -Directory
+```
+
+Yeni JDK'yı o oturum için öne al (klasör adını yukarıdaki çıktıdan al):
+
+```powershell
+$jdk = "C:\Program Files\Microsoft\jdk-21.0.12.7-hotspot\bin"
+$env:Path = "$jdk;" + $env:Path
+javac -version
+```
+
+Kalıcı yapmak için: **Ayarlar → Sistem → Sistem bilgileri → Gelişmiş sistem ayarları
+→ Ortam Değişkenleri** → `Path` içinde yeni JDK satırını yukarı taşı.
 
 Çalıştırma: Windows'ta `run.bat`, macOS/Linux'ta önce bir kez `chmod +x run.sh`, sonra `./run.sh`.
 
