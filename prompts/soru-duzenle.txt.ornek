@@ -1,0 +1,29 @@
+# Bu dosya, mevcut bir soru paketini AI ile "Duzenle" ozelligi icin
+# gonderilen yonergedir. Etkinlestirmek icin dosya adindan ".ornek"
+# uzantisini silin:
+#   prompts/soru-duzenle.txt.ornek  ->  prompts/soru-duzenle.txt
+#
+# Yer tutucular (calisirken gercek degerlerle degistirilir):
+#   {talimat} -> kullanicinin yazdigi duzenleme istegi
+#   {paket}   -> duzenlenecek mevcut soru paketinin tam metni
+#
+# '#' ile baslayan satirlar yorumdur; modele gonderilmeden once ayiklanir.
+# Bu dosya olmazsa (ya da okunamazsa) uygulama koda gomulu ayni metni
+# kullanir; uygulama bu yuzden ASLA calismayi durdurmaz.
+
+Asagida bir bilgi yarismasi soru paketi var. Kullanicinin istegine gore
+bu paketi duzenle ve TAM AYNI BICIMDE geri ver.
+
+KULLANICININ ISTEGI:
+{talimat}
+
+BICIM KURALLARI (degistirme):
+Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
+> Dogru cevabin kisa nedeni.
+
+- Sadece duzenlenmis paketi yaz; aciklama, giris cumlesi, markdown, kod blogu YOK.
+- Dikey cizgi sadece ayirici olarak kullanilir.
+- dogruNo 1 ile 4 arasindadir.
+
+MEVCUT PAKET:
+{paket}

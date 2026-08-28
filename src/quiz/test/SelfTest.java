@@ -1,5 +1,6 @@
 package quiz.test;
 
+import quiz.ai.QuestionGenerator;
 import quiz.core.QuestionBank;
 import quiz.core.Quiz;
 import quiz.core.QuizSet;
@@ -45,6 +46,7 @@ public class SelfTest {
         testSets(sets, questions);
         testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
+        testQuestionGeneratorSurvivesMissingPromptsDir();
 
         System.out.println();
         System.out.println("Geçen: " + passed + "   Kalan: " + failed);
@@ -308,6 +310,25 @@ public class SelfTest {
             }
         }
         return false;
+    }
+
+    /**
+     * prompts/soru-uret.txt ve prompts/soru-duzenle.txt isteğe bağlıdır
+     * (bkz. quiz.ai.QuestionGenerator). QuestionGenerator kurucusu bu
+     * dosyalara / klasöre hiç dokunmaz -- yönerge metni yalnızca generate()
+     * ve revise() çağrıldığında, o an okunur ve dosya yoksa sessizce koda
+     * gömülü metne düşülür. Bu yüzden "prompts" klasörü hiç var olmasa
+     * (silinse, taşınsa) bile kurucu asla patlamamalı.
+     */
+    private static void testQuestionGeneratorSurvivesMissingPromptsDir() {
+        boolean constructed;
+        try {
+            new QuestionGenerator();
+            constructed = true;
+        } catch (RuntimeException e) {
+            constructed = false;
+        }
+        check("QuestionGenerator, prompts klasörü olmasa bile kurulabiliyor", constructed);
     }
 
     // --------------------------------------------------------- yardimcilar
