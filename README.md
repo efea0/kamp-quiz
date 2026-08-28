@@ -1,9 +1,13 @@
 <img src="assets/banner.svg" alt="Kamp Quiz Motoru" width="880">
 
-### Sınıfça oynanan bilgi yarışması — internetsiz, hesapsız, kütüphanesiz
+### Sınıfça oynanan bilgi yarışması — kendi ağınızda, hesapsız, kütüphanesiz
 
 Hoca laptopunda bir komut çalıştırır. Öğrenciler telefonlarından bir QR okutup katılır.
-Cevaplar geldikçe projeksiyondaki sıralama canlı döner. **Tek gereksinim: aynı Wi-Fi ve Java 17.**
+Cevaplar geldikçe projeksiyondaki sıralama canlı döner.
+
+**Gereken:** herkesin **aynı yerel ağda** olması (okul Wi-Fi'ı, ev modemi ya da bir telefonun
+hotspot'u) ve hocanın bilgisayarında Java 17. Bu ağın **internete çıkması gerekmez** — quiz
+trafiği modemin ötesine hiç gitmez, dışarıdaki hiçbir sunucuya bağlanılmaz.
 
 ```bash
 git clone https://github.com/efea0/kamp-quiz.git
@@ -33,7 +37,7 @@ cd kamp-quiz
 
 | | |
 |---|---|
-| 🔌 **İnternet gerekmez** | Trafik yerel ağdan çıkmaz. Kampın Wi-Fi'ı internete bağlı olmasa bile çalışır |
+| 🔌 **İnternete çıkmaz** | Yerel ağ yeterli; modem internete bağlı olmasa bile çalışır. Veri dışarı gitmez |
 | 👤 **Hesap gerekmez** | Adını yaz, katıl. Kayıt, şifre, e-posta yok |
 | 📱 **Telefondan katılım** | 4 haneli oda kodu ya da QR. Uygulama indirmek gerekmez |
 | ⏱ **Hız puanı** | Doğru cevap 500 puan, kalan süreye göre 500'e kadar bonus |

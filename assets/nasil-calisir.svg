@@ -92,5 +92,5 @@
     <text class="s note" x="0" y="204">yapılan sorular raporlanır.</text>
   </g>
 
-  <text class="m tiny" x="40" y="282">İnternet gerekmez — trafiğin tamamı yerel ağda kalır.</text>
+  <text class="m tiny" x="40" y="282">Aynı yerel ağ yeterli — trafik internete hiç çıkmaz.</text>
 </svg>
