@@ -26,7 +26,7 @@ public class SelfTest {
     private static int passed = 0;
     private static int failed = 0;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Kendi kendini test\n");
 
         List<Question> questions = QuestionBank.loadFromDirectory(Path.of("questions"));
@@ -35,6 +35,7 @@ public class SelfTest {
         testQuestionsLoad(questions);
         testQuestionGuards();
         testScoring();
+        testTimerDoesNotRestart();
         testRetryList();
         testSets(sets, questions);
         testCoreDoesNotPrint();
@@ -108,6 +109,25 @@ public class SelfTest {
         check("Yüzde 50", quiz.getPercentage() == 50);
         check("Quiz bitti", !quiz.hasNext());
         check("Geçmişte 2 kayıt var", quiz.getHistory().size() == 2);
+    }
+
+    /**
+     * Sayfa yenilenince sure sifirlanmamali; yoksa ogrenci soruyu
+     * defalarca yenileyip sinirsiz sure kazanirdi.
+     */
+    private static void testTimerDoesNotRestart() throws InterruptedException {
+        Quiz quiz = new Quiz(List.of(
+                new Question("A?", new String[]{"1", "2"}, 0, "t", "")));
+
+        quiz.startQuestionTimer();
+        Thread.sleep(60);
+        long first = quiz.elapsedMillis();
+
+        quiz.startQuestionTimer();   // sayfa yenilendi
+        long second = quiz.elapsedMillis();
+
+        check("Sayaç ikinci çağrıda sıfırlanmıyor", second >= first);
+        check("Geçen süre gerçekten ilerliyor", first >= 50);
     }
 
     private static void testRetryList() {
