@@ -34,8 +34,24 @@ public class QuestionBank {
         // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
     }
 
-    /** Klasordeki TUM .txt dosyalarini okur. */
+    /**
+     * Klasordeki TUM .txt dosyalarini okur.
+     * Uyarilari kimsenin gormedigi surum; ekrana basmaz.
+     */
     public static List<Question> loadFromDirectory(Path directory) throws IOException {
+        return loadFromDirectory(directory, new ArrayList<>());
+    }
+
+    /**
+     * Klasordeki TUM .txt dosyalarini okur ve bozuk satir uyarilarini
+     * verilen listeye YAZAR, ekrana basmaz.
+     *
+     * Bu ayrim onemli: core paketi ekrani bilmez. Uyariyi kimin nasil
+     * gosterecegine arayuz karar verir - terminalde satir olarak, web'de
+     * sayfada. Boylece ayni kod iki arayuzde de calisir.
+     */
+    public static List<Question> loadFromDirectory(Path directory, List<String> warnings)
+            throws IOException {
         if (!Files.isDirectory(directory)) {
             throw new IOException("Soru klasoru bulunamadi: " + directory.toAbsolutePath());
         }
@@ -48,14 +64,20 @@ public class QuestionBank {
                     .toList();
 
             for (Path file : txtFiles) {
-                all.addAll(loadFromFile(file));
+                all.addAll(loadFromFile(file, warnings));
             }
         }
         return all;
     }
 
-    /** Tek bir dosyayi okur. Bozuk satirlari atlar ama uyari basar. */
+    /** Tek bir dosyayi okur; uyarilari yok sayar. */
     public static List<Question> loadFromFile(Path file) throws IOException {
+        return loadFromFile(file, new ArrayList<>());
+    }
+
+    /** Tek bir dosyayi okur. Bozuk satirlari atlar, uyariyi listeye ekler. */
+    public static List<Question> loadFromFile(Path file, List<String> warnings)
+            throws IOException {
         List<Question> questions = new ArrayList<>();
         List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
 
@@ -86,7 +108,8 @@ public class QuestionBank {
             }
 
             // Yeni bir soru satiri geldi: bekleyeni tamamla
-            addPending(questions, pendingLine, pendingExplanation, category, file, pendingLineNumber);
+            addPending(questions, pendingLine, pendingExplanation, category, file,
+                    pendingLineNumber, warnings);
 
             pendingLine = line;
             pendingLineNumber = i + 1;
@@ -94,7 +117,8 @@ public class QuestionBank {
         }
 
         // Dosya bitti; son bekleyeni de tamamla
-        addPending(questions, pendingLine, pendingExplanation, category, file, pendingLineNumber);
+        addPending(questions, pendingLine, pendingExplanation, category, file,
+                pendingLineNumber, warnings);
 
         return questions;
     }
@@ -102,7 +126,7 @@ public class QuestionBank {
     /** Bekleyen soru satirini ayristirip listeye ekler. */
     private static void addPending(List<Question> questions, String line,
                                    StringBuilder explanation, String category,
-                                   Path file, int lineNumber) {
+                                   Path file, int lineNumber, List<String> warnings) {
         if (line == null) {
             return;
         }
@@ -110,8 +134,8 @@ public class QuestionBank {
             questions.add(parseLine(line, category, explanation.toString()));
         } catch (IllegalArgumentException e) {
             // Tek bozuk satir yuzunden tum quiz cokmesin.
-            System.out.println("  [UYARI] " + file.getFileName()
-                    + " -> " + lineNumber + ". satir atlandi: " + e.getMessage());
+            warnings.add(file.getFileName() + " -> " + lineNumber
+                    + ". satir atlandi: " + e.getMessage());
         }
     }
 

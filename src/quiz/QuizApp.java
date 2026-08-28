@@ -35,8 +35,9 @@ public class QuizApp {
 
         // 1) Sorulari yukle
         List<Question> allQuestions;
+        List<String> warnings = new ArrayList<>();
         try {
-            allQuestions = QuestionBank.loadFromDirectory(QUESTIONS_DIR);
+            allQuestions = QuestionBank.loadFromDirectory(QUESTIONS_DIR, warnings);
         } catch (IOException e) {
             System.out.println("Sorular yüklenemedi: " + e.getMessage());
             System.out.println("Programı projenin ana klasöründen çalıştırdığından emin ol.");
@@ -49,6 +50,9 @@ public class QuizApp {
         }
 
         System.out.println(allQuestions.size() + " soru yüklendi.");
+        for (String warning : warnings) {
+            System.out.println("  [UYARI] " + warning);
+        }
         System.out.println();
 
         // 2) Web modu mu, konsol modu mu?
@@ -57,7 +61,7 @@ public class QuizApp {
         if (args.length > 0 && args[0].equalsIgnoreCase("web")) {
             int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
             try {
-                List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR);
+                List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR, warnings);
                 new WebServer(allQuestions, sets, QUESTIONS_DIR, SETS_DIR,
                         new Scoreboard(SCORES_FILE), port).start();
             } catch (IOException e) {
@@ -71,7 +75,7 @@ public class QuizApp {
         // 3) Konsol modu: oyuncu adi
         String playerName = ui.askText("Adın nedir? (boş bırak = Misafir): ", "Misafir");
 
-        List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR);
+        List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR, warnings);
         List<Question> selected;
         int seconds = 20;
 

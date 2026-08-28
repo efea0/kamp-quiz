@@ -116,9 +116,15 @@ src/quiz/
 değişkeninden okunur. Koda, örnek dosyaya veya teste anahtar yazan bir PR
 kabul edilmez.
 
-**Altın kural:** `core/` içine **asla** `System.out.println` yazma.
-İş mantığı ekranı bilmemeli. Bu kural sayesinde web arayüzü eklenirken
-`Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmadı.
+**Altın kural:** `core/` ve `model/` içine **asla** `System.out.println` yazma.
+Bu paketler ekranı bilmez. Kullanıcıya bir şey söylemen gerekiyorsa mesajı
+bir `List<String>` uyarı listesine ekle; onu ekrana basmak arayüzün işi.
+
+Bu kural denetleniyor: `./run.sh test` kaynak kodu okuyup `core` ve `model`
+paketlerinde `System.out` arıyor. Bulursa test kırmızı olur, PR birleşmez.
+
+Kuralın karşılığı şu: web arayüzü eklenirken `Quiz` ve `Scoreboard`
+sınıflarına tek satır dokunulmadı.
 
 ### Kod yazım kuralları
 

@@ -78,8 +78,13 @@ public class WebServer {
 
     /** Yeni paket kaydedildikten sonra sorulari ve setleri diskten tazeler. */
     private void reloadContent() throws IOException {
-        this.allQuestions = QuestionBank.loadFromDirectory(questionsDir);
-        this.sets = QuizSetLoader.loadFromDirectory(setsDir);
+        // core paketi ekrani bilmez; uyarilari toplayip BURADA basiyoruz.
+        List<String> warnings = new ArrayList<>();
+        this.allQuestions = QuestionBank.loadFromDirectory(questionsDir, warnings);
+        this.sets = QuizSetLoader.loadFromDirectory(setsDir, warnings);
+        for (String warning : warnings) {
+            System.out.println("  [UYARI] " + warning);
+        }
     }
 
     /** Adiyla bir hazir seti bulur. */
