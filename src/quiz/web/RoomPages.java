@@ -178,16 +178,28 @@ public final class RoomPages {
 
         StringBuilder list = new StringBuilder();
         List<GameSession> standings = room.standings();
+
+        // Projeksiyonda kaydirma yapilamaz: ekrana ne sigiyorsa o gorunur.
+        // Bu yuzden sadece ilk EKRANDA_GOSTERILEN kisi listelenir, gerisi
+        // tek satirlik bir ozetle belirtilir. 25 kisilik sinifta bile
+        // siralama ve tepki seridi ayni ekranda kalir.
+        int gosterilecek = Math.min(standings.size(), EKRANDA_GOSTERILEN);
+
         if (standings.isEmpty()) {
             list.append("      <p class=\"muted center\">Katılımcılar bekleniyor...</p>\n");
         } else {
-            int rank = 1;
-            for (GameSession player : standings) {
-                list.append("      <div class=\"row\"><span class=\"pos\">").append(rank++)
+            for (int i = 0; i < gosterilecek; i++) {
+                GameSession player = standings.get(i);
+                list.append("      <div class=\"row\"><span class=\"pos\">").append(i + 1)
                     .append("</span><span class=\"who\">").append(Html.escape(player.getPlayerName()))
                     .append("</span><span class=\"sub\">").append(ServerContext.progressLabel(player))
                     .append("</span><span class=\"pts\">").append(player.getQuiz().getPoints())
                     .append("</span></div>\n");
+            }
+            int kalan = standings.size() - gosterilecek;
+            if (kalan > 0) {
+                list.append("      <p class=\"muted small center\" style=\"margin:10px 0 0\">")
+                    .append("+ ").append(kalan).append(" katılımcı daha</p>\n");
             }
         }
 
@@ -205,19 +217,19 @@ public final class RoomPages {
                     </div>
                   </div>
 
+                %s
                   <div class="rank big">
                 %s      </div>
 
-                %s
-                  <p class="muted small center" style="margin-top:20px">%d katılımcı · %s</p>
+                  <p class="muted small center" style="margin-top:18px">%d katılımcı · %s</p>
                 </div>
                 """.formatted(
                 Html.escape(room.getSet().getName()),
                 room.getCode(),
-                ctx.joinQr(exchange, 150),
+                ctx.joinQr(exchange, 108),
                 Html.escape(ctx.joinUrl(exchange)),
-                list,
                 reactionsBlock(room, standings),
+                list,
                 room.playerCount(),
                 room.everyoneFinished() ? "test bitti" : "devam ediyor");
 
@@ -232,6 +244,9 @@ public final class RoomPages {
      * kapanis ozeti, aksi halde her yenilemede farkli donen tek satirlik
      * bir tepki uretir. Hic cevap yoksa serit tamamen gizlenir.
      */
+    /** Projeksiyonda aynı anda gösterilecek en fazla katılımcı sayısı. */
+    private static final int EKRANDA_GOSTERILEN = 8;
+
     private String reactionsBlock(Room room, List<GameSession> standings) {
         boolean anyHistory = false;
         for (GameSession player : standings) {

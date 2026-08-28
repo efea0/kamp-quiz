@@ -374,10 +374,20 @@ final class Html {
             .qr.small { margin: 12px 0 0; }
             .qr.small span { font-size: 0.65rem; }
 
-            .screen.wide { max-width: 900px; }
-            .rank.big .row { padding: 16px 20px; font-size: 1.15rem; }
-            .rank.big .pos { flex: 0 0 40px; font-size: 1.3rem; }
-            .rank.big .pts { font-size: 1.4rem; }
+            .screen.wide {
+              max-width: 1000px;
+              padding: 18px 28px 20px;   /* perdede her piksel degerli */
+            }
+            .screen.wide h1 { font-size: clamp(1.4rem, 2.6vw, 2.1rem); }
+            .screen.wide .eyebrow { margin-bottom: 4px; }
+            /* Projeksiyonda kaydirma yok: satirlar 720p ekrana sigacak kadar sik. */
+            .rank.big { gap: 6px; }
+            .rank.big .row { padding: 10px 18px; font-size: 1.05rem; }
+            .rank.big .pos { flex: 0 0 36px; font-size: 1.15rem; }
+            .rank.big .pts { font-size: 1.25rem; }
+            .screen.wide .screenhead { margin-bottom: 4px; }
+            .screen.wide .codebox { padding: 8px 12px; }
+            .screen.wide .codebox b { font-size: 1.6rem; }
 
             /* ---------- taslak duzenleyici ---------- */
 
