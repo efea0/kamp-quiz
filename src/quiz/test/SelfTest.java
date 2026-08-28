@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Projenin kendi kendini sinamasi.  Calistirmak icin:  ./run.sh test
@@ -34,10 +36,14 @@ public class SelfTest {
 
         testQuestionsLoad(questions);
         testQuestionGuards();
+        testDifficultyDefault();
+        testDifficultyLineParsing();
+        testDifficultyFileHeader();
         testScoring();
         testTimerDoesNotRestart();
         testRetryList();
         testSets(sets, questions);
+        testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
 
         System.out.println();

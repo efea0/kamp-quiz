@@ -3,8 +3,14 @@
 # Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
 
 7 x 8 kaçtır? | 54 | 56 | 63 | 48 | 2
+> 7'yi 8 kez toplarsan 56 eder. 63, 7x9 ile karıştırılan yaygın bir çarpım tablosu hatasıdır.
 Bir üçgenin iç açıları toplamı kaç derecedir? | 90 | 180 | 270 | 360 | 2
+> Herhangi bir üçgenin iç açıları toplamı her zaman 180 derecedir. 360 derece ise dörtgenlerin iç açı toplamıdır, sık karıştırılır.
 144 sayısının karekökü kaçtır? | 11 | 12 | 13 | 14 | 2
+> 12 x 12 = 144 olduğu için karekök 12'dir. 11x11=121 ve 13x13=169 olduğundan diğer şıklar tutmaz.
 Pi sayısının virgülden sonraki ilk iki basamağı nedir? | 14 | 41 | 15 | 12 | 1
+> Pi sayısı 3,14159... şeklinde başlar; virgülden sonraki ilk iki basamak 14'tür.
 2 üzeri 10 kaçtır? | 512 | 1000 | 1024 | 2048 | 3
+> 2'yi 10 kez kendisiyle çarparsan 1024 eder. Bilgisayarda 1 KB'ın 1000 değil 1024 bayt olmasının nedeni budur.
 Bir karenin çevresi 20 ise bir kenarı kaçtır? | 4 | 5 | 6 | 10 | 2
+> Karenin çevresi 4 kenarın toplamıdır, yani kenar = çevre / 4 = 20 / 4 = 5. 10, çevrenin yarısı olan alan formülüyle karıştırılabilir.

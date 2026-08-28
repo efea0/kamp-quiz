@@ -412,6 +412,15 @@ final class Html {
             code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
                    font-size: 0.85em; color: var(--blue); }
 
+            /* bekleme ekranindaki nabiz */
+            .pulse {
+              width: 54px; height: 54px; margin: 30px auto 0;
+              border-radius: 50%; border: 3px solid var(--line);
+              border-top-color: var(--blue); animation: spin 1.1s linear infinite;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
             .center { text-align: center; }
             a { color: var(--blue); }
             a.plain { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 0.9rem; }

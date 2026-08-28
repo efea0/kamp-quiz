@@ -23,9 +23,16 @@ public class QuizSet {
     private final String description;                   // kisa tanitim, bos olabilir
     private final int timeLimitSeconds;                  // soru basina saniye
     private final Map<String, Integer> categoryCounts;   // kategori adi -> istenen soru sayisi
+    private final Question.Difficulty difficultyFilter;  // istege bagli zorluk suzgeci, yoksa null
 
+    /** Zorluk suzgeci olmadan set olusturur; eski cagrilarin bozulmamasi icin korunuyor. */
     public QuizSet(String name, String description, int timeLimitSeconds,
                    Map<String, Integer> categoryCounts) {
+        this(name, description, timeLimitSeconds, categoryCounts, null);
+    }
+
+    public QuizSet(String name, String description, int timeLimitSeconds,
+                   Map<String, Integer> categoryCounts, Question.Difficulty difficultyFilter) {
         // --- BEKCI KONTROLLERI ---
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Set adi bos olamaz.");
@@ -51,6 +58,7 @@ public class QuizSet {
         this.timeLimitSeconds = timeLimitSeconds;
         // LinkedHashMap: kategori sirasi dosyadaki sirayla ayni kalsin
         this.categoryCounts = new LinkedHashMap<>(categoryCounts);
+        this.difficultyFilter = difficultyFilter;
     }
 
     public String getName() {
@@ -74,6 +82,15 @@ public class QuizSet {
         return new LinkedHashMap<>(categoryCounts);
     }
 
+    /** Setin zorluk suzgeci; yoksa null (tum zorluklar kabul edilir). */
+    public Question.Difficulty getDifficultyFilter() {
+        return difficultyFilter;
+    }
+
+    public boolean hasDifficultyFilter() {
+        return difficultyFilter != null;
+    }
+
     /** Setin istedigi TOPLAM soru sayisi (kategorilerdeki sayilarin toplami). */
     public int totalQuestions() {
         int total = 0;
@@ -91,6 +108,11 @@ public class QuizSet {
      * kadarini alir (sessizce eksik doner) - test paketleri sorulardan bagimsiz
      * hazirlandigi icin bu durumu quiz'i cokertmeden idare etmek gerekir.
      *
+     * Zorluk suzgeci varsa (bkz. difficultyFilter), her kategoride once o
+     * zorluktaki sorular secilir; yeterli sayida yoksa eksik, hata
+     * firlatilmadan, ayni kategorinin diger zorluklarindaki sorularla
+     * tamamlanir.
+     *
      * Donen liste karistirilmis haldedir; kategoriler blok blok gelmez.
      */
     public List<Question> build(List<Question> allQuestions) {
@@ -104,10 +126,30 @@ public class QuizSet {
             int wanted = entry.getValue();
 
             List<Question> pool = new ArrayList<>(QuestionBank.byCategory(allQuestions, category));
-            Collections.shuffle(pool);
 
-            int take = Math.min(wanted, pool.size());
-            result.addAll(pool.subList(0, take));
+            if (difficultyFilter == null) {
+                Collections.shuffle(pool);
+                result.addAll(pool.subList(0, Math.min(wanted, pool.size())));
+                continue;
+            }
+
+            // Once tam istenen zorluktan sec.
+            List<Question> matching = new ArrayList<>(
+                    QuestionBank.byDifficulty(pool, difficultyFilter));
+            Collections.shuffle(matching);
+            int take = Math.min(wanted, matching.size());
+            List<Question> chosen = new ArrayList<>(matching.subList(0, take));
+
+            // Eksik kaldiysa, ayni kategorideki diger zorluklardan tamamla.
+            int missing = wanted - chosen.size();
+            if (missing > 0) {
+                List<Question> rest = new ArrayList<>(pool);
+                rest.removeAll(matching);
+                Collections.shuffle(rest);
+                chosen.addAll(rest.subList(0, Math.min(missing, rest.size())));
+            }
+
+            result.addAll(chosen);
         }
 
         Collections.shuffle(result);

@@ -19,16 +19,23 @@ import java.util.stream.Stream;
  *
  * Dosya formati (her satir bir soru):
  *     Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
+ *     Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo | zorluk   (istege bagli sutun)
  *
  * - dogruNo INSANIN saydigi gibi 1'den baslar (1 = ilk sik)
+ * - Son sutun 'kolay'/'orta'/'zor' kelimelerinden biriyse (buyuk/kucuk harf
+ *   onemsiz) zorluk olarak okunur; o zaman dogru cevap SONDAN IKINCI sutundur.
+ *   Bu sutun yoksa eski bicim aynen calisir.
  * - '#' ile baslayan satirlar yorumdur, atlanir
  * - Bos satirlar atlanir
  * - '# baslik: Genel Kultur' satiri kategoriye gorunen bir ad verir
+ * - '# zorluk: zor' satiri dosyadaki TUM sorulara varsayilan zorluk verir;
+ *   satir sonundaki zorluk sutunu varsa onu ezer (satir her zaman kazanir)
  * - '>' ile baslayan satir, bir onceki sorunun aciklamasidir
  */
 public class QuestionBank {
 
     private static final String TITLE_PREFIX = "baslik:";
+    private static final String DIFFICULTY_PREFIX = "zorluk:";
 
     private QuestionBank() {
         // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
@@ -83,6 +90,8 @@ public class QuestionBank {
 
         // Once dosyanin basligini ara; yoksa dosya adindan uret.
         String category = findTitle(lines).orElseGet(() -> categoryOf(file));
+        // Dosya geneli varsayilan zorluk; yoksa null (Question kendi varsayilanini uygular).
+        Question.Difficulty fileDifficulty = findDifficulty(lines).orElse(null);
 
         // Aciklama satiri ('>') sorudan SONRA geldigi icin soruyu hemen kurmuyoruz;
         // bir sonraki soruya (veya dosya sonuna) kadar bekletiyoruz.
@@ -108,8 +117,8 @@ public class QuestionBank {
             }
 
             // Yeni bir soru satiri geldi: bekleyeni tamamla
-            addPending(questions, pendingLine, pendingExplanation, category, file,
-                    pendingLineNumber, warnings);
+            addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
+                    file, pendingLineNumber, warnings);
 
             pendingLine = line;
             pendingLineNumber = i + 1;
@@ -117,8 +126,8 @@ public class QuestionBank {
         }
 
         // Dosya bitti; son bekleyeni de tamamla
-        addPending(questions, pendingLine, pendingExplanation, category, file,
-                pendingLineNumber, warnings);
+        addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
+                file, pendingLineNumber, warnings);
 
         return questions;
     }
@@ -126,12 +135,13 @@ public class QuestionBank {
     /** Bekleyen soru satirini ayristirip listeye ekler. */
     private static void addPending(List<Question> questions, String line,
                                    StringBuilder explanation, String category,
+                                   Question.Difficulty fileDifficulty,
                                    Path file, int lineNumber, List<String> warnings) {
         if (line == null) {
             return;
         }
         try {
-            questions.add(parseLine(line, category, explanation.toString()));
+            questions.add(parseLine(line, category, explanation.toString(), fileDifficulty));
         } catch (IllegalArgumentException e) {
             // Tek bozuk satir yuzunden tum quiz cokmesin.
             warnings.add(file.getFileName() + " -> " + lineNumber
@@ -140,7 +150,8 @@ public class QuestionBank {
     }
 
     /** Bir metin satirini Question nesnesine cevirir. */
-    private static Question parseLine(String line, String category, String explanation) {
+    private static Question parseLine(String line, String category, String explanation,
+                                      Question.Difficulty fileDifficulty) {
         String[] parts = line.split("\\|");
 
         if (parts.length < 4) {
@@ -150,24 +161,35 @@ public class QuestionBank {
 
         String text = parts[0].trim();
 
-        // Ilk parca soru, son parca dogru cevap numarasi; aradakiler siklar.
-        int optionCount = parts.length - 2;
+        // Son sutun zorluk kelimesiyse (kolay/orta/zor), dogru cevap numarasi
+        // SONDAN IKINCI sutuna kayar; degilse eski bicim aynen gecerlidir.
+        String lastPart = parts[parts.length - 1].trim();
+        Optional<Question.Difficulty> lineDifficulty = parts.length >= 5
+                ? Question.Difficulty.fromText(lastPart)
+                : Optional.empty();
+
+        int correctColumn = lineDifficulty.isPresent() ? parts.length - 2 : parts.length - 1;
+        int optionCount = correctColumn - 1;
+
         String[] options = new String[optionCount];
         for (int i = 0; i < optionCount; i++) {
             options[i] = parts[i + 1].trim();
         }
 
-        String lastPart = parts[parts.length - 1].trim();
+        String correctRaw = parts[correctColumn].trim();
         int humanNumber;
         try {
-            humanNumber = Integer.parseInt(lastPart);
+            humanNumber = Integer.parseInt(correctRaw);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
-                    "Son sutun bir sayi olmali, gelen deger: '" + lastPart + "'");
+                    "Son sutun bir sayi olmali, gelen deger: '" + correctRaw + "'");
         }
 
+        // Satirdaki zorluk > dosya genelindeki zorluk > Question'in kendi varsayilani (ORTA).
+        Question.Difficulty difficulty = lineDifficulty.orElse(fileDifficulty);
+
         // Insan 1'den sayar, dizi 0'dan. Cevirme burada yapilir.
-        return new Question(text, options, humanNumber - 1, category, explanation);
+        return new Question(text, options, humanNumber - 1, category, explanation, difficulty);
     }
 
     /**
@@ -193,6 +215,18 @@ public class QuestionBank {
         return result;
     }
 
+    /** Sadece belirli bir zorluktaki sorulari suzer. */
+    public static List<Question> byDifficulty(List<Question> questions,
+                                               Question.Difficulty difficulty) {
+        List<Question> result = new ArrayList<>();
+        for (Question q : questions) {
+            if (q.getDifficulty() == difficulty) {
+                result.add(q);
+            }
+        }
+        return result;
+    }
+
     /** Dosyada '# baslik: ...' satiri varsa onun degerini bulur. */
     private static Optional<String> findTitle(List<String> lines) {
         for (String raw : lines) {
@@ -205,6 +239,25 @@ public class QuestionBank {
                 String title = withoutHash.substring(TITLE_PREFIX.length()).trim();
                 if (!title.isEmpty()) {
                     return Optional.of(title);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Dosyada '# zorluk: ...' satiri varsa onun degerini bulur. */
+    private static Optional<Question.Difficulty> findDifficulty(List<String> lines) {
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (!line.startsWith("#")) {
+                continue;
+            }
+            String withoutHash = line.substring(1).trim();
+            if (withoutHash.toLowerCase().startsWith(DIFFICULTY_PREFIX)) {
+                String value = withoutHash.substring(DIFFICULTY_PREFIX.length()).trim();
+                Optional<Question.Difficulty> parsed = Question.Difficulty.fromText(value);
+                if (parsed.isPresent()) {
+                    return parsed;
                 }
             }
         }

@@ -634,9 +634,10 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 redirect(exchange, "/kur");
                 return;
             }
-            // Varsayilan: herkes ayni soruyu ayni sirada gorur (Kahoot düzeni).
+            Room.Mode mode = "senkron".equals(form.get("mod"))
+                    ? Room.Mode.SENKRON : Room.Mode.SERBEST;
             boolean sharedOrder = !"kisiye-ozel".equals(form.get("sira"));
-            Room room = new Room(newRoomCode(), set, sharedOrder);
+            Room room = new Room(newRoomCode(), set, mode, sharedOrder);
             rooms.put(room.getCode(), room);
             redirect(exchange, "/oda?kod=" + room.getCode());
             return;
@@ -661,6 +662,12 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
 
                   <form method="POST" action="/kur" style="margin-top:20px">
                     <div class="card" style="margin-bottom:16px">
+                      <label class="field" for="mod">Akış</label>
+                      <select id="mod" name="mod">
+                        <option value="serbest" selected>Serbest — herkes kendi hızında ilerler</option>
+                        <option value="senkron">Senkron — herkes aynı soruda, sen ilerletirsin</option>
+                      </select>
+
                       <label class="field" for="sira">Soru sırası</label>
                       <select id="sira" name="sira" style="margin-bottom:0">
                         <option value="paylasik" selected>Herkese aynı — perdedeki yarış anlamlı olur</option>
@@ -685,6 +692,18 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
         Room room = rooms.get(query(exchange, "kod"));
         if (room == null) {
             redirect(exchange, "/kur");
+            return;
+        }
+
+        // Senkron odada hoca akisi buradan yonetir.
+        if ("POST".equals(exchange.getRequestMethod())) {
+            switch (readForm(exchange).getOrDefault("islem", "")) {
+                case "basla"   -> room.start(allQuestions);
+                case "goster"  -> room.reveal();
+                case "sonraki" -> room.next(allQuestions);
+                default -> { }
+            }
+            redirect(exchange, "/oda?kod=" + room.getCode());
             return;
         }
 
@@ -721,6 +740,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                   <div class="rank">
                 %s      </div>
 
+                %s
                   <div class="actions">
                     <a class="btn blue" href="/ekran?kod=%s">Projeksiyon ekranı</a>
                     <a class="btn ghost" href="/rapor?kod=%s">Yanlış raporu</a>
@@ -736,10 +756,169 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 room.getSet().totalQuestions(),
                 room.isSharedOrder() ? "herkese aynı" : "kişiye özel",
                 list,
+                hostControls(room),
                 room.getCode(), room.getCode());
 
         sendHtml(exchange, 200, Html.page("Oda " + room.getCode(), body,
                 "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
+    }
+
+    /** Senkron odada hocanin akis dugmeleri. Serbest odada bos doner. */
+    private String hostControls(Room room) {
+        if (!room.isSynchronous()) {
+            return "";
+        }
+
+        int total = room.questionCount(allQuestions);
+        String durum;
+        String buton;
+
+        switch (room.getPhase()) {
+            case LOBI -> {
+                durum = "Katılımcılar bekleniyor";
+                buton = "<button class=\"btn\" type=\"submit\" name=\"islem\" value=\"basla\">Başlat</button>";
+            }
+            case SORU -> {
+                durum = "Soru " + (room.getIndex() + 1) + " / " + total
+                        + " · " + room.remainingSeconds() + " sn kaldı";
+                buton = "<button class=\"btn blue\" type=\"submit\" name=\"islem\" value=\"goster\">Cevabı göster</button>";
+            }
+            case CEVAP -> {
+                durum = "Soru " + (room.getIndex() + 1) + " / " + total + " · cevap açıkta";
+                boolean son = room.getIndex() + 1 >= total;
+                buton = "<button class=\"btn\" type=\"submit\" name=\"islem\" value=\"sonraki\">"
+                        + (son ? "Testi bitir" : "Sonraki soru") + "</button>";
+            }
+            default -> {
+                durum = "Test bitti";
+                buton = "";
+            }
+        }
+
+        return """
+                  <div class="card" style="margin-top:4px">
+                    <p class="eyebrow" style="margin-bottom:10px">Akış kontrolü</p>
+                    <p class="muted small" style="margin-bottom:14px">%s</p>
+                    <form method="POST" action="/oda?kod=%s">%s</form>
+                  </div>
+                """.formatted(Html.escape(durum), room.getCode(), buton);
+    }
+
+    /** Senkron odadaki oyuncunun gordugu ekran; odanin durumuna gore degisir. */
+    private void sendSyncScreen(HttpExchange exchange, GameSession session, Room room)
+            throws IOException {
+        Quiz quiz = session.getQuiz();
+        int total = room.questionCount(allQuestions);
+        int playerIndex = quiz.getQuestionNumber() - 1;
+
+        switch (room.getPhase()) {
+            case LOBI -> sendWaiting(exchange, "Hazır ol",
+                    Html.escape(session.getPlayerName()) + ", odadasın. Hoca başlatınca ilk soru gelecek.",
+                    room.playerCount() + " kişi bekliyor");
+
+            case SORU -> {
+                if (playerIndex > room.getIndex() || !quiz.hasNext()) {
+                    sendWaiting(exchange, "Cevabın alındı",
+                            "Diğerlerini bekliyoruz. Hoca cevabı açınca doğrusunu göreceksin.",
+                            "Soru " + (room.getIndex() + 1) + " / " + total);
+                } else {
+                    session.clearFeedback();
+                    sendHtml(exchange, 200, Html.page("Soru " + (room.getIndex() + 1),
+                            questionScreen(quiz, room.remainingSeconds(),
+                                    quiz.getTimeLimitSeconds(), room.getIndex() + 1, total),
+                            ""));
+                }
+            }
+
+            case CEVAP -> sendHtml(exchange, 200, Html.page("Cevap",
+                    syncReviewScreen(session, room, total),
+                    "  <meta http-equiv=\"refresh\" content=\"2\">\n"));
+
+            default -> redirect(exchange, "/sonuc");
+        }
+    }
+
+    /** Bekleme ekrani: kendi kendine yenilenir. */
+    private void sendWaiting(HttpExchange exchange, String title, String message, String meta)
+            throws IOException {
+        String body = """
+                <div class="screen">
+                  <div class="body-area center" style="display:flex;flex-direction:column;
+                       justify-content:center;flex:1">
+                    <p class="eyebrow center">%s</p>
+                    <h1 style="margin-bottom:14px">%s</h1>
+                    <p class="muted">%s</p>
+                    <div class="pulse"></div>
+                  </div>
+                </div>
+                """.formatted(Html.escape(meta), Html.escape(title), Html.escape(message));
+        sendHtml(exchange, 200, Html.page(title, body,
+                "  <meta http-equiv=\"refresh\" content=\"2\">\n"));
+    }
+
+    /** Senkron odada cevap acildiginda gosterilen ekran. */
+    private String syncReviewScreen(GameSession session, Room room, int total) {
+        Question question = room.currentQuestion(allQuestions);
+        Quiz quiz = session.getQuiz();
+
+        List<Quiz.AnswerResult> history = quiz.getHistory();
+        Quiz.AnswerResult mine = history.isEmpty() ? null : history.get(history.size() - 1);
+        boolean correct = mine != null && mine.correct();
+
+        StringBuilder choices = new StringBuilder();
+        if (question != null) {
+            String[] options = question.getOptions();
+            for (int i = 0; i < options.length; i++) {
+                String state = question.isCorrect(i) ? " is-right" : " is-dim";
+                choices.append("      <div class=\"choice").append(state).append("\">")
+                       .append("<span data-key=\"").append(Html.letter(i)).append("\">")
+                       .append(Html.escape(options[i])).append("</span></div>\n");
+            }
+        }
+
+        StringBuilder board = new StringBuilder();
+        int rank = 1;
+        for (GameSession player : room.standings()) {
+            if (rank > 5) {
+                break;
+            }
+            boolean me = player == session;
+            board.append("      <div class=\"row").append(me ? " me" : "").append("\">")
+                 .append("<span class=\"pos\">").append(rank++).append("</span>")
+                 .append("<span class=\"who\">").append(Html.escape(player.getPlayerName())).append("</span>")
+                 .append("<span class=\"pts\">").append(player.getQuiz().getPoints()).append("</span>")
+                 .append("</div>\n");
+        }
+
+        String why = question != null && question.hasExplanation()
+                ? "      <div class=\"why\">" + Html.escape(question.getExplanation()) + "</div>\n"
+                : "";
+
+        return """
+                <div class="screen">
+                  <p class="eyebrow">Soru %d / %d · cevap</p>
+                  <h2>%s</h2>
+
+                  <div class="choices">
+                %s      </div>
+
+                  <div class="verdict %s">
+                    <h3><span>%s</span><span class="gain">%s</span></h3>
+                %s      </div>
+
+                  <div class="rank">
+                %s      </div>
+                  <p class="muted small center" style="margin-top:16px">Hoca sonraki soruya geçince devam edeceğiz.</p>
+                </div>
+                """.formatted(
+                room.getIndex() + 1, total,
+                question == null ? "" : Html.escape(question.getText()),
+                choices,
+                correct ? "ok" : "bad",
+                correct ? "Doğru!" : "Yanlış",
+                mine == null ? "" : "+" + mine.earnedPoints() + " puan",
+                why,
+                board);
     }
 
     /** Buyuk ekranda gosterilen canli siralama. Kendi kendine yenilenir. */
@@ -998,6 +1177,13 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
             return;
         }
 
+        // Senkron odada akisi oda yonetir; serbest akis kurallari isletilmez.
+        Room room = session.getRoomCode() == null ? null : rooms.get(session.getRoomCode());
+        if (room != null && room.isSynchronous()) {
+            sendSyncScreen(exchange, session, room);
+            return;
+        }
+
         // Cevap verildiyse once sonuc ekrani gosterilir ("Devam" ile gecilir).
         if (session.getFeedback() != null) {
             sendHtml(exchange, 200, Html.page("Cevap", reviewScreen(session)));
@@ -1010,13 +1196,23 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
             return;
         }
 
-        Question question = quiz.currentQuestion();
-        String[] options = question.getOptions();
-        int limit = quiz.getTimeLimitSeconds();
-
         // Sayac soru ekrana gelince baslar. Ayni soru icin ikinci cagri sifirlamaz.
         quiz.startQuestionTimer();
-        int remaining = quiz.remainingSeconds();
+
+        String body = questionScreen(quiz, quiz.remainingSeconds(), quiz.getTimeLimitSeconds(),
+                quiz.getQuestionNumber(), quiz.getTotal());
+
+        sendHtml(exchange, 200, Html.page("Soru " + quiz.getQuestionNumber(), body));
+    }
+
+    /**
+     * Soru ekrani. Hem serbest hem senkron akista kullanilir; fark yalnizca
+     * kalan surenin nereden geldigi.
+     */
+    private String questionScreen(Quiz quiz, int remaining, int limit,
+                                  int questionNumber, int total) {
+        Question question = quiz.currentQuestion();
+        String[] options = question.getOptions();
 
         StringBuilder choices = new StringBuilder();
         for (int i = 0; i < options.length; i++) {
@@ -1026,9 +1222,9 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                    .append(Html.escape(options[i])).append("</span></label>\n");
         }
 
-        int progress = Math.round((quiz.getQuestionNumber() - 1) * 100f / quiz.getTotal());
+        int progress = Math.round((questionNumber - 1) * 100f / total);
 
-        String body = """
+        return """
                 <div class="screen">
                   <div class="topbar">
                     <div class="bar"><i style="width:%d%%"></i></div>
@@ -1072,12 +1268,10 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 progress, remaining,
                 Math.round(remaining * 100f / limit),
                 Html.escape(question.getCategory()),
-                quiz.getQuestionNumber(), quiz.getTotal(),
+                questionNumber, total,
                 Html.escape(question.getText()),
                 choices,
                 limit, remaining);
-
-        sendHtml(exchange, 200, Html.page("Soru " + quiz.getQuestionNumber(), body));
     }
 
     /** Cevap sonrasi ekrani: dogru sik yesil, secilen yanlis sik kirmizi. */

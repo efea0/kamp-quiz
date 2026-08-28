@@ -4,10 +4,18 @@
 # doğruNo 1'den başlar (1 = ilk şık). '#' ile başlayan satırlar yorumdur.
 
 Türkiye'nin en uzun nehri hangisidir? | Kızılırmak | Fırat | Sakarya | Dicle | 1
+> Kızılırmak 1355 km ile Türkiye sınırları içindeki en uzun nehirdir. Fırat daha uzun olsa da kaynağı Türkiye'de olup büyük bölümü ülke dışına akar.
 Dünyanın en büyük okyanusu hangisidir? | Atlas | Hint | Pasifik | Arktik | 3
+> Pasifik Okyanusu, yüzölçümü bakımından diğer tüm okyanusların toplamına yakın büyüklükte, dünyanın en büyük okyanusudur.
 Mona Lisa tablosunu kim yapmıştır? | Van Gogh | Picasso | Leonardo da Vinci | Michelangelo | 3
+> Mona Lisa'yı Leonardo da Vinci 16. yüzyılın başında yapmıştır. Michelangelo aynı dönemin ressamıdır ama bu eseri o yapmamıştır.
 Bir yılda kaç hafta vardır? | 48 | 50 | 52 | 54 | 3
+> Bir yıl 365 gün, bir hafta 7 gündür; 365'i 7'ye böldüğünde 52 hafta ve birkaç gün fazlalık çıkar.
 Güneş sistemindeki en büyük gezegen hangisidir? | Satürn | Jüpiter | Neptün | Dünya | 2
+> Jüpiter, çapı Dünya'nın yaklaşık 11 katı olan güneş sistemindeki en büyük gezegendir. Satürn ikinci sıradadır, halkalarıyla karıştırılır.
 İstanbul Boğazı hangi iki denizi birleştirir? | Ege - Akdeniz | Karadeniz - Marmara | Marmara - Ege | Karadeniz - Akdeniz | 2
+> İstanbul Boğazı, Karadeniz ile Marmara Denizi'ni birleştirir. Ege ile Marmara'yı birleştiren ise Çanakkale Boğazı'dır.
 İnsan vücudundaki en büyük organ hangisidir? | Kalp | Beyin | Deri | Karaciğer | 3
+> Deri, vücudun tamamını kaplaması nedeniyle en büyük organdır. Karaciğer ise iç organlar arasında en büyüğüdür, bu yüzden sık karıştırılır.
 Nobel Ödülü hangi ülkeler tarafından verilir? | Norveç ve İsveç | Almanya | Fransa | ABD | 1
+> Ödüller İsveç kurumları tarafından verilir, yalnızca Barış Ödülü Norveç'te bir komite tarafından verilir; bu yüzden ikisi birlikte anılır.

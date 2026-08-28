@@ -1,5 +1,7 @@
 package quiz.core;
 
+import quiz.model.Question;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +20,7 @@ import java.util.stream.Stream;
  *     # baslik: Sabah Testi
  *     # aciklama: Gunu acmak icin kisa karisik tur      (istege bagli)
  *     # sure: 15                                        (istege bagli, yoksa 20)
+ *     # zorluk: kolay                                   (istege bagli, yoksa tum zorluklar)
  *     Kategori Adi = sayi
  *     Baska Kategori = sayi
  *
@@ -25,6 +28,8 @@ import java.util.stream.Stream;
  * - Bos satirlar atlanir
  * - Kategori adlari questions/*.txt dosyalarindaki '# baslik:' degerleriyle
  *   BIREBIR eslesmeli; eslesmezse QuizSet.build() o kategoriden 0 soru getirir
+ * - '# zorluk:' satiri 'kolay'/'orta'/'zor' degerlerinden birini alir;
+ *   build() o zorluktaki sorulari oncelikli secer (bkz. QuizSet.build())
  *
  * Bu ozellik ISTEGE BAGLIDIR: sets/ klasoru yoksa ya da bossa, program
  * hata vermeden bos liste doner ve normal (rastgele N soru) mod calismaya
@@ -35,6 +40,7 @@ public class QuizSetLoader {
     private static final String TITLE_PREFIX = "baslik:";
     private static final String DESCRIPTION_PREFIX = "aciklama:";
     private static final String TIME_PREFIX = "sure:";
+    private static final String DIFFICULTY_PREFIX = "zorluk:";
     private static final int DEFAULT_TIME_LIMIT_SECONDS = 20;
 
     private QuizSetLoader() {
@@ -88,6 +94,7 @@ public class QuizSetLoader {
         String title = null;
         String description = "";
         int timeLimit = DEFAULT_TIME_LIMIT_SECONDS;
+        Question.Difficulty difficultyFilter = null;
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
 
         for (int i = 0; i < lines.size(); i++) {
@@ -117,6 +124,16 @@ public class QuizSetLoader {
                     } catch (NumberFormatException e) {
                         warnings.add(file.getFileName() + " -> " + lineNumber
                                 + ". satir atlandi: sure bir pozitif sayi olmali: '" + raw + "'");
+                    }
+                } else if (lower.startsWith(DIFFICULTY_PREFIX)) {
+                    String raw = withoutHash.substring(DIFFICULTY_PREFIX.length()).trim();
+                    Optional<Question.Difficulty> parsed = Question.Difficulty.fromText(raw);
+                    if (parsed.isPresent()) {
+                        difficultyFilter = parsed.get();
+                    } else {
+                        warnings.add(file.getFileName() + " -> " + lineNumber
+                                + ". satir atlandi: zorluk 'kolay', 'orta' veya 'zor' olmali: '"
+                                + raw + "'");
                     }
                 }
                 // diger '#' satirlari sade yorumdur, sessizce atla
@@ -171,7 +188,8 @@ public class QuizSetLoader {
         }
 
         try {
-            return Optional.of(new QuizSet(title, description, timeLimit, categoryCounts));
+            return Optional.of(
+                    new QuizSet(title, description, timeLimit, categoryCounts, difficultyFilter));
         } catch (IllegalArgumentException e) {
             warnings.add(file.getFileName() + " -> set olusturulamadi: " + e.getMessage());
             return Optional.empty();

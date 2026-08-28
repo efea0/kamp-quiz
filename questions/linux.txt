@@ -4,13 +4,13 @@
 Linux çekirdeğini ilk geliştiren kişi kimdir? | Linus Torvalds | Bill Gates | Steve Jobs | Dennis Ritchie | 1
 > Torvalds 1991'de çekirdeği yazdı. Etrafındaki araçların çoğu Stallman'ın GNU projesinden gelir; bu yüzden GNU/Linux da denir.
 
-Bulunduğun dizinin yolunu gösteren komut hangisidir? | ls | pwd | cd | dir | 2
+Bulunduğun dizinin yolunu gösteren komut hangisidir? | ls | pwd | cd | dir | 2 | kolay
 > pwd = print working directory. Nerede olduğunu kaybettiğinde ilk yazacağın komut.
 
-Bir dizindeki dosyaları listeleyen komut hangisidir? | ls | mv | rm | cp | 1
+Bir dizindeki dosyaları listeleyen komut hangisidir? | ls | mv | rm | cp | 1 | kolay
 > ls = list. Gizli dosyaları da görmek için ls -a, ayrıntılar için ls -l.
 
-Dizin değiştirmek için hangi komut kullanılır? | go | cd | move | open | 2
+Dizin değiştirmek için hangi komut kullanılır? | go | cd | move | open | 2 | kolay
 > cd = change directory. Bir üst klasöre çıkmak için cd .. yazılır.
 
 Yeni bir klasör oluşturan komut hangisidir? | newdir | mkdir | createdir | folder | 2
@@ -37,10 +37,10 @@ Dosya izinlerini değiştiren komut hangisidir? | chown | chmod | chgrp | perm |
 Bir komutun kullanım kılavuzunu açan komut hangisidir? | help | man | info | doc | 2
 > man = manual. Çıkmak için q tuşuna basılır. Bir komutu bilmiyorsan önce man dene.
 
-Çalışan süreçleri canlı olarak izleyen komut hangisidir? | top | ls | ps -a | run | 1
+Çalışan süreçleri canlı olarak izleyen komut hangisidir? | top | ls | ps -a | run | 1 | zor
 > top canlı bir liste gösterir. ps ise o anki anlık görüntüyü verir.
 
-Bir dosyanın içinde metin aramak için hangi komut kullanılır? | find | grep | search | locate | 2
+Bir dosyanın içinde metin aramak için hangi komut kullanılır? | find | grep | search | locate | 2 | zor
 > grep metnin İÇİNDE arar, find ise dosyanın KENDİSİNİ arar. İkisi sık karıştırılır.
 
 Tüm yetkilere sahip olan Linux kullanıcısının adı nedir? | admin | root | super | sudo | 2
