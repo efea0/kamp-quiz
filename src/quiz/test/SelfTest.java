@@ -92,6 +92,67 @@ public class SelfTest {
         check("Getter kopya veriyor", "doğru".equals(question.getCorrectOption()));
     }
 
+    private static void testDifficultyDefault() {
+        Question normal = new Question("A?", new String[]{"1", "2"}, 0, "t", "");
+        check("Zorluk belirtilmeyen soru ORTA kabul ediliyor",
+                normal.getDifficulty() == Question.Difficulty.ORTA);
+
+        Question hard = new Question("B?", new String[]{"1", "2"}, 0, "t", "",
+                Question.Difficulty.ZOR);
+        check("6 parametreli constructor zorluğu doğru kaydediyor",
+                hard.getDifficulty() == Question.Difficulty.ZOR);
+
+        Question nullDifficulty = new Question("C?", new String[]{"1", "2"}, 0, "t", "", null);
+        check("6 parametreli constructor'a null verilirse ORTA'ya düşüyor",
+                nullDifficulty.getDifficulty() == Question.Difficulty.ORTA);
+    }
+
+    /** Dosya biçiminde satır sonundaki isteğe bağlı zorluk sütunu doğru okunuyor mu? */
+    private static void testDifficultyLineParsing() throws IOException {
+        Path file = writeTempQuestionsFile(
+                "# baslik: Gecici Zorluk Testi\n"
+                + "İki artı iki kaç eder? | 3 | 4 | 5 | 6 | 2 | zor\n"
+                + "Bir artı bir kaç eder? | 1 | 2 | 3 | 4 | 2\n");
+        try {
+            List<Question> loaded = QuestionBank.loadFromFile(file);
+            check("Zorluklu ve zorluksuz satır birlikte yükleniyor", loaded.size() == 2);
+
+            Question withDifficulty = loaded.get(0);
+            check("Satır sonundaki 'zor' kelimesi doğru okunuyor",
+                    withDifficulty.getDifficulty() == Question.Difficulty.ZOR);
+            check("Zorluk sütunü varken doğru cevap numarası hâlâ doğru ayrıştırılıyor",
+                    "4".equals(withDifficulty.getCorrectOption()));
+
+            Question withoutDifficulty = loaded.get(1);
+            check("Zorluk sütunu olmayan eski biçim hâlâ çalışıyor (ORTA varsayılan)",
+                    withoutDifficulty.getDifficulty() == Question.Difficulty.ORTA);
+            check("Eski biçimde doğru cevap numarası bozulmuyor",
+                    "2".equals(withoutDifficulty.getCorrectOption()));
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    /** '# zorluk: ...' dosya başlığı, satırda zorluk belirtilmeyen sorulara uygulanıyor mu? */
+    private static void testDifficultyFileHeader() throws IOException {
+        Path file = writeTempQuestionsFile(
+                "# baslik: Gecici Baslik Testi\n"
+                + "# zorluk: kolay\n"
+                + "Soru bir? | a | b | 1\n"
+                + "Soru iki? | a | b | c | 3 | zor\n");
+        try {
+            List<Question> loaded = QuestionBank.loadFromFile(file);
+            check("'# zorluk:' başlıklı geçici dosya yükleniyor", loaded.size() == 2);
+
+            check("'# zorluk:' başlığı, satırda zorluk belirtilmeyen soruya uygulanıyor",
+                    loaded.get(0).getDifficulty() == Question.Difficulty.KOLAY);
+            check("Satır sonundaki zorluk, dosya geneli başlığı eziyor",
+                    loaded.get(1).getDifficulty() == Question.Difficulty.ZOR);
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
     private static void testScoring() {
         Question q1 = new Question("1+1?", new String[]{"2", "3"}, 0, "t", "");
         Question q2 = new Question("2+2?", new String[]{"4", "5"}, 0, "t", "");
@@ -167,6 +228,53 @@ public class SelfTest {
         }
     }
 
+    /** Zorluk süzgeçli bir setin doğru sayıda soru ürettiğini denetler. */
+    private static void testDifficultyFilteredSet(List<Question> questions) {
+        List<String> categories = QuestionBank.categoriesOf(questions);
+        if (!categories.contains("Linux Temelleri")) {
+            // questions/linux.txt yoksa (ornegin baska bir ortamda) testi sessizce atla.
+            return;
+        }
+
+        List<Question> categoryPool = QuestionBank.byCategory(questions, "Linux Temelleri");
+        int kolaySayisi = QuestionBank.byDifficulty(categoryPool, Question.Difficulty.KOLAY).size();
+        check("Linux Temelleri kategorisinde en az 1 kolay soru var", kolaySayisi >= 1);
+
+        // Tam olarak eldeki kolay soru sayısı kadar istenirse, hepsi kolay gelmeli.
+        Map<String, Integer> exactCounts = new LinkedHashMap<>();
+        exactCounts.put("Linux Temelleri", kolaySayisi);
+        QuizSet exactSet = new QuizSet("Kolay Tur", "", 20, exactCounts, Question.Difficulty.KOLAY);
+        List<Question> exactBuilt = exactSet.build(questions);
+        check("Zorluk süzgeçli set, yeterli soru varken istenen sayıda üretiyor",
+                exactBuilt.size() == kolaySayisi);
+
+        boolean allEasy = true;
+        for (Question q : exactBuilt) {
+            if (q.getDifficulty() != Question.Difficulty.KOLAY) {
+                allEasy = false;
+                break;
+            }
+        }
+        check("Yeterli soru varken sadece istenen zorluktan seçiliyor", allEasy);
+
+        // Eldekinden fazlası istenirse, eksik diğer zorluklardan tamamlanmalı (hata firlatmamali).
+        int wanted = kolaySayisi + 3;
+        Map<String, Integer> overCounts = new LinkedHashMap<>();
+        overCounts.put("Linux Temelleri", wanted);
+        QuizSet overSet = new QuizSet("Kolay Tur Fazla", "", 20, overCounts, Question.Difficulty.KOLAY);
+        List<Question> overBuilt = overSet.build(questions);
+        int expected = Math.min(wanted, categoryPool.size());
+        check("Zorluk süzgeçli set, eksik kaldığında diğer zorluklardan tamamlıyor",
+                overBuilt.size() == expected);
+
+        // Zorluk süzgeci olmayan bir set, eski davranışı aynen korumalı.
+        Map<String, Integer> plainCounts = new LinkedHashMap<>();
+        plainCounts.put("Linux Temelleri", 5);
+        QuizSet plainSet = new QuizSet("Karma Tur", "", 20, plainCounts);
+        check("Zorluk süzgeci olmayan set eskisi gibi çalışıyor",
+                plainSet.build(questions).size() == 5 && !plainSet.hasDifficultyFilter());
+    }
+
     /**
      * Mimarinin tek kurali: core ve model paketleri EKRANI BILMEZ.
      *
@@ -224,5 +332,12 @@ public class SelfTest {
 
     private static String kisa(String text) {
         return text.length() > 40 ? text.substring(0, 40) + "..." : text;
+    }
+
+    /** Zorluk ayrıştırma testleri için geçici bir soru dosyası yazar. */
+    private static Path writeTempQuestionsFile(String content) throws IOException {
+        Path file = Files.createTempFile("selftest-questions-", ".txt");
+        Files.writeString(file, content, StandardCharsets.UTF_8);
+        return file;
     }
 }
