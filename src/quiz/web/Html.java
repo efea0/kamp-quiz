@@ -482,8 +482,11 @@ final class Html {
               border-bottom: 2px solid var(--line-soft); margin-bottom: 14px;
             }
             .revlist > summary::-webkit-details-marker { display: none; }
-            .revlist > summary::before { content: "\25b8  "; color: var(--blue); }
-            .revlist[open] > summary::before { content: "\25be  "; }
+            /* DIKKAT: CSS kacisi (\25b8) Java metin blogunda ISE YARAMAZ.
+               Java "\25"i sekizlik kacis olarak okur, geriye "b8" metni kalir.
+               Bu yuzden karakterin kendisi yaziliyor. */
+            .revlist > summary::before { content: "▸  "; color: var(--blue); }
+            .revlist[open] > summary::before { content: "▾  "; }
             .wrongcard .wrongq { font-weight: 700; margin: 0 0 10px; }
             .wrongcard .ans { margin: 0 0 6px; font-size: 0.92rem; }
             .wrongcard .ans b { font-weight: 800; }
