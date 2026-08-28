@@ -124,9 +124,17 @@ questions/   soru paketleri  ← katkı buraya
 sets/        hazır test tanımları
 ```
 
-**Değişmez kural:** `core/` içinde tek bir `System.out.println` yoktur. İş mantığı
-ekranı tanımadığı için terminal ve web arayüzü **aynı motoru** paylaşır — web
-arayüzü eklenirken `Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmadı.
+**Değişmez kural:** `core/` ve `model/` paketlerinde tek
+bir `System.out.println` yoktur — ekranı hiç tanımazlar. Bozuk bir soru satırı
+bulunduğunda uyarı ekrana basılmaz, çağıran arayüze **liste olarak döndürülür**;
+onu nasıl göstereceğine terminal ya da web arayüzü karar verir.
+
+Bu kural yazıyla kalmıyor: `./run.sh test` kaynak kodu okuyup `core` ve `model`
+paketlerinde `System.out` geçip geçmediğini denetliyor. Kuralı bozan bir katkı
+testte kırmızı görünür.
+
+Karşılığını da web arayüzünü eklerken aldık: terminal ve tarayıcı **aynı motoru**
+paylaşıyor, `Quiz` ve `Scoreboard` sınıflarına tek satır dokunulmadı.
 
 ## AI ile soru üretme (isteğe bağlı)
 

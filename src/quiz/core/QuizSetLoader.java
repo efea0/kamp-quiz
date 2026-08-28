@@ -42,7 +42,16 @@ public class QuizSetLoader {
     }
 
     /** Klasordeki TUM .txt dosyalarini okur, dosya adina gore sirali doner. */
+    /** Uyarilari yok sayan surum. */
     public static List<QuizSet> loadFromDirectory(Path directory) {
+        return loadFromDirectory(directory, new ArrayList<>());
+    }
+
+    /**
+     * Setleri okur; bozuk satir uyarilarini verilen listeye YAZAR, ekrana basmaz.
+     * core paketi ekrani bilmez; uyariyi arayuz gosterir.
+     */
+    public static List<QuizSet> loadFromDirectory(Path directory, List<String> warnings) {
         List<QuizSet> sets = new ArrayList<>();
 
         if (!Files.isDirectory(directory)) {
@@ -57,22 +66,22 @@ public class QuizSetLoader {
                     .toList();
 
             for (Path file : txtFiles) {
-                loadFromFile(file).ifPresent(sets::add);
+                loadFromFile(file, warnings).ifPresent(sets::add);
             }
         } catch (IOException e) {
-            System.out.println("  [UYARI] " + directory + " klasoru okunamadi: " + e.getMessage());
+            warnings.add(directory + " klasoru okunamadi: " + e.getMessage());
         }
 
         return sets;
     }
 
     /** Tek bir dosyayi okur. Bozuk satirlari atlar ama uyari basar. */
-    private static Optional<QuizSet> loadFromFile(Path file) {
+    private static Optional<QuizSet> loadFromFile(Path file, List<String> warnings) {
         List<String> lines;
         try {
             lines = Files.readAllLines(file, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            System.out.println("  [UYARI] " + file.getFileName() + " okunamadi: " + e.getMessage());
+            warnings.add(file.getFileName() + " okunamadi: " + e.getMessage());
             return Optional.empty();
         }
 
@@ -106,7 +115,7 @@ public class QuizSetLoader {
                         }
                         timeLimit = parsed;
                     } catch (NumberFormatException e) {
-                        System.out.println("  [UYARI] " + file.getFileName() + " -> " + lineNumber
+                        warnings.add(file.getFileName() + " -> " + lineNumber
                                 + ". satir atlandi: sure bir pozitif sayi olmali: '" + raw + "'");
                     }
                 }
@@ -117,7 +126,7 @@ public class QuizSetLoader {
             // "Kategori Adi = sayi" satiri bekleniyor
             int eq = line.indexOf('=');
             if (eq < 0) {
-                System.out.println("  [UYARI] " + file.getFileName() + " -> " + lineNumber
+                warnings.add(file.getFileName() + " -> " + lineNumber
                         + ". satir atlandi: '=' isareti bulunamadi");
                 continue;
             }
@@ -126,7 +135,7 @@ public class QuizSetLoader {
             String countRaw = line.substring(eq + 1).trim();
 
             if (category.isEmpty()) {
-                System.out.println("  [UYARI] " + file.getFileName() + " -> " + lineNumber
+                warnings.add(file.getFileName() + " -> " + lineNumber
                         + ". satir atlandi: kategori adi bos");
                 continue;
             }
@@ -135,13 +144,13 @@ public class QuizSetLoader {
             try {
                 count = Integer.parseInt(countRaw);
             } catch (NumberFormatException e) {
-                System.out.println("  [UYARI] " + file.getFileName() + " -> " + lineNumber
+                warnings.add(file.getFileName() + " -> " + lineNumber
                         + ". satir atlandi: sayi degil: '" + countRaw + "'");
                 continue;
             }
 
             if (count <= 0) {
-                System.out.println("  [UYARI] " + file.getFileName() + " -> " + lineNumber
+                warnings.add(file.getFileName() + " -> " + lineNumber
                         + ". satir atlandi: sayi pozitif olmali: " + count);
                 continue;
             }
@@ -150,13 +159,13 @@ public class QuizSetLoader {
         }
 
         if (title == null || title.isBlank()) {
-            System.out.println("  [UYARI] " + file.getFileName()
+            warnings.add(file.getFileName()
                     + " -> '# baslik:' satiri yok, dosya atlandi");
             return Optional.empty();
         }
 
         if (categoryCounts.isEmpty()) {
-            System.out.println("  [UYARI] " + file.getFileName()
+            warnings.add(file.getFileName()
                     + " -> hic kategori satiri yok, dosya atlandi");
             return Optional.empty();
         }
@@ -164,7 +173,7 @@ public class QuizSetLoader {
         try {
             return Optional.of(new QuizSet(title, description, timeLimit, categoryCounts));
         } catch (IllegalArgumentException e) {
-            System.out.println("  [UYARI] " + file.getFileName() + " -> set olusturulamadi: " + e.getMessage());
+            warnings.add(file.getFileName() + " -> set olusturulamadi: " + e.getMessage());
             return Optional.empty();
         }
     }

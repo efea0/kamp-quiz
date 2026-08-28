@@ -7,6 +7,8 @@ import quiz.core.QuizSetLoader;
 import quiz.model.Question;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -35,6 +37,7 @@ public class SelfTest {
         testScoring();
         testRetryList();
         testSets(sets, questions);
+        testCoreDoesNotPrint();
 
         System.out.println();
         System.out.println("Geçen: " + passed + "   Kalan: " + failed);
@@ -136,6 +139,41 @@ public class SelfTest {
             check("'" + set.getName() + "' istenen sayıda soru üretiyor",
                     built.size() == set.totalQuestions());
         }
+    }
+
+    /**
+     * Mimarinin tek kurali: core ve model paketleri EKRANI BILMEZ.
+     *
+     * Bu denetim kaynak kodun kendisini okur. Kural bir kez yazilip
+     * unutulmasin diye; birisi core icine System.out yazarsa test kirmizi olur.
+     */
+    private static void testCoreDoesNotPrint() throws IOException {
+        for (String pkg : new String[]{"core", "model"}) {
+            Path dir = Path.of("src", "quiz", pkg);
+            if (!Files.isDirectory(dir)) {
+                continue;
+            }
+            try (var files = Files.list(dir)) {
+                for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                    check("quiz." + pkg + "/" + file.getFileName() + " ekrana yazmıyor",
+                            !printsToScreen(file));
+                }
+            }
+        }
+    }
+
+    /** Yorum satirlarini atlayarak gercek bir System.out cagrisi var mi bakar. */
+    private static boolean printsToScreen(Path file) throws IOException {
+        for (String raw : Files.readAllLines(file, StandardCharsets.UTF_8)) {
+            String line = raw.trim();
+            if (line.startsWith("*") || line.startsWith("//") || line.startsWith("/*")) {
+                continue;   // yorum; kural bu satirda anlatiliyor olabilir
+            }
+            if (line.contains("System.out") || line.contains("System.err")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // --------------------------------------------------------- yardimcilar
