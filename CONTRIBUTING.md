@@ -110,21 +110,19 @@ src/quiz/
 │   ├── GameSession.java   # Tek oyuncunun web durumu
 │   ├── QrCode.java        # Sıfırdan QR kodlayıcı
 │   ├── Html.java          # Sayfa şablonu ve CSS
-│   └── pages/             # Her dosya bir grup sayfanın HTML'ini üretir
-│       ├── HomePages.java     # /  /ayarla  /start  /katil
-│       ├── QuizPages.java     # /quiz  /cevap  /devam  /sonuc  /tekrar
-│       ├── RoomPages.java     # /kur  /oda  /ekran  /rapor
-│       ├── BoardPage.java     # /tablo
-│       └── GeneratePages.java # /uret
+│   ├── HomePages.java     # /  /ayarla  /start  /katil
+│   ├── QuizPages.java     # /quiz  /cevap  /devam  /sonuc  /tekrar
+│   ├── RoomPages.java     # /kur  /oda  /ekran  /rapor
+│   ├── BoardPage.java     # /tablo
+│   └── GeneratePages.java # /uret
 ├── ai/                    # Soru üretimi (Gemini / OpenRouter)
 └── test/SelfTest.java     # Kendi kendini sınama
 ```
 
-`web/` altındaki sınıflar hâlâ `quiz.web` paketindedir — `Room` ve
-`GameSession` gibi paket-içi (package-private) sınıflara erişebilmeleri
-için. Klasör ayrımı sadece dosyaları düzenli tutmak içindir, ayrı bir Java
-paketi değildir; her sayfa sınıfı `ServerContext` alan bir kurucuya sahiptir
-ve ihtiyacı olan her şeye oradan ulaşır.
+Her sayfa sınıfı `ServerContext`'i alır; paylaşılan durum (sorular, odalar,
+oturumlar) ve ortak yardımcılar (form okuma, yönlendirme, çerez) oradadır.
+Yeni bir sayfa eklemek için kendi sınıfını yaz ve `WebServer`'daki rota
+tablosuna bir satır ekle.
 
 **API anahtarları:** hiçbir anahtar depoya girmez. Anahtar ya
 `~/.config/kamp-quiz/gemini.key` gibi bir dosyadan (izin 600) ya da ortam
