@@ -5,7 +5,12 @@ import quiz.core.Quiz;
 import quiz.model.Question;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Bir oyuncunun quiz sirasinda gordugu ekranlar:
@@ -23,6 +28,16 @@ import java.util.List;
 public final class QuizPages {
 
     private final ServerContext ctx;
+
+    /**
+     * Bu turda hangi sik hangi soruda isaretlendi; quiz.getHistory() ile ayni
+     * sirada tutulur. Quiz.AnswerResult isaretlenen sikki tasimiyor (yalnizca
+     * dogru/yanlis, sure ve soruyu), ama sonuc ekraninda "senin cevabin"i
+     * gostermek icin buna ihtiyacimiz var. Anahtar Quiz NESNESININ KENDISI
+     * (Quiz equals/hashCode override etmiyor, yani kimlik bazli); her yeni
+     * Quiz (orn. /tekrar ile baslayan tur) kendi bos listesiyle baslar.
+     */
+    private final Map<Quiz, List<Integer>> chosenAnswers = new ConcurrentHashMap<>();
 
     public QuizPages(ServerContext ctx) {
         this.ctx = ctx;
@@ -81,6 +96,7 @@ public final class QuizPages {
         Question question = quiz.currentQuestion();
         int answer = ServerContext.parseIntOr(ctx.readForm(exchange).get("cevap"), -1);
         Quiz.AnswerResult result = quiz.submitAnswer(answer);
+        chosenAnswers.computeIfAbsent(quiz, k -> new CopyOnWriteArrayList<>()).add(answer);
 
         session.setFeedback(new GameSession.Feedback(
                 result.correct(), result.timedOut(), result.earnedPoints(), question, answer));
@@ -131,7 +147,7 @@ public final class QuizPages {
                     <div class="stat"><b>%d/%d</b><span>Doğru</span></div>
                     <div class="stat"><b>%%%d</b><span>Başarı</span></div>
                   </div>
-
+                %s%s%s
                   <div class="actions">
                 %s      <a class="btn blue" href="/tablo">Lider tablosu</a>
                     <a class="btn ghost" href="/">Yeniden oyna</a>
@@ -142,6 +158,7 @@ public final class QuizPages {
                 verdictTitle(quiz.getPercentage()),
                 quiz.getPoints(),
                 quiz.getScore(), quiz.getTotal(), quiz.getPercentage(),
+                categoryBreakdown(quiz), speedSummary(quiz), wrongReview(quiz),
                 retryButton(quiz));
 
         ctx.sendHtml(exchange, 200, Html.page("Sonuç", body));
@@ -157,12 +174,16 @@ public final class QuizPages {
         }
 
         List<Question> wrong = previous.getQuiz().getWrongQuestions();
-        if (wrong.isEmpty()) {
+        // Yanlis yoksa "ayni testi tekrar coz": tum sorular, cevaplanmis
+        // sirayla (previous.getQuiz() /sonuc'a ulastigina gore tamamen
+        // oynanmis olmali, yani gecmis tum sorulari icerir).
+        List<Question> pool = wrong.isEmpty() ? allAnsweredQuestions(previous.getQuiz()) : wrong;
+        if (pool.isEmpty()) {
             ctx.redirect(exchange, "/sonuc");
             return;
         }
 
-        Quiz retry = new Quiz(wrong);
+        Quiz retry = new Quiz(pool);
         retry.shuffle();
         retry.setTimeLimitSeconds(previous.getQuiz().getTimeLimitSeconds());
 
@@ -419,12 +440,186 @@ public final class QuizPages {
                 board);
     }
 
-    /** Yanlis varsa "tekrar coz" butonu. */
+    /**
+     * Bir onceki turda cevaplanmis TUM sorular, cevaplanma sirasiyla.
+     * /tekrar yanlis yoksa buradan "ayni testi tekrar coz" turu kurar.
+     */
+    private static List<Question> allAnsweredQuestions(Quiz quiz) {
+        List<Question> all = new ArrayList<>();
+        for (Quiz.AnswerResult result : quiz.getHistory()) {
+            all.add(result.question());
+        }
+        return all;
+    }
+
+    /**
+     * Kategori dokumu: her kategoride kac dogru/toplam ve yuzde, yatay
+     * cubukla. Tek kategorili bir testte ust bilgideki skor zaten yeterli
+     * oldugundan bu blok bos doner.
+     */
+    private static String categoryBreakdown(Quiz quiz) {
+        Map<String, int[]> tally = new LinkedHashMap<>();   // kategori -> [dogru, toplam]
+        for (String category : quiz.getCategories()) {
+            tally.put(category, new int[2]);
+        }
+        for (Quiz.AnswerResult result : quiz.getHistory()) {
+            int[] counts = tally.computeIfAbsent(result.question().getCategory(), k -> new int[2]);
+            counts[1]++;
+            if (result.correct()) {
+                counts[0]++;
+            }
+        }
+        if (tally.size() <= 1) {
+            return "";
+        }
+
+        String weakest = null;
+        int weakestPercent = 101;
+        for (Map.Entry<String, int[]> entry : tally.entrySet()) {
+            int[] counts = entry.getValue();
+            if (counts[1] == 0) {
+                continue;
+            }
+            int percent = Math.round(counts[0] * 100f / counts[1]);
+            if (percent < weakestPercent) {
+                weakestPercent = percent;
+                weakest = entry.getKey();
+            }
+        }
+
+        StringBuilder rows = new StringBuilder();
+        for (Map.Entry<String, int[]> entry : tally.entrySet()) {
+            int[] counts = entry.getValue();
+            if (counts[1] == 0) {
+                continue;
+            }
+            int percent = Math.round(counts[0] * 100f / counts[1]);
+            boolean isWeakest = entry.getKey().equals(weakest) && percent < 100;
+            rows.append("        <div class=\"catrow\">\n")
+                .append("          <div class=\"catrow-head\"><span class=\"catname\">")
+                .append(Html.escape(entry.getKey()))
+                .append("</span><span class=\"catfrac\">")
+                .append(counts[0]).append("/").append(counts[1])
+                .append(" · %").append(percent)
+                .append("</span></div>\n")
+                .append("          <div class=\"catbar").append(isWeakest ? " weak" : "")
+                .append("\"><i style=\"width:").append(percent).append("%\"></i></div>\n")
+                .append("        </div>\n");
+        }
+
+        String note = "";
+        if (weakest != null && weakestPercent < 100) {
+            note = "      <p class=\"catnote\">En çok zorlandığın konu: <b>"
+                    + Html.escape(weakest) + "</b> (%" + weakestPercent + ")</p>\n";
+        }
+
+        return """
+                      <p class="eyebrow" style="margin-top:26px">Konu dökümü</p>
+                      <div class="catlist">
+                %s      </div>
+                %s""".formatted(rows, note);
+    }
+
+    /** Ortalama cevap suresi ve en hizli dogru cevabin suresi. */
+    private static String speedSummary(Quiz quiz) {
+        List<Quiz.AnswerResult> history = quiz.getHistory();
+        if (history.isEmpty()) {
+            return "";
+        }
+
+        long totalMs = 0;
+        long fastestCorrectMs = -1;
+        for (Quiz.AnswerResult result : history) {
+            totalMs += result.elapsedMillis();
+            if (result.correct() && (fastestCorrectMs < 0 || result.elapsedMillis() < fastestCorrectMs)) {
+                fastestCorrectMs = result.elapsedMillis();
+            }
+        }
+
+        String avg = formatSeconds(totalMs / history.size());
+        String fastest = fastestCorrectMs < 0 ? "—" : formatSeconds(fastestCorrectMs);
+
+        return """
+                      <p class="eyebrow" style="margin-top:26px">Hız</p>
+                      <div class="stats">
+                        <div class="stat"><b>%s</b><span>Ortalama süre</span></div>
+                        <div class="stat"><b>%s</b><span>En hızlı doğru</span></div>
+                      </div>
+                """.formatted(avg, fastest);
+    }
+
+    /** Milisaniyeyi "8.3 sn" gibi bir metne cevirir. */
+    private static String formatSeconds(long millis) {
+        double seconds = Math.round(millis / 100.0) / 10.0;
+        String number = seconds == Math.rint(seconds)
+                ? String.valueOf((long) seconds)
+                : String.valueOf(seconds);
+        return number + " sn";
+    }
+
+    /**
+     * Yanlis yapilan her sorunun kalip okunacak gozden gecirmesi: soru,
+     * isaretlenen sik, dogru sik, aciklama. Yanlis yoksa bos doner.
+     */
+    private String wrongReview(Quiz quiz) {
+        List<Quiz.AnswerResult> history = quiz.getHistory();
+        List<Integer> chosen = chosenAnswers.getOrDefault(quiz, List.of());
+
+        StringBuilder cards = new StringBuilder();
+        int wrongCount = 0;
+        for (int i = 0; i < history.size(); i++) {
+            Quiz.AnswerResult result = history.get(i);
+            if (result.correct()) {
+                continue;
+            }
+            wrongCount++;
+
+            Question question = result.question();
+            String[] options = question.getOptions();
+            int chosenIndex = i < chosen.size() ? chosen.get(i) : -1;
+
+            String yourAnswer = (chosenIndex < 0 || chosenIndex >= options.length)
+                    ? "Süre doldu, cevap verilmedi"
+                    : Html.escape(options[chosenIndex]);
+
+            String why = question.hasExplanation()
+                    ? "        <p class=\"why\">" + Html.escape(question.getExplanation()) + "</p>\n"
+                    : "";
+
+            cards.append("""
+                        <div class="card wrongcard">
+                          <p class="eyebrow" style="margin-bottom:6px">%s</p>
+                          <p class="wrongq">%s</p>
+                          <p class="ans wrong">Senin cevabın: <b>%s</b></p>
+                          <p class="ans right">Doğru cevap: <b>%s</b></p>
+                    %s    </div>
+                    """.formatted(
+                    Html.escape(question.getCategory()),
+                    Html.escape(question.getText()),
+                    yourAnswer,
+                    Html.escape(question.getCorrectOption()),
+                    why));
+        }
+
+        if (wrongCount == 0) {
+            return "";
+        }
+
+        return """
+                      <details class="revlist" open>
+                        <summary>Yanlış yaptığın %d soru</summary>
+                %s      </details>
+                """.formatted(wrongCount, cards);
+    }
+
+    /** Yanlis varsa "tekrar coz" butonu; yoksa ayni testi tekrar baslat. */
     private static String retryButton(Quiz quiz) {
         int wrong = quiz.getWrongQuestions().size();
-        return wrong == 0 ? ""
-                : "    <a class=\"btn\" href=\"/tekrar\">" + wrong
-                  + " yanlışını tekrar çöz</a>\n";
+        if (wrong == 0) {
+            return "    <a class=\"btn\" href=\"/tekrar\">Aynı testi tekrar çöz</a>\n";
+        }
+        return "    <a class=\"btn\" href=\"/tekrar\">" + wrong
+              + " yanlışını şimdi tekrar dene</a>\n";
     }
 
     private static String verdictTitle(int percentage) {
