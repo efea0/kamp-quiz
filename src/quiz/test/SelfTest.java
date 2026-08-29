@@ -47,6 +47,7 @@ public class SelfTest {
         testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
         testQuestionGeneratorSurvivesMissingPromptsDir();
+        testProjectionScrollGuard();
 
         System.out.println();
         System.out.println("Geçen: " + passed + "   Kalan: " + failed);
@@ -329,6 +330,22 @@ public class SelfTest {
             constructed = false;
         }
         check("QuestionGenerator, prompts klasörü olmasa bile kurulabiliyor", constructed);
+    }
+
+    /** Projeksiyonun tam sayfa yenilemesi kullanıcının kaydırma konumunu bozmamalı. */
+    private static void testProjectionScrollGuard() throws IOException {
+        String html = Files.readString(Path.of("src", "quiz", "web", "Html.java"),
+                StandardCharsets.UTF_8);
+        String roomPages = Files.readString(Path.of("src", "quiz", "web", "RoomPages.java"),
+                StandardCharsets.UTF_8);
+        check("Projeksiyon yenilenince kaydırma konumu korunuyor",
+                html.contains("projectionNavigationGuard")
+                        && html.contains("kampQuizProjectionScroll")
+                        && html.contains("sessionStorage")
+                        && html.contains("scrollTo"));
+        check("Projeksiyon ekranı kaydırma korumasını bağlıyor",
+                roomPages.contains("Html.projectionNavigationGuard()")
+                        && roomPages.contains("meta http-equiv=\\\"refresh\\\""));
     }
 
     // --------------------------------------------------------- yardimcilar

@@ -35,6 +35,46 @@ final class Html {
                 """.formatted(escape(title), headExtra, body);
     }
 
+    /** Tam sayfa otomatik yenilenen ekranlarda kullanicinin kaydirma konumunu korur. */
+    static String projectionNavigationGuard() {
+        return """
+                <script>
+                  (function () {
+                    var scrollKey = 'kampQuizProjectionScroll:' + location.search;
+
+                    function saveScroll() {
+                      try {
+                        sessionStorage.setItem(scrollKey, String(window.scrollY || window.pageYOffset || 0));
+                      } catch (ignore) {
+                        // Ozel tarama modlarinda sessionStorage kapali olabilir.
+                      }
+                    }
+
+                    function restoreScroll() {
+                      try {
+                        var raw = sessionStorage.getItem(scrollKey);
+                        if (raw === null) return;
+                        var y = Number(raw);
+                        if (!Number.isFinite(y)) return;
+                        requestAnimationFrame(function () {
+                          window.scrollTo(0, y);
+                          requestAnimationFrame(function () { window.scrollTo(0, y); });
+                        });
+                      } catch (ignore) {
+                        // Kaydirma korunamazsa ekranin normal acilmasi engellenmez.
+                      }
+                    }
+
+                    history.scrollRestoration = 'manual';
+                    window.addEventListener('pagehide', saveScroll);
+                    window.addEventListener('beforeunload', saveScroll);
+                    window.addEventListener('pageshow', restoreScroll);
+                    document.addEventListener('DOMContentLoaded', restoreScroll);
+                  })();
+                </script>
+                """;
+    }
+
     /**
      * Metindeki HTML anlamli karakterleri zararsiz hale getirir.
      * Bu olmadan bir soru metnindeki '<' isareti sayfanin yapisini bozabilir.

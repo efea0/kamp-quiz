@@ -165,7 +165,8 @@ public final class RoomPages {
                 room.getCode(), room.getCode(), room.getCode(), room.getCode());
 
         ctx.sendHtml(exchange, 200, Html.page("Oda " + room.getCode(), body,
-                "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
+                "  <meta http-equiv=\"refresh\" content=\"4\">\n"
+                        + Html.projectionNavigationGuard()));
     }
 
     /** Buyuk ekranda gosterilen canli siralama. Kendi kendine yenilenir. */
@@ -234,7 +235,8 @@ public final class RoomPages {
                 room.everyoneFinished() ? "test bitti" : "devam ediyor");
 
         ctx.sendHtml(exchange, 200, Html.page("Ekran " + room.getCode(), body,
-                "  <meta http-equiv=\"refresh\" content=\"3\">\n"));
+                "  <meta http-equiv=\"refresh\" content=\"3\">\n"
+                        + Html.projectionNavigationGuard()));
     }
 
     // ------------------------------------------------------- canli tepki seridi
