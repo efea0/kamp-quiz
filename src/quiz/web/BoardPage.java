@@ -6,12 +6,6 @@ import quiz.core.Scoreboard;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Lider tablosu sayfasi: /tablo
- *
- * Tek bir rota oldugu icin en kucuk sayfa sinifi budur. WebServer'i bolmenin
- * ne kadar kolay olabilecegini gormek icin buradan baslamak iyi bir fikir.
- */
 public final class BoardPage {
 
     private final ServerContext ctx;
@@ -20,7 +14,7 @@ public final class BoardPage {
         this.ctx = ctx;
     }
 
-    /** Lider tablosu. */
+
     public void handleBoard(HttpExchange exchange) throws IOException {
         List<Scoreboard.Entry> entries;
         try {

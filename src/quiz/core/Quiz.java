@@ -8,57 +8,45 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Bir quiz oturumu: soru listesini tutar, sirayi ilerletir, skoru sayar.
- *
- * Bu sinif EKRANI HIC BILMEZ. System.out.println burada gecmez.
- * Kural: is mantigi (core) ile ekran (cli) birbirinden ayridir.
- * Boylece ayni Quiz sinifini yarin web sunucusunda da kullanabiliriz.
- */
 public class Quiz {
 
-    /** Dogru cevabin taban puani. */
+
     private static final int BASE_POINTS = 500;
-    /** Hizli cevaba verilen en fazla ek puan. */
+
     private static final int MAX_SPEED_BONUS = 500;
     private static final int DEFAULT_TIME_LIMIT_SECONDS = 20;
 
-    /**
-     * Bir sorunun cevaplanma sonucu.
-     * Arayuzun ekrana basmak icin ihtiyac duydugu her seyi tek pakette dondurur.
-     */
+
+
     public record AnswerResult(boolean correct, boolean timedOut,
                                int earnedPoints, long elapsedMillis, Question question) {
     }
 
     private final List<Question> questions;
-    private int currentIndex = 0;   // su an kacinci sorudayiz
-    private int score = 0;          // kac dogru yaptik
-    private int points = 0;         // hiz bonuslu toplam puan
+    private int currentIndex = 0;
+    private int score = 0;
+    private int points = 0;
 
     private int timeLimitSeconds = DEFAULT_TIME_LIMIT_SECONDS;
-    private long questionStartedAt = 0;   // 0 = sayac baslatilmadi
+    private long questionStartedAt = 0;
 
-    /**
-     * Verilen her cevabin kaydi. Iki ise yariyor:
-     *   - "yanlislarini tekrar coz" modu
-     *   - hocanin gordugu yanlis raporu
-     */
+
+
     private final List<AnswerResult> history = new ArrayList<>();
 
     public Quiz(List<Question> questions) {
         if (questions == null || questions.isEmpty()) {
             throw new IllegalArgumentException("Quiz en az 1 soru icermeli.");
         }
-        this.questions = new ArrayList<>(questions);   // kendi kopyamiz
+        this.questions = new ArrayList<>(questions);
     }
 
-    /** Sorulari karistirir; her oyunda sira farkli olsun diye. */
+
     public void shuffle() {
         Collections.shuffle(questions);
     }
 
-    /** Quiz'i en fazla 'max' soruyla sinirlar. */
+
     public void limitTo(int max) {
         if (max > 0 && max < questions.size()) {
             questions.subList(max, questions.size()).clear();
@@ -73,25 +61,20 @@ public class Quiz {
         return questions.get(currentIndex);
     }
 
-    /**
-     * Soru ekrana gelince cagrilir; sure buradan itibaren sayilir.
-     *
-     * Ayni soru icin ikinci kez cagrilmasi sayaci SIFIRLAMAZ. Aksi halde
-     * oyuncu sayfayi yenileyerek sureyi bastan baslatip her soruda
-     * tam hiz bonusu alabilirdi.
-     */
+
+
     public void startQuestionTimer() {
         if (questionStartedAt == 0) {
             questionStartedAt = System.currentTimeMillis();
         }
     }
 
-    /** Bu soruda ne kadar sure gectigini milisaniye olarak verir. */
+
     public long elapsedMillis() {
         return questionStartedAt == 0 ? 0 : System.currentTimeMillis() - questionStartedAt;
     }
 
-    /** Bu soruda kac saniye kaldigini verir; sure dolduysa 0. */
+
     public int remainingSeconds() {
         long left = timeLimitSeconds * 1000L - elapsedMillis();
         return left <= 0 ? 0 : (int) Math.ceil(left / 1000.0);
@@ -107,35 +90,40 @@ public class Quiz {
         }
     }
 
-    /**
-     * Cevabi isler: dogruysa skoru ve puani artirir, her durumda sonraki soruya gecer.
-     *
-     * Puanlama: dogru cevap 500 taban puan alir; ustune kalan sureye orantili
-     * en fazla 500 hiz bonusu eklenir. Sure dolduysa cevap yanlis sayilir.
-     */
-    public AnswerResult submitAnswer(int answerIndex) {
+
+
+    public synchronized AnswerResult previewAnswer(int answerIndex) {
         Question question = currentQuestion();
         long elapsed = elapsedMillis();
-
         boolean timedOut = questionStartedAt != 0 && elapsed > timeLimitSeconds * 1000L;
         boolean correct = !timedOut && question.isCorrect(answerIndex);
+        int earned = correct ? BASE_POINTS + speedBonus(elapsed) : 0;
+        return new AnswerResult(correct, timedOut, earned, elapsed, question);
+    }
 
-        int earned = 0;
-        if (correct) {
-            score++;
-            earned = BASE_POINTS + speedBonus(elapsed);
-            points += earned;
+
+    public synchronized void commitAnswer(AnswerResult result) {
+        if (result == null || !hasNext() || result.question() != currentQuestion()) {
+            throw new IllegalArgumentException("Cevap mevcut soruya ait degil.");
         }
-
+        if (result.correct()) {
+            score++;
+            points += result.earnedPoints();
+        }
         currentIndex++;
         questionStartedAt = 0;
-
-        AnswerResult result = new AnswerResult(correct, timedOut, earned, elapsed, question);
         history.add(result);
+    }
+
+
+
+    public synchronized AnswerResult submitAnswer(int answerIndex) {
+        AnswerResult result = previewAnswer(answerIndex);
+        commitAnswer(result);
         return result;
     }
 
-    /** Ne kadar hizli cevaplandiysa o kadar cok bonus. */
+
     private int speedBonus(long elapsedMillis) {
         double limit = timeLimitSeconds * 1000.0;
         double remainingRatio = 1.0 - (elapsedMillis / limit);
@@ -145,7 +133,7 @@ public class Quiz {
         return (int) Math.round(MAX_SPEED_BONUS * remainingRatio);
     }
 
-    /** Kacinci sorudayiz (insan sayimiyla: 1, 2, 3...). */
+
     public int getQuestionNumber() {
         return currentIndex + 1;
     }
@@ -158,7 +146,7 @@ public class Quiz {
         return points;
     }
 
-    /** Tam performansta toplanabilecek en yuksek puan. */
+
     public int getMaxPoints() {
         return questions.size() * (BASE_POINTS + MAX_SPEED_BONUS);
     }
@@ -171,12 +159,12 @@ public class Quiz {
         return Math.round(score * 100f / questions.size());
     }
 
-    /** Verilen cevaplarin kaydi (degistirilemez kopya). */
+
     public List<AnswerResult> getHistory() {
         return List.copyOf(history);
     }
 
-    /** Yanlis yapilan ya da suresi dolan sorular; tekrar modu bunu kullanir. */
+
     public List<Question> getWrongQuestions() {
         List<Question> wrong = new ArrayList<>();
         for (AnswerResult result : history) {
@@ -187,7 +175,7 @@ public class Quiz {
         return wrong;
     }
 
-    /** Bu quizde hangi kategoriler var? */
+
     public Set<String> getCategories() {
         Set<String> categories = new LinkedHashSet<>();
         for (Question q : questions) {

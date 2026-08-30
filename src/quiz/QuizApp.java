@@ -15,10 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * Programin giris noktasi.
- * Gorevi: parcalari birbirine baglamak. Kendi basina is mantigi barindirmaz.
- */
 public class QuizApp {
 
     private static final Path QUESTIONS_DIR = Path.of("questions");
@@ -33,7 +29,7 @@ public class QuizApp {
 
         ui.printBanner();
 
-        // 1) Sorulari yukle
+
         List<Question> allQuestions;
         List<String> warnings = new ArrayList<>();
         try {
@@ -55,9 +51,9 @@ public class QuizApp {
         }
         System.out.println();
 
-        // 2) Web modu mu, konsol modu mu?
-        //    ./run.sh web        -> tarayicidan oynanir
-        //    ./run.sh web 9000   -> baska port
+
+
+
         if (args.length > 0 && args[0].equalsIgnoreCase("web")) {
             int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
             try {
@@ -69,17 +65,17 @@ public class QuizApp {
                 System.out.println("Port " + port + " başka bir program tarafından kullanılıyor olabilir.");
                 System.out.println("Farklı bir port dene:  ./run.sh web 9000");
             }
-            return;   // sunucu arka planda calismaya devam eder
+            return;
         }
 
-        // 3) Konsol modu: oyuncu adi
+
         String playerName = ui.askText("Adın nedir? (boş bırak = Misafir): ", "Misafir");
 
         List<QuizSet> sets = QuizSetLoader.loadFromDirectory(SETS_DIR, warnings);
         List<Question> selected;
         int seconds = 20;
 
-        // 4) Hazir test mi, serbest tur mu?
+
         int setChoice = 0;
         if (!sets.isEmpty()) {
             System.out.println();
@@ -98,7 +94,7 @@ public class QuizApp {
             selected = set.build(allQuestions);
             seconds = set.getTimeLimitSeconds();
         } else {
-            // 5) Serbest tur: kategori ve soru sayisi
+
             List<String> categories = QuestionBank.categoriesOf(allQuestions);
             System.out.println();
             System.out.println("Kategoriler:");
@@ -120,7 +116,7 @@ public class QuizApp {
             selected = selected.subList(0, questionCount);
         }
 
-        // 6) Quiz'i kur ve oynat
+
         Quiz quiz = new Quiz(selected);
         quiz.shuffle();
         quiz.setTimeLimitSeconds(seconds);
@@ -129,7 +125,7 @@ public class QuizApp {
         ui.play(quiz);
         ui.printResult(quiz, playerName);
 
-        // 6) Skoru kaydet ve lider tablosunu goster
+
         Scoreboard scoreboard = new Scoreboard(SCORES_FILE);
         try {
             scoreboard.save(playerName, quiz.getScore(), quiz.getTotal(), quiz.getPoints());
@@ -143,7 +139,7 @@ public class QuizApp {
         scanner.close();
     }
 
-    /** Komut satirindan gelen port degerini dogrular. */
+
     private static int parsePort(String text) {
         try {
             int port = Integer.parseInt(text.trim());

@@ -1,0 +1,32 @@
+# baslik: Sunucu Kurulumu ve Yönetimi
+# aciklama: Linux sunucusunu kurma, güvenli yapılandırma ve temel işletim becerileri
+
+Bir sunucuda SSH'nin varsayılan portu hangisidir? | 21 | 22 | 53 | 443 | 2 | kolay
+> SSH varsayılan olarak TCP 22 portunu kullanır; FTP 21, DNS 53 ve HTTPS 443 ile ilişkilidir.
+
+Linux'ta bir servisi systemd ile başlatmak için hangi komut kullanılır? | systemctl start servis | service add servis | startd servis | daemon new servis | 1 | kolay
+> `systemctl start servis` çalışan oturum için servisi başlatır; kalıcı otomatik başlatma için ayrıca enable kullanılır.
+
+Bir servisin açılışta otomatik başlamasını sağlayan komut hangisidir? | systemctl enable servis | systemctl erase servis | systemctl freeze servis | systemctl copy servis | 1 | orta
+> `enable`, servisin ilgili açılış hedeflerine bağlanmasını sağlar; start ise o an çalıştırır.
+
+En az yetki ilkesi neyi önerir? | Kullanıcı ve servislere ihtiyaç duyduğu minimum yetkiyi vermeyi | Herkese yönetici yetkisi vermeyi | Parolaları ortak kullanmayı | Güncellemeleri kapatmayı | 1 | kolay
+> Gereksiz yetkiler saldırı yüzeyini büyütür; servisler mümkün olduğunca sınırlı hesaplarla çalıştırılmalıdır.
+
+Bir güvenlik duvarı kuralında kaynak port ile hedef port arasındaki fark nedir? | Kaynak gönderen tarafı, hedef servisin dinlediği tarafı belirtir | İkisi her zaman aynıdır | Kaynak IP'yi, hedef kullanıcıyı belirtir | Biri yalnızca parola taşır | 1 | orta
+> Ağ paketinde kaynak ve hedef uçlar farklı olabilir; sunucu çoğunlukla hedef portta bağlantı kabul eder.
+
+Log rotasyonu neden yapılır? | Logların diski doldurmasını önleyip eski kayıtları yönetmek için | Logları tamamen yok etmek için | Sunucuyu hızlandırmak için | Ağ adresini değiştirmek için | 1 | orta
+> Eski loglar sıkıştırılabilir veya süre politikasına göre silinebilir; olay inceleme ihtiyacı korunmalıdır.
+
+Bir hizmeti internete açmadan önce ilk güvenlik adımlarından biri hangisidir? | Gereksiz servisi kapatıp güncellemeleri uygulamak | Varsayılan parolayı korumak | Tüm portları açmak | Loglamayı kapatmak | 1 | kolay
+> Saldırı yüzeyini azaltmak, güncellemek ve güçlü kimlik doğrulama kullanmak temel savunmalardır.
+
+Yedekleme stratejisinde geri yükleme testi neden gereklidir? | Yedeğin gerçekten kullanılabilir olduğunu doğrulamak için | Yedek boyutunu büyütmek için | Parolayı değiştirmek için | Sunucuyu internete açmak için | 1 | orta
+> Başarılı yedekleme mesajı tek başına yeterli değildir; düzenli geri yükleme tatbikatı kurtarma hedefini sınar.
+
+Ters vekil (reverse proxy) genellikle ne yapar? | İstemci isteklerini arka uç servislerine yönlendirir | Klavyeyi şifreler | Disk bölümlerini birleştirir | DNS kayıtlarını otomatik siler | 1 | orta
+> Nginx veya benzeri bir ters vekil TLS sonlandırma, yönlendirme ve yük dağıtımı gibi görevler üstlenebilir.
+
+Bir sunucuda izleme (monitoring) neyi amaçlar? | Kaynak ve hizmet durumunu ölçüp sorunları erken fark etmeyi | Tüm logları gizlemeyi | Yedekleri silmeyi | Kullanıcı hesaplarını rastgele kapatmayı | 1 | kolay
+> CPU, bellek, disk, ağ ve servis metrikleri arıza oluşmadan önce uyarı üretmeye yardımcı olur.

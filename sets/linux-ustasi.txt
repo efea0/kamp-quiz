@@ -1,4 +1,4 @@
 # baslik: Linux Ustası
-# aciklama: Sadece Linux Temelleri paketinden 15 soruluk uzman turu
+# aciklama: Linux Temelleri paketinden 15 soruluk uzman turu
 # sure: 20
 Linux Temelleri = 15

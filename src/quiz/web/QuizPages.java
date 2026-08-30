@@ -12,38 +12,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Bir oyuncunun quiz sirasinda gordugu ekranlar:
- *
- *   /quiz    Siradaki soru (ya da az once verilen cevabin sonucu)
- *   /cevap   Cevabi degerlendirir, sonraki soruya yonlendirir
- *   /devam   "Devam" tusu: sonuc ekranindan sonraki soruya gecer
- *   /sonuc   Test bitince skor ekrani
- *   /tekrar  Yanlis yapilan sorulari yeni bir tur olarak baslatir
- *
- * Bir oda SENKRON modda ise (hoca herkesi ayni soruda tutuyorsa) /quiz
- * isteği burada Room'un durumuna gore ayri bir ekrana (sendSyncScreen)
- * yonlendirilir; serbest oyunda normal akis isler.
- */
 public final class QuizPages {
 
     private final ServerContext ctx;
 
-    /**
-     * Bu turda hangi sik hangi soruda isaretlendi; quiz.getHistory() ile ayni
-     * sirada tutulur. Quiz.AnswerResult isaretlenen sikki tasimiyor (yalnizca
-     * dogru/yanlis, sure ve soruyu), ama sonuc ekraninda "senin cevabin"i
-     * gostermek icin buna ihtiyacimiz var. Anahtar Quiz NESNESININ KENDISI
-     * (Quiz equals/hashCode override etmiyor, yani kimlik bazli); her yeni
-     * Quiz (orn. /tekrar ile baslayan tur) kendi bos listesiyle baslar.
-     */
+
+
     private final Map<Quiz, List<Integer>> chosenAnswers = new ConcurrentHashMap<>();
 
     public QuizPages(ServerContext ctx) {
         this.ctx = ctx;
     }
 
-    /** Sirdaki soruyu ya da az once verilen cevabin sonucunu gosterir. */
+
     public void handleQuiz(HttpExchange exchange) throws IOException {
         GameSession session = ctx.currentSession(exchange);
         if (session == null) {
@@ -51,14 +32,14 @@ public final class QuizPages {
             return;
         }
 
-        // Senkron odada akisi oda yonetir; serbest akis kurallari isletilmez.
+
         Room room = session.getRoomCode() == null ? null : ctx.getRooms().get(session.getRoomCode());
         if (room != null && room.isSynchronous()) {
             sendSyncScreen(exchange, session, room);
             return;
         }
 
-        // Cevap verildiyse once sonuc ekrani gosterilir ("Devam" ile gecilir).
+
         if (session.getFeedback() != null) {
             ctx.sendHtml(exchange, 200, Html.page("Cevap", reviewScreen(session)));
             return;
@@ -70,7 +51,7 @@ public final class QuizPages {
             return;
         }
 
-        // Sayac soru ekrana gelince baslar. Ayni soru icin ikinci cagri sifirlamaz.
+
         quiz.startQuestionTimer();
 
         String body = questionScreen(quiz, quiz.remainingSeconds(), quiz.getTimeLimitSeconds(),
@@ -79,7 +60,7 @@ public final class QuizPages {
         ctx.sendHtml(exchange, 200, Html.page("Soru " + quiz.getQuestionNumber(), body));
     }
 
-    /** Cevabi degerlendirir ve bir sonraki soruya yonlendirir. */
+
     public void handleAnswer(HttpExchange exchange) throws IOException {
         GameSession session = ctx.currentSession(exchange);
         if (session == null) {
@@ -93,6 +74,14 @@ public final class QuizPages {
             return;
         }
 
+        Room room = session.getRoomCode() == null ? null : ctx.getRooms().get(session.getRoomCode());
+        if (room != null && room.isSynchronous()) {
+            int answer = ServerContext.parseIntOr(ctx.readForm(exchange).get("cevap"), -1);
+            room.submitSyncAnswer(session, answer);
+            ctx.redirect(exchange, "/quiz");
+            return;
+        }
+
         Question question = quiz.currentQuestion();
         int answer = ServerContext.parseIntOr(ctx.readForm(exchange).get("cevap"), -1);
         Quiz.AnswerResult result = quiz.submitAnswer(answer);
@@ -101,12 +90,12 @@ public final class QuizPages {
         session.setFeedback(new GameSession.Feedback(
                 result.correct(), result.timedOut(), result.earnedPoints(), question, answer));
 
-        // Cevaptan sonra yonlendiriyoruz ki kullanici sayfayi yenileyince
-        // ayni cevap tekrar gonderilmesin (POST-Redirect-GET deseni).
+
+
         ctx.redirect(exchange, "/quiz");
     }
 
-    /** "Devam" tusu: sonucu temizler, sonraki soruya gecer. */
+
     public void handleContinue(HttpExchange exchange) throws IOException {
         GameSession session = ctx.currentSession(exchange);
         if (session == null) {
@@ -117,7 +106,7 @@ public final class QuizPages {
         ctx.redirect(exchange, session.getQuiz().hasNext() ? "/quiz" : "/sonuc");
     }
 
-    /** Sonuc sayfasi; skoru bir kez kaydeder. */
+
     public void handleResult(HttpExchange exchange) throws IOException {
         GameSession session = ctx.currentSession(exchange);
         if (session == null) {
@@ -164,7 +153,7 @@ public final class QuizPages {
         ctx.sendHtml(exchange, 200, Html.page("Sonuç", body));
     }
 
-    /** Yanlis yapilan sorulari yeni bir tur olarak sunar. */
+
     public void handleRetry(HttpExchange exchange) throws IOException {
         String sessionId = ctx.currentSessionId(exchange);
         GameSession previous = sessionId == null ? null : ctx.getSessions().get(sessionId);
@@ -174,9 +163,9 @@ public final class QuizPages {
         }
 
         List<Question> wrong = previous.getQuiz().getWrongQuestions();
-        // Yanlis yoksa "ayni testi tekrar coz": tum sorular, cevaplanmis
-        // sirayla (previous.getQuiz() /sonuc'a ulastigina gore tamamen
-        // oynanmis olmali, yani gecmis tum sorulari icerir).
+
+
+
         List<Question> pool = wrong.isEmpty() ? allAnsweredQuestions(previous.getQuiz()) : wrong;
         if (pool.isEmpty()) {
             ctx.redirect(exchange, "/sonuc");
@@ -187,17 +176,15 @@ public final class QuizPages {
         retry.shuffle();
         retry.setTimeLimitSeconds(previous.getQuiz().getTimeLimitSeconds());
 
-        // Tekrar turu odanin siralamasina KATILMAZ; yoksa oda tablosu bozulurdu.
+
         ctx.getSessions().put(sessionId, new GameSession(previous.getPlayerName(), retry, null));
         ctx.redirect(exchange, "/quiz");
     }
 
-    // ------------------------------------------------------------- ekranlar
 
-    /**
-     * Soru ekrani. Hem serbest hem senkron akista kullanilir; fark yalnizca
-     * kalan surenin nereden geldigi.
-     */
+
+
+
     private String questionScreen(Quiz quiz, int remaining, int limit,
                                   int questionNumber, int total) {
         Question question = quiz.currentQuestion();
@@ -263,7 +250,7 @@ public final class QuizPages {
                 limit, remaining);
     }
 
-    /** Cevap sonrasi ekrani: dogru sik yesil, secilen yanlis sik kirmizi. */
+
     private String reviewScreen(GameSession session) {
         GameSession.Feedback fb = session.getFeedback();
         Question question = fb.question();
@@ -323,7 +310,7 @@ public final class QuizPages {
                 fb.correct() ? "" : "blue");
     }
 
-    /** Senkron odadaki oyuncunun gordugu ekran; odanin durumuna gore degisir. */
+
     private void sendSyncScreen(HttpExchange exchange, GameSession session, Room room)
             throws IOException {
         Quiz quiz = session.getQuiz();
@@ -336,7 +323,7 @@ public final class QuizPages {
                     room.playerCount() + " kişi bekliyor");
 
             case SORU -> {
-                if (playerIndex > room.getIndex() || !quiz.hasNext()) {
+                if (session.hasPendingAnswer() || playerIndex > room.getIndex() || !quiz.hasNext()) {
                     sendWaiting(exchange, "Cevabın alındı",
                             "Diğerlerini bekliyoruz. Hoca cevabı açınca doğrusunu göreceksin.",
                             "Soru " + (room.getIndex() + 1) + " / " + total);
@@ -357,7 +344,7 @@ public final class QuizPages {
         }
     }
 
-    /** Bekleme ekrani: kendi kendine yenilenir. */
+
     private void sendWaiting(HttpExchange exchange, String title, String message, String meta)
             throws IOException {
         String body = """
@@ -375,7 +362,7 @@ public final class QuizPages {
                 "  <meta http-equiv=\"refresh\" content=\"2\">\n"));
     }
 
-    /** Senkron odada cevap acildiginda gosterilen ekran. */
+
     private String syncReviewScreen(GameSession session, Room room, int total) {
         Question question = room.currentQuestion(ctx.getAllQuestions());
         Quiz quiz = session.getQuiz();
@@ -440,10 +427,8 @@ public final class QuizPages {
                 board);
     }
 
-    /**
-     * Bir onceki turda cevaplanmis TUM sorular, cevaplanma sirasiyla.
-     * /tekrar yanlis yoksa buradan "ayni testi tekrar coz" turu kurar.
-     */
+
+
     private static List<Question> allAnsweredQuestions(Quiz quiz) {
         List<Question> all = new ArrayList<>();
         for (Quiz.AnswerResult result : quiz.getHistory()) {
@@ -452,13 +437,10 @@ public final class QuizPages {
         return all;
     }
 
-    /**
-     * Kategori dokumu: her kategoride kac dogru/toplam ve yuzde, yatay
-     * cubukla. Tek kategorili bir testte ust bilgideki skor zaten yeterli
-     * oldugundan bu blok bos doner.
-     */
+
+
     private static String categoryBreakdown(Quiz quiz) {
-        Map<String, int[]> tally = new LinkedHashMap<>();   // kategori -> [dogru, toplam]
+        Map<String, int[]> tally = new LinkedHashMap<>();
         for (String category : quiz.getCategories()) {
             tally.put(category, new int[2]);
         }
@@ -520,7 +502,7 @@ public final class QuizPages {
                 %s""".formatted(rows, note);
     }
 
-    /** Ortalama cevap suresi ve en hizli dogru cevabin suresi. */
+
     private static String speedSummary(Quiz quiz) {
         List<Quiz.AnswerResult> history = quiz.getHistory();
         if (history.isEmpty()) {
@@ -548,7 +530,7 @@ public final class QuizPages {
                 """.formatted(avg, fastest);
     }
 
-    /** Milisaniyeyi "8.3 sn" gibi bir metne cevirir. */
+
     private static String formatSeconds(long millis) {
         double seconds = Math.round(millis / 100.0) / 10.0;
         String number = seconds == Math.rint(seconds)
@@ -557,10 +539,8 @@ public final class QuizPages {
         return number + " sn";
     }
 
-    /**
-     * Yanlis yapilan her sorunun kalip okunacak gozden gecirmesi: soru,
-     * isaretlenen sik, dogru sik, aciklama. Yanlis yoksa bos doner.
-     */
+
+
     private String wrongReview(Quiz quiz) {
         List<Quiz.AnswerResult> history = quiz.getHistory();
         List<Integer> chosen = chosenAnswers.getOrDefault(quiz, List.of());
@@ -612,7 +592,7 @@ public final class QuizPages {
                 """.formatted(wrongCount, cards);
     }
 
-    /** Yanlis varsa "tekrar coz" butonu; yoksa ayni testi tekrar baslat. */
+
     private static String retryButton(Quiz quiz) {
         int wrong = quiz.getWrongQuestions().size();
         if (wrong == 0) {

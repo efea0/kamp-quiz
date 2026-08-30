@@ -3,20 +3,12 @@ package quiz.ai;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Cok kucuk bir JSON yardimcisi.
- *
- * Neden hazir kutuphane yok? Cunku projenin kurali "sifir bagimlilik".
- * Tam bir JSON ayristirici yazmiyoruz; sadece iki isimiz var:
- *   1) gonderecegimiz metni JSON dizesine cevirmek (escape)
- *   2) gelen cevaptan belirli bir anahtarin dize degerlerini cikarmak
- */
 final class Json {
 
     private Json() {
     }
 
-    /** Bir metni JSON dizesi icine guvenle konacak hale getirir. */
+
     static String escape(String text) {
         StringBuilder out = new StringBuilder(text.length() + 16);
         for (int i = 0; i < text.length(); i++) {
@@ -39,10 +31,8 @@ final class Json {
         return out.toString();
     }
 
-    /**
-     * JSON metninde "anahtar": "deger" seklindeki tum degerleri toplar.
-     * Ic ice yapiyi umursamaz; bize yeten bu.
-     */
+
+
     static List<String> valuesOf(String json, String key) {
         List<String> found = new ArrayList<>();
         String needle = "\"" + key + "\"";
@@ -51,7 +41,7 @@ final class Json {
         while ((i = json.indexOf(needle, i)) >= 0) {
             int p = i + needle.length();
 
-            // ':' ve bosluklari atla
+
             while (p < json.length() && Character.isWhitespace(json.charAt(p))) p++;
             if (p >= json.length() || json.charAt(p) != ':') { i = p; continue; }
             p++;
@@ -65,7 +55,7 @@ final class Json {
         return found;
     }
 
-    /** Acilis tirnagindan baslayarak bir JSON dizesini okur ve kacislari cozer. */
+
     private static String readString(String json, int start, int[] endOut) {
         StringBuilder out = new StringBuilder();
         int i = start + 1;
@@ -73,7 +63,7 @@ final class Json {
         while (i < json.length()) {
             char c = json.charAt(i);
 
-            if (c == '"') {           // dize bitti
+            if (c == '"') {
                 i++;
                 break;
             }
@@ -83,7 +73,7 @@ final class Json {
                 continue;
             }
 
-            // kacis dizisi
+
             i++;
             if (i >= json.length()) break;
             char e = json.charAt(i++);

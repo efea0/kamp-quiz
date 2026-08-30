@@ -1,0 +1,6 @@
+# baslik: Web ve Yazılım Temelleri
+# aciklama: Web, API, programlama ve ağ temellerini birleştiren bilişim mix'i
+# sure: 20
+Web, HTTP ve API = 4
+Yazılım Temelleri = 4
+Ağ Temelleri = 2

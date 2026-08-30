@@ -1,0 +1,6 @@
+# baslik: Ağ ve Sunucu Temelleri
+# aciklama: Ağlara giriş, Linux ve sunucu yönetimini birleştiren teknik ders mix'i
+# sure: 20
+Ağ Temelleri = 5
+Sunucu Kurulumu ve Yönetimi = 5
+Linux Temelleri = 3

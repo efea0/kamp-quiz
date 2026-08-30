@@ -1,9 +1,11 @@
 # baslik: Hızlı Tur
-# aciklama: 10 soruda kısa ve karışık bir tur, saniyeler kısıtlı
-# sure: 10
+# aciklama: 10 soruda teknik ve akademik becerilerden kısa karışık tur
+# sure: 15
 Ağ Temelleri = 2
 Linux Temelleri = 2
-Donanım Temelleri = 2
-Özgür Yazılım = 2
-Yazılım Temelleri = 1
-Genel Kültür = 1
+Sunucu Kurulumu ve Yönetimi = 1
+Web, HTTP ve API = 1
+Üniversite ve Akademik Okuryazarlık = 1
+Veri ve Sayısal Okuryazarlık = 1
+İşletme Temelleri = 1
+Psikoloji Temelleri = 1

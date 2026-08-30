@@ -10,13 +10,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * AI ile soru paketi uretme sayfasi: /uret
- *
- * Akis uc adimli: konu yaz -> AI taslak uretir -> istersen AI'ya
- * duzelttirip pakete kaydedersin. QUIZ_ADMIN_KEY tanimliysa once bir
- * parola sayfasi gosterilir (bkz. ctx.isAdmin).
- */
 public final class GeneratePages {
 
     private final ServerContext ctx;
@@ -25,7 +18,7 @@ public final class GeneratePages {
         this.ctx = ctx;
     }
 
-    /** Soru paketi uretme, AI ile duzenleme ve kaydetme sayfasi. */
+
     public void handleGenerate(HttpExchange exchange) throws IOException {
         if (!ctx.getGenerator().isEnabled()) {
             ctx.sendHtml(exchange, 200, Html.page("AI kapalı", """
@@ -54,7 +47,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
             return;
         }
 
-        // Parola tanimliysa once giris istenir.
+
         if (!ctx.getAdminKey().isEmpty() && !ctx.isAdmin(exchange)) {
             if ("POST".equals(exchange.getRequestMethod())) {
                 String given = ctx.readForm(exchange).getOrDefault("parola", "");
@@ -199,7 +192,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 """.formatted(Html.escape(ctx.getGenerator().describe()), warning);
     }
 
-    /** Uretilen taslagi gosterir: elle duzenlenebilir, AI ile de duzenlenebilir. */
+
     private String draftEditor(String title, String draft, String error) {
         String warning = error == null ? ""
                 : "  <div class=\"verdict bad\"><h3><span>Olmadı</span></h3>"
@@ -213,7 +206,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
             }
         }
 
-        // Kutu icerige gore buyusun; sabit yukseklik bos alan birakiyor.
+
         int rows = Math.max(8, Math.min(26, draft.split("\\n").length + 2));
 
         return """
@@ -263,10 +256,8 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
                 """.formatted(Html.escape(title), Html.escape(file.toString()));
     }
 
-    /**
-     * Taslagi dosyaya yazar. Once GECICI bir dosyaya yazip QuestionBank ile
-     * okutur; gecerli soru cikmazsa hicbir sey kaydedilmez.
-     */
+
+
     private Path saveDraft(String title, String draft) throws IOException {
         String safeTitle = title.isBlank() ? "Üretilen Paket" : title.trim();
         String content = "# baslik: " + safeTitle + "\n"
@@ -290,7 +281,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
         }
     }
 
-    /** Dosya adi olarak guvenli bir metin uretir (dizin gecisi engellenir). */
+
     private static String slug(String text) {
         String lower = text.toLowerCase(java.util.Locale.forLanguageTag("tr"))
                 .replace('ı', 'i').replace('ğ', 'g').replace('ü', 'u')
@@ -313,7 +304,7 @@ chmod 600 ~/.config/kamp-quiz/gemini.key
         return slug.length() > 40 ? slug.substring(0, 40) : slug;
     }
 
-    /** Ayni adda dosya varsa sonuna sayi ekler. */
+
     private Path uniquePath(String slug) {
         Path candidate = ctx.getQuestionsDir().resolve(slug + ".txt");
         int n = 2;

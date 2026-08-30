@@ -1,0 +1,32 @@
+# baslik: İletişim ve Medya Okuryazarlığı
+# aciklama: Her bölüm için günlük ve mesleki iletişim, bilgi doğrulama ve medya temelleri
+
+İletişim sürecindeki kanal neyi ifade eder? | Mesajın iletildiği ortamı | Mesajın amacını | Alıcının kişiliğini | Gürültünün kaynağını | 1 | kolay
+> Kanal; konuşma, e-posta, telefon veya sosyal medya gibi mesajın taşındığı ortamdır.
+
+İletişimde gürültü (noise) nedir? | Mesajın anlaşılmasını bozan etken | Yalnızca yüksek ses | Mesajın konusu | Alıcının adı | 1 | kolay
+> Gürültü fiziksel ses, teknik kesinti, dil farkı veya dikkat dağınıklığı gibi birçok biçimde olabilir.
+
+Etkin dinlemenin temel göstergesi hangisidir? | Karşıdakinin mesajını anlamaya çalışıp uygun geri bildirim vermek | Cevabı sürekli kesmek | Yalnızca konuşmayı beklemek | Göz teması kurmamak | 1 | kolay
+> Etkin dinleme, anlamayı kontrol etmeyi ve kişinin mesajını doğru kavradığını göstermeyi içerir.
+
+Medya okuryazarlığında kaynağı doğrulamak için hangisi daha güvenilirdir? | İddianın birincil kaynağını ve bağımsız kaynakları kontrol etmek | Yalnızca paylaşım sayısına bakmak | Başlığa göre karar vermek | Yorumları kanıt saymak | 1 | orta
+> Kaynağın kimliği, tarihi, kanıtları ve başka güvenilir kaynaklarla uyumu birlikte incelenmelidir.
+
+Çerçeveleme (framing) etkisi nedir? | Bir olayın sunuluş biçiminin algıyı etkileyebilmesi | Kameranın çözünürlüğü | Mesajın şifrelenmesi | Mikrofonun bozulması | 1 | orta
+> Aynı bilgi farklı vurgu ve kelimelerle sunulduğunda insanların yorumu değişebilir.
+
+Gündem belirleme yaklaşımı neyi öne çıkarır? | Medyanın hangi konuların önemli görüneceğini etkileyebilmesini | Medyanın tüm fikirleri yasaklamasını | Haberlerin her zaman tarafsız olmasını | İzleyicinin pasif kalmasını | 1 | orta
+> Medya bir konuyu görünür kılarak kamuoyunun dikkatini o konuya yönlendirebilir; bu, insanların ne düşüneceğini tamamen belirlediği anlamına gelmez.
+
+Yapıcı geri bildirim nasıl olmalıdır? | Davranışa ve etkisine odaklanan, somut ve geliştirici | Kişiliğe saldıran | Belirsiz ve gecikmiş | Yalnızca övgüden oluşan | 1 | kolay
+> “Sen dikkatsizsin” yerine “raporda şu veri eksik kaldı, tamamlayalım” gibi somut ifadeler daha işlevseldir.
+
+Kriz iletişiminde ilkelerden biri hangisidir? | Doğru, zamanında ve tutarlı bilgi vermek | Bilgiyi süresiz saklamak | Söylentiyi doğrulamadan paylaşmak | Sorumluluğu başkasına atmak | 1 | orta
+> Krizde belirsizlik artar; güvenilir ve güncel bilgi paylaşımı yanlış yorumları azaltır.
+
+Telif hakkı neden önemlidir? | Üreticinin eser üzerindeki haklarını ve kullanım koşullarını koruduğu için | Her içeriği otomatik olarak ücretsiz yaptığı için | Kaynak göstermeyi gereksiz kıldığı için | İnterneti kapattığı için | 1 | kolay
+> Bir içeriğin internette bulunması, izinsiz kopyalanabileceği anlamına gelmez; lisans ve kullanım koşulları incelenmelidir.
+
+Yüz yüze olmayan iletişimde yanlış anlaşılmayı azaltmak için hangisi uygundur? | Açık yazmak, varsayım yapmamak ve gerekirse anlamayı teyit etmek | Sadece büyük harf kullanmak | Bağlam vermemek | Yanıtı geciktirmek | 1 | kolay
+> Yazılı iletişimde ton ve beden dili görünmediği için kısa bağlam ve teyit soruları özellikle değerlidir.

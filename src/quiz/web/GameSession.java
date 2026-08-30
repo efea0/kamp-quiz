@@ -3,28 +3,23 @@ package quiz.web;
 import quiz.core.Quiz;
 import quiz.model.Question;
 
-/**
- * Tek bir oyuncunun web oturumu.
- * Sunucu ayni anda birden fazla oyuncuya hizmet verdigi icin,
- * her oyuncunun kendi Quiz nesnesi ve kendi ilerlemesi olmalidir.
- */
 class GameSession {
 
-    /**
-     * Cevaplanmis bir sorunun sonucu.
-     * Cevap ekraninda soruyu ve siklari tekrar gosterebilmek icin
-     * sorunun kendisini de tasir.
-     */
+
+
     record Feedback(boolean correct, boolean timedOut, int earnedPoints,
                     Question question, int chosenIndex) {
     }
 
     private final String playerName;
     private final Quiz quiz;
-    private final String roomCode;   // oda disinda oynayanlarda null
+    private final String roomCode;
 
-    /** Cevap verildikten sonra gosterilecek sonuc; "Devam" ile temizlenir. */
+
     private Feedback feedback;
+
+
+    private Quiz.AnswerResult pendingAnswer;
     private boolean scoreSaved;
 
     GameSession(String playerName, Quiz quiz, String roomCode) {
@@ -55,6 +50,28 @@ class GameSession {
 
     void clearFeedback() {
         this.feedback = null;
+    }
+
+    synchronized Quiz.AnswerResult getPendingAnswer() {
+        return pendingAnswer;
+    }
+
+    synchronized boolean hasPendingAnswer() {
+        return pendingAnswer != null;
+    }
+
+    synchronized boolean setPendingAnswer(Quiz.AnswerResult answer) {
+        if (pendingAnswer != null) {
+            return false;
+        }
+        pendingAnswer = answer;
+        return true;
+    }
+
+    synchronized Quiz.AnswerResult takePendingAnswer() {
+        Quiz.AnswerResult answer = pendingAnswer;
+        pendingAnswer = null;
+        return answer;
     }
 
     boolean isScoreSaved() {

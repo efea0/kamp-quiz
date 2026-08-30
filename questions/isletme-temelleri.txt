@@ -1,0 +1,32 @@
+# baslik: İşletme Temelleri
+# aciklama: İşletme, ekonomi ve girişimcilik öğrencileri için temel kavramlar
+
+Gelirden toplam maliyet çıkarıldığında hangi büyüklük elde edilir? | Kâr | Stok | Ciro | Faiz | 1 | kolay
+> Kâr = gelir - maliyet olarak hesaplanır. Ciro ise genellikle toplam satış gelirini anlatır.
+
+Kira gibi üretim miktarı değişse de kısa vadede aynı kalan maliyet nedir? | Sabit maliyet | Değişken maliyet | Fırsat maliyeti | Batık gelir | 1 | kolay
+> Sabit maliyet üretim miktarından bağımsızdır; kira tipik bir örnektir.
+
+Nakit akışı neyi izler? | İşletmeye giren ve çıkan nakdi | Yalnızca kâr oranını | Çalışan sayısını | Marka bilinirliğini | 1 | kolay
+> Kârlı görünen bir işletme bile nakit giriş-çıkış zamanlaması kötüyse ödeme güçlüğü yaşayabilir.
+
+Pazar bölümlendirme (segmentasyon) nedir? | Pazarı ortak özelliklere sahip gruplara ayırmak | Ürünü depoya kaldırmak | Maliyeti gizlemek | Rakipleri satın almak | 1 | orta
+> Yaş, ihtiyaç, davranış veya konum gibi özelliklerle müşteri gruplarını ayırmak daha uygun değer önerileri geliştirmeyi sağlar.
+
+SWOT analizindeki T harfi neyi temsil eder? | Tehditler | Teknoloji | Tedarik | Taktikler | 1 | kolay
+> SWOT; güçlü yönler, zayıf yönler, fırsatlar ve tehditlerden oluşur.
+
+Başabaş noktası ne zaman oluşur? | Toplam gelir toplam maliyete eşit olduğunda | Kâr en yüksek olduğunda | Hiç satış yapılmadığında | Stok sıfırlandığında | 1 | orta
+> Başabaşta işletme ne kâr ne de zarar eder; satış geliri tüm maliyetleri karşılar.
+
+Talep sabitken fiyat artarsa genel olarak ne beklenir? | Talep edilen miktarın azalması | Arzın kesinlikle sıfırlanması | Ürünün ücretsiz olması | Maliyetin otomatik düşmesi | 1 | orta
+> Diğer koşullar sabitken fiyat artışı çoğu malda talep edilen miktarı azaltır.
+
+Fırsat maliyeti nedir? | Bir seçimin kaçırılan en iyi alternatifinin değeri | Ürünün etiket fiyatı | Vergi oranı | Depolama alanı | 1 | orta
+> Kaynak sınırlı olduğunda bir seçimi yapmanın bedeli, vazgeçilen en iyi alternatifin değeridir.
+
+Bilanço temel olarak neyi gösterir? | Belirli bir tarihte varlık, borç ve özkaynak durumunu | Yalnızca günlük satışları | Reklam metnini | Çalışan memnuniyetini | 1 | orta
+> Bilanço belirli bir andaki finansal durumu fotoğraf gibi gösterir.
+
+KPI ne için kullanılır? | Hedefe ilerlemeyi izleyen ölçülebilir gösterge olarak | Sözleşme türü olarak | Vergi belgesi olarak | Logo standardı olarak | 1 | kolay
+> KPI, performansın hedefe göre izlenmesini sağlayan seçilmiş ölçüttür.

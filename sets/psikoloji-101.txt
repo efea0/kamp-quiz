@@ -1,0 +1,4 @@
+# baslik: Psikoloji 101
+# aciklama: Psikolojiye giriş ve insan davranışı kavramları
+# sure: 20
+Psikoloji Temelleri = 10

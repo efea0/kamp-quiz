@@ -1,0 +1,4 @@
+# baslik: İşletme 101
+# aciklama: İşletme ve girişimcilik öğrencileri için temel kavramlar
+# sure: 20
+İşletme Temelleri = 10

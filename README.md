@@ -12,7 +12,7 @@ trafiği modemin ötesine hiç gitmez, dışarıdaki hiçbir sunucuya bağlanıl
 ```bash
 git clone https://github.com/efea0/kamp-quiz.git
 cd kamp-quiz
-./run.sh web            # Windows: run.bat web
+./run.sh web
 ```
 
 > **Gereksinim: Java 17 veya üzeri — JDK, sadece JRE değil.**
@@ -33,7 +33,7 @@ cd kamp-quiz
 | Soru | Cevap ve nedeni | Sonuç |
 |:---:|:---:|:---:|
 | <img src="assets/ekran-soru.png" alt="Soru ekranı" width="230"> | <img src="assets/ekran-cevap.png" alt="Cevap değerlendirmesi" width="230"> | <img src="assets/ekran-ana.png" alt="Test seçme ekranı" width="230"> |
-| Süre işlerken cevap ver. Hızlı cevap daha çok puan. | Doğru şık yeşil, seçtiğin yanlış şık kırmızı, altında **neden** o cevap. | 6 hazır test ya da kendi ayarların. |
+| Süre işlerken cevap ver. Hızlı cevap daha çok puan. | Doğru şık yeşil, seçtiğin yanlış şık kırmızı, altında **neden** o cevap. | 12 hazır test ya da kendi ayarların. |
 
 | Projeksiyon | Yanlış raporu |
 |:---:|:---:|
@@ -53,21 +53,24 @@ cd kamp-quiz
 | 💡 **Açıklamalar** | Yanlış yapınca doğrusunu **ve nedenini** gösterir |
 | 🔁 **Tekrar modu** | Sadece yanlışlarından oluşan ikinci bir tur |
 | 📊 **Yanlış raporu** | Hocaya: hangi konuyu tekrar anlatmalı |
+| 🧾 **Yoklama çıktısı** | Katılımcı, cevaplanan soru, doğru/yanlış ve doğruluk oranı CSV olarak indirilebilir |
+| 🖥 **Projeksiyon dashboard'u** | Sayaç, süre, soru ilerlemesi, kalan soru, cevaplayan sayısı ve sıralama |
+| 🔊 **Ses ve animasyon** | Kullanıcı etkileşimiyle etkinleşen ses efektleri ve projeksiyon geçişleri |
 | 🖥 **İki arayüz** | Terminalde tek kişilik, tarayıcıda sınıfça — aynı motor |
 | 🤖 **AI ile soru üretimi** | Konu yaz, paket üretsin; düzenle, onayla, kaydet |
 
-**81 soru** · 7 kategori · **6 hazır test** · 216 otomatik denetim · **0 dış bağımlılık**
+**137 soru** · 12 kategori · **12 hazır test** · 373 otomatik denetim · **0 dış bağımlılık**
 
 ---
 
 ## Sınıfça oynamak — 3 adım
 
-1. **Oda kur** → `/kur` sayfasından bir test seç, 4 haneli kod üretilir
-2. **Perdeye aç** → `/ekran?kod=1234`, sıralama 3 saniyede bir yenilenir
-3. **Katıl** → öğrenciler kodu yazar ya da ekrandaki QR'ı okutur
+1. **Oda kur** → `/kur` sayfasından bir test seç, akış olarak `Senkron` seçersen sınıf aynı soruda ilerler
+2. **Perdeye aç** → `/ekran?kod=1234`; dashboard, soru, süre, cevaplayan sayısı ve sıralama otomatik yenilenir
+3. **Katıl** → öğrenciler kodu yazar ya da ekrandaki QR'ı okutur; QR oda kodunu Safari'de hazır taşır
 
-Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** — yan masadan kopyalanamaz.
-Test bitince `/rapor?kod=1234` en çok yanlış yapılan soruları sıralar.
+Senkron modda puan ve sıralama, tüm katılımcılar cevap verince veya hoca **Cevabı göster** düğmesine basınca güncellenir.
+Test bitince `/rapor?kod=1234` en çok yanlış yapılan soruları sıralar. Oda panelindeki CSV bağlantıları yoklama ve soru analiz dosyalarını indirir.
 
 ---
 
@@ -91,7 +94,7 @@ Java bilmene gerek yok. `questions/` klasörüne bir `.txt` dosyası ekle:
 
 ```bash
 git checkout -b soru/tarih-paketi
-./run.sh test          # bozmadığından emin ol
+./run.sh test
 git commit -am "Tarih soru paketi eklendi"
 git push -u origin soru/tarih-paketi
 ```
@@ -208,7 +211,7 @@ OpenRouter'a otomatik geçilir.** Ortam değişkeni de çalışır (`GEMINI_API_
 kabuk geçmişine düşer, bu yüzden dosya daha güvenlidir.
 
 ```bash
-export QUIZ_ADMIN_KEY="birparola"    # /uret sayfasını kilitler, önerilir
+export QUIZ_ADMIN_KEY="birparola"
 export OPENROUTER_MODEL="saglayici/model"
 ```
 
@@ -276,9 +279,11 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 | ✔ | Katmanlı mimari, dosyadan soru okuma, skor ve lider tablosu |
 | ✔ | Web arayüzü, oda kodu, projeksiyon ekranı, QR ile katılım |
 | ✔ | Süre sınırı, hız puanı, açıklamalar, tekrar modu, yanlış raporu |
-| ✔ | Hazır test setleri, AI ile soru üretme, kendi kendini test |
+| ✔ | Hazır test setleri, bölüm bazlı kategori mix'leri, AI ile soru üretme, kendi kendini test |
+| ✔ | Senkron canlı mod — herkes aynı soruda, hoca ilerletir |
+| ✔ | Projeksiyon dashboard'u, ses/animasyon, QR ile oda kodlu katılım |
+| ✔ | Yoklama ve soru analizi için CSV çıktıları |
 | ☐ | Takım modu |
-| ☐ | Senkron canlı mod — herkes aynı soruda, hoca ilerletir |
 
 ## Katkı
 

@@ -1,28 +1,19 @@
 package quiz.web;
 
-/**
- * Kucuk bir QR kod uretici (byte modu, M seviye hata duzeltme, surum 1-6).
- *
- * Neden hazir kutuphane yok? Projenin kurali sifir bagimlilik. Bir baglanti
- * adresi icin surum 6'ya kadar yetiyor (108 bayt); yerel ag adresleri bunun
- * cok altinda kaliyor.
- *
- * Uretilen kod SVG olarak verilir; boylece projeksiyonda buyutulunce bulanmaz.
- */
 final class QrCode {
 
-    /** Surum basina: [hata duzeltme kodsozcugu/blok, blok sayisi, blok basina veri] */
+
     private static final int[][] ECC_M = {
-            {},              // 0 kullanilmiyor
-            {10, 1, 16},     // surum 1  -> 16 veri kodsozcugu
-            {16, 1, 28},     // surum 2  -> 28
-            {26, 1, 44},     // surum 3  -> 44
-            {18, 2, 32},     // surum 4  -> 64
-            {24, 2, 43},     // surum 5  -> 86
-            {16, 4, 27},     // surum 6  -> 108
+            {},
+            {10, 1, 16},
+            {16, 1, 28},
+            {26, 1, 44},
+            {18, 2, 32},
+            {24, 2, 43},
+            {16, 4, 27},
     };
 
-    /** Surum basina hizalama deseni merkezi (surum 1'de yok). */
+
     private static final int[] ALIGN = {0, 0, 18, 22, 26, 30, 34};
 
     private final int size;
@@ -33,9 +24,9 @@ final class QrCode {
         this.dark = dark;
     }
 
-    // ------------------------------------------------------------------ API
 
-    /** Metni QR koda cevirir. Sigmazsa IllegalArgumentException firlatir. */
+
+
     static QrCode encode(String text) {
         byte[] data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
@@ -58,7 +49,7 @@ final class QrCode {
         drawFunctionPatterns(modules, reserved, version, size);
         placeData(modules, reserved, codewords, size);
 
-        // Sekiz maskeyi de dene, en az cezali olani sec.
+
         int bestMask = 0;
         int bestPenalty = Integer.MAX_VALUE;
         boolean[][] best = null;
@@ -79,9 +70,9 @@ final class QrCode {
         return new QrCode(size, best);
     }
 
-    /** QR kodu SVG olarak dondurur. */
+
     String toSvg(int pixelSize, String darkColor, String lightColor) {
-        int quiet = 4;                       // kenar bosluğu (standart 4 modul)
+        int quiet = 4;
         int total = size + quiet * 2;
 
         StringBuilder path = new StringBuilder();
@@ -100,24 +91,24 @@ final class QrCode {
                 + "<path d=\"" + path + "\" fill=\"" + darkColor + "\"/></svg>";
     }
 
-    // -------------------------------------------------------------- veri
+
 
     private static int totalDataCodewords(int version) {
         return ECC_M[version][1] * ECC_M[version][2];
     }
 
-    /** Veriyi bitlere cevirir, doldurur, blokla, hata duzeltme ekler ve harmanlar. */
+
     private static byte[] buildCodewords(byte[] data, int version) {
         int totalData = totalDataCodewords(version);
         BitBuffer bits = new BitBuffer();
 
-        bits.append(0b0100, 4);          // byte modu
-        bits.append(data.length, 8);     // uzunluk (surum 1-9 icin 8 bit)
+        bits.append(0b0100, 4);
+        bits.append(data.length, 8);
         for (byte b : data) {
             bits.append(b & 0xFF, 8);
         }
 
-        // sonlandirici + bayt hizalama
+
         int capacity = totalData * 8;
         for (int i = 0; i < 4 && bits.size() < capacity; i++) {
             bits.append(0, 1);
@@ -125,7 +116,7 @@ final class QrCode {
         while (bits.size() % 8 != 0) {
             bits.append(0, 1);
         }
-        // dolgu: 0xEC ve 0x11 donusumlu
+
         boolean useEc = true;
         while (bits.size() < capacity) {
             bits.append(useEc ? 0xEC : 0x11, 8);
@@ -146,7 +137,7 @@ final class QrCode {
             eccBlocks[i] = reedSolomon(dataBlocks[i], eccPerBlock);
         }
 
-        // harmanla: once veri sutunlari, sonra hata duzeltme sutunlari
+
         byte[] result = new byte[blockCount * (perBlock + eccPerBlock)];
         int pos = 0;
         for (int i = 0; i < perBlock; i++) {
@@ -162,7 +153,7 @@ final class QrCode {
         return result;
     }
 
-    // ------------------------------------------------- Reed-Solomon (GF 256)
+
 
     private static final int[] EXP = new int[512];
     private static final int[] LOG = new int[256];
@@ -174,7 +165,7 @@ final class QrCode {
             LOG[x] = i;
             x <<= 1;
             if ((x & 0x100) != 0) {
-                x ^= 0x11D;              // QR'nin ilkel polinomu
+                x ^= 0x11D;
             }
         }
         for (int i = 255; i < 512; i++) {
@@ -213,22 +204,22 @@ final class QrCode {
         return out;
     }
 
-    // ------------------------------------------------------- desen cizimi
+
 
     private static void drawFunctionPatterns(boolean[][] m, boolean[][] r, int version, int size) {
-        // bulucu desenler ve ayiricilari
+
         drawFinder(m, r, 0, 0, size);
         drawFinder(m, r, size - 7, 0, size);
         drawFinder(m, r, 0, size - 7, size);
 
-        // zamanlama desenleri
+
         for (int i = 8; i < size - 8; i++) {
             boolean on = i % 2 == 0;
             m[6][i] = on; r[6][i] = true;
             m[i][6] = on; r[i][6] = true;
         }
 
-        // hizalama deseni (surum 2 ve uzeri)
+
         if (version >= 2) {
             int c = ALIGN[version];
             for (int dy = -2; dy <= 2; dy++) {
@@ -240,7 +231,7 @@ final class QrCode {
             }
         }
 
-        // bicim bilgisi icin ayrilan alanlar
+
         for (int i = 0; i < 9; i++) {
             r[8][i] = true;
             r[i][8] = true;
@@ -250,7 +241,7 @@ final class QrCode {
             r[size - 1 - i][8] = true;
         }
 
-        // her zaman siyah olan modul
+
         m[size - 8][8] = true;
         r[size - 8][8] = true;
     }
@@ -271,14 +262,14 @@ final class QrCode {
         }
     }
 
-    /** Veri bitlerini sag alttan baslayarak zikzak yerlestirir. */
+
     private static void placeData(boolean[][] m, boolean[][] r, byte[] codewords, int size) {
         int bitIndex = 0;
         boolean upward = true;
 
         for (int right = size - 1; right >= 1; right -= 2) {
             if (right == 6) {
-                right = 5;   // zamanlama sutununu atla
+                right = 5;
             }
             for (int step = 0; step < size; step++) {
                 int y = upward ? size - 1 - step : step;
@@ -322,17 +313,17 @@ final class QrCode {
         }
     }
 
-    /** Bicim bilgisi: hata duzeltme seviyesi + maske, BCH ile korunur. */
+
     private static void drawFormatInfo(boolean[][] m, int mask, int size) {
-        int data = (0b00 << 3) | mask;        // 00 = M seviyesi
+        int data = (0b00 << 3) | mask;
         int rem = data;
         for (int i = 0; i < 10; i++) {
             rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
         }
         int bits = ((data << 10) | rem) ^ 0x5412;
 
-        // DIKKAT: bicim bilgisi hem 8. SATIRA hem 8. SUTUNA yazilir.
-        // Satir/sutun sirasi karistirilirsa kod okunmaz hale gelir.
+
+
         for (int i = 0; i <= 5; i++) {
             m[i][8] = getBit(bits, i);
         }
@@ -355,18 +346,18 @@ final class QrCode {
         return ((value >>> index) & 1) == 1;
     }
 
-    // -------------------------------------------------------------- ceza
+
 
     private static int penalty(boolean[][] m, int size) {
         int score = 0;
 
-        // kural 1: ayni renkte 5 ve uzeri dizi
+
         for (int i = 0; i < size; i++) {
             score += lineRun(m, size, i, true);
             score += lineRun(m, size, i, false);
         }
 
-        // kural 2: 2x2 ayni renk bloklar
+
         for (int y = 0; y < size - 1; y++) {
             for (int x = 0; x < size - 1; x++) {
                 boolean c = m[y][x];
@@ -376,7 +367,7 @@ final class QrCode {
             }
         }
 
-        // kural 3: bulucu desene benzeyen diziler
+
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 if (x + 6 < size && matchesFinderLike(m, y, x, true)) score += 40;
@@ -384,7 +375,7 @@ final class QrCode {
             }
         }
 
-        // kural 4: siyah oraninin %50'den sapmasi
+
         int darkCount = 0;
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -433,7 +424,7 @@ final class QrCode {
         return out;
     }
 
-    /** Bit biriktirici. */
+
     private static final class BitBuffer {
         private final java.util.List<Boolean> bits = new java.util.ArrayList<>();
 

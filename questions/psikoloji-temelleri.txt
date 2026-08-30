@@ -1,0 +1,32 @@
+# baslik: Psikoloji Temelleri
+# aciklama: Psikoloji öğrencileri ve insan davranışına ilgi duyan herkes için giriş düzeyi kavramlar
+
+Klasik koşullanma hangi öğrenme biçimiyle ilgilidir? | Bir uyaranın başka bir uyaranla eşleşmesiyle tepki oluşması | Yalnızca kas gücüyle öğrenme | Sadece kitap okuyarak öğrenme | Genetik özelliklerin değişmesi | 1 | kolay
+> Klasik koşullanmada başlangıçta nötr olan bir uyaran, anlamlı bir uyaranla eşleşerek tepki doğurabilir.
+
+Çalışma belleği neyi ifade eder? | Bilgiyi kısa süre tutup işlemeyi | Anıları ömür boyu saklamayı | Refleksleri yönetmeyi | Hormon üretimini | 1 | kolay
+> Çalışma belleği, sınırlı miktardaki bilgiyi kısa süre boyunca aktif tutup üzerinde işlem yapar.
+
+Doğrulama yanlılığı nedir? | Kişinin mevcut inancını destekleyen bilgileri seçmeye eğilimi | Tüm kanıtları eşit değerlendirme | Hafızanın tamamen silinmesi | Rastgele örneklem seçimi | 1 | orta
+> İnsanlar bazen karşıt kanıtları göz ardı edip kendi görüşlerini destekleyen örneklere daha fazla ağırlık verir.
+
+Bir değişkenin operasyonel tanımı ne sağlar? | Değişkenin nasıl ölçüleceğini açıkça belirtir | Sonucu önceden belirler | Katılımcıyı seçer | Araştırmayı etik dışı yapar | 1 | orta
+> Örneğin “stres”i belirli bir ölçek puanıyla tanımlamak, kavramı ölçülebilir hale getirir.
+
+Korelasyonel bir çalışma neden tek başına nedensellik kanıtlamaz? | Üçüncü değişken veya ters yönlü ilişki olabileceği için | Sayılar kullanıldığı için | Her araştırma yanlış olduğu için | Deneyler hiç yapılamadığı için | 1 | orta
+> Değişkenler arasındaki ilişkinin yönünü ve araya giren etkenleri kontrol etmek için deneysel tasarım gerekebilir.
+
+Bilgilendirilmiş gönüllü olur neyi korur? | Katılımcının neye katıldığını bilerek özgürce karar vermesini | Araştırmacının sonucunu | Verinin otomatik doğruluğunu | Deney süresinin kısalmasını | 1 | kolay
+> Katılımcı süreç, riskler ve hakları hakkında bilgilendirildikten sonra gönüllü olarak karar vermelidir.
+
+Bilişsel çelişki (cognitive dissonance) nedir? | İnançlar ve davranışlar arasındaki uyumsuzluktan doğan rahatsızlık | Uyaranlara hiç tepki vermemek | Kasların istemsiz kasılması | Yeni dil öğrenmek | 1 | orta
+> Kişi kendi davranışıyla inancı çeliştiğinde bu rahatsızlığı azaltmak için davranışını veya yorumunu değiştirebilir.
+
+Plasebo etkisi neyi anlatır? | Etkin madde içermeyen uygulamaya ilişkin beklentinin algılanan sonucu etkileyebilmesini | İlacın her zaman işe yaramasını | Deneyin kontrolsüz olmasını | Hastalığın genetik olmasını | 1 | zor
+> Beklenti, özellikle öznel belirtilerde algılanan iyilik halini etkileyebilir; bu nedenle kontrollü çalışmalar önemlidir.
+
+Bağlanma araştırmaları çoğunlukla hangi ilişkiyi inceler? | Erken bakım ilişkileri ile sonraki sosyal-duygusal gelişim arasındaki ilişkiyi | Zekâ ile boy arasındaki ilişkiyi | Kas gücü ile refleksi | Uyku ile ekran çözünürlüğünü | 1 | kolay
+> Erken bakım deneyimleri sosyal güven ve ilişki kurma biçimleriyle ilişkili olabilir; tek başına kader belirlemez.
+
+Doğa-yetiştirme tartışması için en dengeli yaklaşım hangisidir? | Davranışın genetik ve çevresel etkileşimlerle şekillenebileceğini kabul etmek | Her şeyi yalnız genlerle açıklamak | Her şeyi yalnız eğitimle açıklamak | Çevrenin etkisiz olduğunu söylemek | 1 | orta
+> Güncel yaklaşım, birçok özelliğin genetik yatkınlıklar ve çevre arasındaki etkileşimle geliştiğini kabul eder.
