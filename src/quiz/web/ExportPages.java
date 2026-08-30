@@ -41,6 +41,10 @@ public final class ExportPages {
             sendNotFound(exchange);
             return;
         }
+        if (!ctx.isHost(exchange, room)) {
+            ctx.sendHostRequired(exchange);
+            return;
+        }
 
         StringBuilder csv = new StringBuilder(BOM);
         writeRow(csv, "sira", "oyuncu", "puan", "dogru", "toplam", "yuzde");
@@ -65,6 +69,10 @@ public final class ExportPages {
         Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
         if (room == null) {
             sendNotFound(exchange);
+            return;
+        }
+        if (!ctx.isHost(exchange, room)) {
+            ctx.sendHostRequired(exchange);
             return;
         }
 

@@ -1,30 +1,116 @@
 <img src="assets/banner.svg" alt="Kamp Quiz Motoru" width="880">
 
-### Sınıfça oynanan bilgi yarışması — kendi ağınızda, hesapsız, kütüphanesiz
+# Kamp Quiz Motoru
 
-Hoca laptopunda bir komut çalıştırır. Öğrenciler telefonlarından bir QR okutup katılır.
-Cevaplar geldikçe projeksiyondaki sıralama canlı döner.
+### İnternetsiz, hesapsız ve dış kütüphanesiz sınıf bilgi yarışması
 
-**Gereken:** herkesin **aynı yerel ağda** olması (okul Wi-Fi'ı, ev modemi ya da bir telefonun
-hotspot'u) ve hocanın bilgisayarında Java 17. Bu ağın **internete çıkması gerekmez** — quiz
-trafiği modemin ötesine hiç gitmez, dışarıdaki hiçbir sunucuya bağlanılmaz.
+Hoca bilgisayarında küçük bir yerel web sunucusu açar. Öğrenciler uygulama indirmeden
+telefon tarayıcısından QR kodla katılır; sorular, cevaplar ve sıralama aynı yerel ağda kalır.
+
+> **Kapsam ve durum:** Kamp Quiz, Java 21 ile çalışan, sınıf içi ve aynı yerel ağdaki quiz
+> kullanımı için geliştirilmiş bir prototiptir. Hazır soru setleriyle temel akışın genel
+> internete açık, yüksek trafikli veya kritik veri gerektiren production kullanımı için
+> doğrulaması yapılmamıştır.
+
+> **En önemli ağ kuralı:** Hoca bilgisayarı, telefon ve tablet **aynı Wi-Fi ağına** bağlı olmalı.
+> Telefon hotspot'u kullanıyorsan bilgisayarın da o hotspot'a bağlanmalı; yalnızca telefon ve
+tabletin aynı hotspot'ta olması bilgisayara erişim sağlamaz.
+
+---
+
+## İndirme ve ilk çalıştırma
+
+### Windows — en kolay yöntem: ZIP indir
+
+Kod yazmayacaksan Git kurmana gerek yok:
+
+1. GitHub sayfasında **Code → Download ZIP** seç.
+2. ZIP dosyasını İndirilenler klasöründe çıkar.
+3. Çıkardığın `kamp-quiz-main` klasörünü aç.
+4. Klasörün boş alanına sağ tıkla ve **Terminalde Aç** seç.
+5. Aşağıdaki komutları PowerShell penceresinde çalıştır:
+
+```powershell
+# Java 21 yoksa bir kez kur
+winget install Microsoft.OpenJDK.21
+
+# Doğru klasörde olduğunu kontrol et
+Get-ChildItem
+
+# Önce kurulumun çalıştığını test et
+./run.bat test
+
+# Sınıf sunucusunu başlat
+./run.bat web
+```
+
+Sunucu başladığında ekranda `QR/katılım` adresi ve `/kur` bağlantısı için kullanılacak adresler
+görünür. Hoca tarayıcıdan şu sayfayı açar:
+
+```text
+http://localhost:8080/kur
+```
+
+> `8080` doluysa farklı bir port kullanabilirsin:
+>
+> ```powershell
+> ./run.bat web 8096
+> ```
+>
+> Sunucunun ekranda yazdığı portu ve IP adresini kullan; tahmin etme.
+
+### Windows — Git ile indirme: katkı verecekler için
+
+```powershell
+git clone https://github.com/efea0/kamp-quiz.git
+Set-Location kamp-quiz
+./run.bat test
+./run.bat web
+```
+
+### macOS / Linux
 
 ```bash
 git clone https://github.com/efea0/kamp-quiz.git
 cd kamp-quiz
-./run.sh web            # Windows: run.bat web
+chmod +x run.sh
+./run.sh test
+./run.sh web
 ```
 
-> **Gereksinim: Java 17 veya üzeri — JDK, sadece JRE değil.**
-> İkisinin de çalıştığını doğrula:
-> ```
-> java -version      → 17 ya da üzeri olmalı
-> javac -version     → aynı sürümü göstermeli
-> ```
-> `javac` bulunamıyorsa sistemde yalnızca JRE (çalıştırıcı) var, derleyici yok.
-> Kurulum ve PATH sorunları için aşağıdaki **Kurulum ayrıntıları** bölümüne bak.
+**Gereken:** Java 21. Hazır soru setleriyle temel quiz akışı yerel ağda internet gerektirmez.
+İnternet yalnızca ZIP/Git indirmek ya da isteğe bağlı AI soru üreticisini kullanmak için
+gerekir; AI kullanılmadığında oyuncu trafiği dışarı çıkmaz.
 
 <img src="assets/nasil-calisir.svg" alt="Nasıl çalışır: hoca sunucuyu başlatır, sınıf telefondan katılır, perdede canlı sıralama döner" width="880">
+
+---
+
+## QR ile sınıfı bağlama
+
+1. Hoca bilgisayarında `run.bat web` komutunu çalıştırır.
+2. Bilgisayarda `/kur` sayfasını açıp test ve akış türünü seçer.
+3. Oda açılınca ekrandaki QR’yi projeksiyona verir.
+4. Öğrenciler **aynı Wi-Fi/hotspot’a bağlıyken** QR’yi okutur.
+5. QR oda kodunu otomatik taşır; öğrencinin tekrar kod yazmasına gerek yoktur. Açılan ekranda yalnızca adını ve istersen tema/karakterini seçip **Oyuna katıl** düğmesine bas.
+6. QR çalışmazsa QR’nin altındaki yazılı URL’yi telefonda tarayıcıya elle yazıp dene.
+
+Telefon hotspot’u için doğru sıra:
+
+```text
+Telefon hotspot’unu aç
+        ↓
+Hoca bilgisayarını bu hotspot’a bağla
+        ↓
+Tableti/telefonları aynı hotspot’a bağla
+        ↓
+Sunucuyu yeniden başlat ve yeni QR’yi okut
+```
+
+QR’nin `localhost`, `127.0.0.1` veya VirtualBox gibi sanal bir IP göstermemesi gerekir.
+Windows Güvenlik Duvarı Java için izin sorarsa **Özel ağlar** seçeneğine izin ver.
+Okul Wi-Fi’ında cihazlar birbirini göremiyorsa ağda **client isolation** olabilir; telefon
+hotspot’u veya sınıf yönlendiricisi kullan.
 
 ---
 
@@ -46,7 +132,7 @@ cd kamp-quiz
 
 | | |
 |---|---|
-| 🔌 **İnternete çıkmaz** | Yerel ağ yeterli; modem internete bağlı olmasa bile çalışır. Veri dışarı gitmez |
+| 🔌 **Yerel ağda çalışır** | Hazır soru setleriyle modem internete bağlı olmasa bile temel quiz çalışır; AI üretimi harici API bağlantısı gerektirir |
 | 👤 **Hesap gerekmez** | Adını yaz, katıl. Kayıt, şifre, e-posta yok |
 | 📱 **Telefondan katılım** | 4 haneli oda kodu ya da QR. Uygulama indirmek gerekmez |
 | ⏱ **Hız puanı** | Doğru cevap 500 puan, kalan süreye göre 500'e kadar bonus |
@@ -54,20 +140,25 @@ cd kamp-quiz
 | 🔁 **Tekrar modu** | Sadece yanlışlarından oluşan ikinci bir tur |
 | 📊 **Yanlış raporu** | Hocaya: hangi konuyu tekrar anlatmalı |
 | 🖥 **İki arayüz** | Terminalde tek kişilik, tarayıcıda sınıfça — aynı motor |
-| 🤖 **AI ile soru üretimi** | Konu yaz, paket üretsin; düzenle, onayla, kaydet |
+| 🤖 **İsteğe bağlı AI soru üretimi** | Konu yaz, paket üretsin; düzenle, onayla, kaydet. Gerçek sağlayıcıya karşı ayrıca doğrulanmalıdır |
+| 🎨 **Kişisel görünüm** | Her oyuncu kendi temasını ve özgün avatarını seçebilir |
+| 🎉 **Canlı tepkiler** | Doğru, yanlış ve süre dolumu için kısa sınıf içi animasyonlar |
 
-**81 soru** · 7 kategori · **6 hazır test** · 216 otomatik denetim · **0 dış bağımlılık**
+**81 soru** · 7 kategori · **6 hazır test** · **285 otomatik denetim** · **0 dış bağımlılık**
 
 ---
 
-## Sınıfça oynamak — 3 adım
+## Sınıfça oynamak — 4 adım
 
 1. **Oda kur** → `/kur` sayfasından bir test seç, 4 haneli kod üretilir
-2. **Perdeye aç** → `/ekran?kod=1234`, sıralama 3 saniyede bir yenilenir
-3. **Katıl** → öğrenciler kodu yazar ya da ekrandaki QR'ı okutur
+2. **Akışı seç** → `Serbest` modda herkes kendi hızında ilerler; `Senkron` modda herkes aynı soruyu görür ve hoca ilerletir
+3. **Perdeye aç** → `/ekran?kod=1234`, sıralama 3 saniyede bir yenilenir
+4. **Katıl** → öğrenciler kodu yazar ya da ekrandaki QR'ı okutur; cihazlarından tema ve avatar seçebilir
 
-Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** — yan masadan kopyalanamaz.
-Test bitince `/rapor?kod=1234` en çok yanlış yapılan soruları sıralar.
+Serbest modda herkes aynı test paketinden, karıştırılmış kişisel soru sırasıyla ilerler — yan masadan
+kopyalamak zorlaşır. Senkron modda ise tüm sınıf aynı soru ve süre üzerinde ilerler.
+Tepkiler `/kur` ekranından tamamen kapatılabilir. Test bitince `/rapor?kod=1234` en çok yanlış
+yapılan soruları sıralar.
 
 ---
 
@@ -98,27 +189,6 @@ git push -u origin soru/tarih-paketi
 
 Her pull request'te testler otomatik çalışır. Ayrıntılar: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
-### Koda katkı da kolaylaştırıldı
-
-Web katmanı başlangıçta tek bir 1654 satırlık dosyaydı ve "bir butonu değiştireceğim"
-diyen birini kapıda karşılıyordu. Şimdi her sayfa grubu kendi dosyasında:
-
-| Değiştirmek istediğin | Dosya | Satır |
-|---|---|---:|
-| Renk, yazı tipi, buton biçimi | `web/Html.java` | 420 |
-| Soru ve cevap ekranı | `web/QuizPages.java` | 436 |
-| Oda paneli, projeksiyon, rapor | `web/RoomPages.java` | 344 |
-| Ana sayfa ve katılım | `web/HomePages.java` | 251 |
-| AI soru üretme sayfası | `web/GeneratePages.java` | 325 |
-| Lider tablosu | `web/BoardPage.java` | 69 |
-| Yeni sayfa eklemek | `web/WebServer.java` (rota tablosu) | 110 |
-| Puanlama, süre, sıralama kuralları | `core/Quiz.java` | 198 |
-| Soru dosyası biçimi | `core/QuestionBank.java` | 223 |
-
-Tam liste ve her satırın açıklaması CONTRIBUTING.md'de. Sayfa sınıflarının hepsi
-`ServerContext`'ten paylaşılan durumu (sorular, odalar, oturumlar) alır; yeni bir
-sayfa eklemek kendi sınıfını yazıp rota tablosuna bir satır eklemek demektir.
-
 ---
 
 <details>
@@ -126,7 +196,7 @@ sayfa eklemek kendi sınıfını yazıp rota tablosuna bir satır eklemek demekt
 
 <br>
 
-**JDK gerekiyor, JRE yetmez.** JRE program çalıştırır; JDK derler. Bize `javac` lazım.
+Java kurulu mu? `java -version`
 
 | Sistem | Kurulum |
 |---|---|
@@ -134,29 +204,6 @@ sayfa eklemek kendi sınıfını yazıp rota tablosuna bir satır eklemek demekt
 | **macOS** | `brew install openjdk@21` ya da [adoptium.net](https://adoptium.net) |
 | **Debian/Ubuntu** | `sudo apt install openjdk-21-jdk` |
 | **Fedora** | `sudo dnf install java-21-openjdk-devel` |
-
-Kurduktan sonra **terminali kapatıp yeniden aç** — PATH ancak öyle güncellenir.
-
-<b>Windows'ta kurdum ama `java -version` hâlâ eski sürümü gösteriyor</b>
-
-Eski bir Java, yeni kurulanın önünde kalmıştır. Hangi kopyaların olduğunu gör:
-
-```powershell
-where.exe java
-where.exe javac
-Get-ChildItem "C:\Program Files\Microsoft" -Directory
-```
-
-Yeni JDK'yı o oturum için öne al (klasör adını yukarıdaki çıktıdan al):
-
-```powershell
-$jdk = "C:\Program Files\Microsoft\jdk-21.0.12.7-hotspot\bin"
-$env:Path = "$jdk;" + $env:Path
-javac -version
-```
-
-Kalıcı yapmak için: **Ayarlar → Sistem → Sistem bilgileri → Gelişmiş sistem ayarları
-→ Ortam Değişkenleri** → `Path` içinde yeni JDK satırını yukarı taşı.
 
 Çalıştırma: Windows'ta `run.bat`, macOS/Linux'ta önce bir kez `chmod +x run.sh`, sonra `./run.sh`.
 
@@ -194,6 +241,10 @@ IP adresini bulmak: `ipconfig` (Windows) · `ipconfig getifaddr en0` (macOS) · 
 `/uret` sayfasından konu yazıp paket ürettirebilirsin. Üretilen taslak **doğrudan quize girmez**:
 düzenlenebilir hâlde gelir, elle ya da "AI ile düzenle" kutusuyla değiştirilir, kaydetmeden önce
 biçimi doğrulanır.
+
+> **Doğrulama notu:** AI üretim akışı yerel olarak yapılandırma ve form davranışı seviyesinde
+> denetlenmiştir. Gerçek Gemini/OpenRouter hesabına karşı uçtan uca doğrulama yapılmadığı için
+> yarınki quiz akışının kritik bir parçası olarak kullanılmamalıdır.
 
 **API anahtarı koda yazılmaz.** En güvenli yol, anahtarı sadece kendine okunur bir dosyaya koymak:
 
@@ -234,11 +285,20 @@ src/quiz/
 │   └── Scoreboard.java     scores.txt'ye yazar, sıralar
 ├── cli/ConsoleUI.java      terminal arayüzü
 ├── web/                    tarayıcı arayüzü
-│   ├── WebServer.java      JDK'nın HttpServer'ı, oturumlar, odalar
+│   ├── WebServer.java      JDK'nın HttpServer'ı ve rota tablosu
+│   ├── ServerContext.java  ortak oturum, oda ve HTTP yardımcıları
+│   ├── HomePages.java      ana sayfa, ayarlar ve katılım akışı
+│   ├── QuizPages.java      soru, cevap ve sonuç akışı
+│   ├── RoomPages.java      oda paneli, perde ve yanlış raporu
+│   ├── BoardPage.java      lider tablosu
+│   ├── GeneratePages.java  AI soru paketi akışı
+│   ├── GameSession.java    oyuncu oturumu, tema ve avatar
+│   ├── Reactions.java      sınıf içi tepki metinleri
 │   ├── QrCode.java         sıfırdan QR kodlayıcı
-│   └── Html.java           sayfa şablonu ve stil
+│   └── Html.java           sayfa şablonu ve merkezi stil
 ├── ai/QuestionGenerator.java   Gemini / OpenRouter ile soru üretimi
-└── test/SelfTest.java      kendi kendini sınama
+└── test/SelfTest.java      birim ve kaynak sözleşmeleri
+    └── WebSmokeTest.java   JDK HTTP istemcisiyle 32 web kontrolü
 ```
 
 **Değişmez kural:** `core/` ve `model/` paketlerinde tek bir `System.out.println` yoktur —
@@ -264,7 +324,7 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 - Cevap gönderimi POST-Redirect-GET kullanır: yenilemek cevabı tekrar göndermez
 - Tekrar turu oda sıralamasını etkilemez
 - Tüm dosya okuma/yazma UTF-8'e sabitlenmiştir
-- 25 eşzamanlı oyuncuyla denendi: 25/25 tamamlandı, hata yok
+- 25 sentetik istemciyle eşzamanlı HTTP akışı denendi; bu sonuç gerçek kullanıcı deneyimi veya sınıf ağı garantisi değildir
 </details>
 
 ---
@@ -277,8 +337,9 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 | ✔ | Web arayüzü, oda kodu, projeksiyon ekranı, QR ile katılım |
 | ✔ | Süre sınırı, hız puanı, açıklamalar, tekrar modu, yanlış raporu |
 | ✔ | Hazır test setleri, AI ile soru üretme, kendi kendini test |
+| ✔ | Senkron canlı mod — herkes aynı soruda, hoca ilerletir |
+| ✔ | Kişisel tema, özgün avatarlar ve öğretmen kontrollü sınıf tepkileri |
 | ☐ | Takım modu |
-| ☐ | Senkron canlı mod — herkes aynı soruda, hoca ilerletir |
 
 ## Katkı
 

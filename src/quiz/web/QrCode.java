@@ -22,7 +22,6 @@ final class QrCode {
             {16, 4, 27},     // surum 6  -> 108
     };
 
-    /** Surum basina hizalama deseni merkezi (surum 1'de yok). */
     private static final int[] ALIGN = {0, 0, 18, 22, 26, 30, 34};
 
     private final int size;
@@ -33,9 +32,6 @@ final class QrCode {
         this.dark = dark;
     }
 
-    // ------------------------------------------------------------------ API
-
-    /** Metni QR koda cevirir. Sigmazsa IllegalArgumentException firlatir. */
     static QrCode encode(String text) {
         byte[] data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
@@ -79,7 +75,6 @@ final class QrCode {
         return new QrCode(size, best);
     }
 
-    /** QR kodu SVG olarak dondurur. */
     String toSvg(int pixelSize, String darkColor, String lightColor) {
         int quiet = 4;                       // kenar bosluğu (standart 4 modul)
         int total = size + quiet * 2;
@@ -216,19 +211,16 @@ final class QrCode {
     // ------------------------------------------------------- desen cizimi
 
     private static void drawFunctionPatterns(boolean[][] m, boolean[][] r, int version, int size) {
-        // bulucu desenler ve ayiricilari
         drawFinder(m, r, 0, 0, size);
         drawFinder(m, r, size - 7, 0, size);
         drawFinder(m, r, 0, size - 7, size);
 
-        // zamanlama desenleri
         for (int i = 8; i < size - 8; i++) {
             boolean on = i % 2 == 0;
             m[6][i] = on; r[6][i] = true;
             m[i][6] = on; r[i][6] = true;
         }
 
-        // hizalama deseni (surum 2 ve uzeri)
         if (version >= 2) {
             int c = ALIGN[version];
             for (int dy = -2; dy <= 2; dy++) {
@@ -240,7 +232,6 @@ final class QrCode {
             }
         }
 
-        // bicim bilgisi icin ayrilan alanlar
         for (int i = 0; i < 9; i++) {
             r[8][i] = true;
             r[i][8] = true;
@@ -250,7 +241,6 @@ final class QrCode {
             r[size - 1 - i][8] = true;
         }
 
-        // her zaman siyah olan modul
         m[size - 8][8] = true;
         r[size - 8][8] = true;
     }
@@ -271,14 +261,13 @@ final class QrCode {
         }
     }
 
-    /** Veri bitlerini sag alttan baslayarak zikzak yerlestirir. */
     private static void placeData(boolean[][] m, boolean[][] r, byte[] codewords, int size) {
         int bitIndex = 0;
         boolean upward = true;
 
         for (int right = size - 1; right >= 1; right -= 2) {
             if (right == 6) {
-                right = 5;   // zamanlama sutununu atla
+                right = 5;
             }
             for (int step = 0; step < size; step++) {
                 int y = upward ? size - 1 - step : step;
@@ -322,7 +311,6 @@ final class QrCode {
         }
     }
 
-    /** Bicim bilgisi: hata duzeltme seviyesi + maske, BCH ile korunur. */
     private static void drawFormatInfo(boolean[][] m, int mask, int size) {
         int data = (0b00 << 3) | mask;        // 00 = M seviyesi
         int rem = data;
@@ -360,13 +348,11 @@ final class QrCode {
     private static int penalty(boolean[][] m, int size) {
         int score = 0;
 
-        // kural 1: ayni renkte 5 ve uzeri dizi
         for (int i = 0; i < size; i++) {
             score += lineRun(m, size, i, true);
             score += lineRun(m, size, i, false);
         }
 
-        // kural 2: 2x2 ayni renk bloklar
         for (int y = 0; y < size - 1; y++) {
             for (int x = 0; x < size - 1; x++) {
                 boolean c = m[y][x];
@@ -376,7 +362,6 @@ final class QrCode {
             }
         }
 
-        // kural 3: bulucu desene benzeyen diziler
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 if (x + 6 < size && matchesFinderLike(m, y, x, true)) score += 40;
@@ -384,7 +369,6 @@ final class QrCode {
             }
         }
 
-        // kural 4: siyah oraninin %50'den sapmasi
         int darkCount = 0;
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -433,7 +417,6 @@ final class QrCode {
         return out;
     }
 
-    /** Bit biriktirici. */
     private static final class BitBuffer {
         private final java.util.List<Boolean> bits = new java.util.ArrayList<>();
 

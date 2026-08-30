@@ -44,19 +44,13 @@ public class QuizSetLoader {
     private static final int DEFAULT_TIME_LIMIT_SECONDS = 20;
 
     private QuizSetLoader() {
-        // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
     }
 
-    /** Klasordeki TUM .txt dosyalarini okur, dosya adina gore sirali doner. */
-    /** Uyarilari yok sayan surum. */
     public static List<QuizSet> loadFromDirectory(Path directory) {
         return loadFromDirectory(directory, new ArrayList<>());
     }
 
-    /**
-     * Setleri okur; bozuk satir uyarilarini verilen listeye YAZAR, ekrana basmaz.
-     * core paketi ekrani bilmez; uyariyi arayuz gosterir.
-     */
+    // Core paketi ekrani bilmez; uyarinin nasil gosterilecegine arayuz karar verir.
     public static List<QuizSet> loadFromDirectory(Path directory, List<String> warnings) {
         List<QuizSet> sets = new ArrayList<>();
 
@@ -81,7 +75,6 @@ public class QuizSetLoader {
         return sets;
     }
 
-    /** Tek bir dosyayi okur. Bozuk satirlari atlar ama uyari basar. */
     private static Optional<QuizSet> loadFromFile(Path file, List<String> warnings) {
         List<String> lines;
         try {
@@ -102,7 +95,7 @@ public class QuizSetLoader {
             int lineNumber = i + 1;
 
             if (line.isEmpty()) {
-                continue;   // bos satir -> atla
+                continue;
             }
 
             if (line.startsWith("#")) {
@@ -136,11 +129,9 @@ public class QuizSetLoader {
                                 + raw + "'");
                     }
                 }
-                // diger '#' satirlari sade yorumdur, sessizce atla
                 continue;
             }
 
-            // "Kategori Adi = sayi" satiri bekleniyor
             int eq = line.indexOf('=');
             if (eq < 0) {
                 warnings.add(file.getFileName() + " -> " + lineNumber

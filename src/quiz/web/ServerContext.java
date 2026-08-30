@@ -11,6 +11,7 @@ import quiz.model.Question;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.DatagramSocket;
 import java.net.NetworkInterface;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 final class ServerContext {
 
     private static final String COOKIE_NAME = "qsid";
+    private static final String HOST_COOKIE_NAME = "qhost";
 
     /** Uretilen paket kaydedilince yeniden yuklendigi icin final degil. */
     private volatile List<Question> allQuestions;
@@ -48,6 +51,7 @@ final class ServerContext {
     private final Scoreboard scoreboard;
     private final QuestionGenerator generator;
     private final int port;
+    private volatile int boundPort;
 
     /** Oyuncu oturumlari. Ayni anda birden fazla istek geldigi icin es zamanli harita. */
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
@@ -111,7 +115,11 @@ final class ServerContext {
     }
 
     int getPort() {
-        return port;
+        return boundPort > 0 ? boundPort : port;
+    }
+
+    void setBoundPort(int boundPort) {
+        this.boundPort = boundPort;
     }
 
     String getAdminKey() {
@@ -128,6 +136,11 @@ final class ServerContext {
 
     Set<String> getAdminTokens() {
         return adminTokens;
+    }
+
+    /** Oda yoneticisinin tarayicisina verilecek tahmin edilemez belirteci uretir. */
+    String newHostToken() {
+        return UUID.randomUUID().toString();
     }
 
     /** Yeni paket kaydedildikten sonra sorulari ve setleri diskten tazeler. */
@@ -193,6 +206,37 @@ final class ServerContext {
     GameSession currentSession(HttpExchange exchange) {
         String id = currentSessionId(exchange);
         return id == null ? null : sessions.get(id);
+    }
+
+    void setHostCookie(HttpExchange exchange, String token) {
+        exchange.getResponseHeaders().add("Set-Cookie",
+                HOST_COOKIE_NAME + "=" + token + "; Path=/; Max-Age=7200; SameSite=Lax; HttpOnly");
+    }
+
+    /** Cerezdeki oda yoneticisi belirtecini dondurur. */
+    String currentHostToken(HttpExchange exchange) {
+        return cookieValue(exchange, HOST_COOKIE_NAME);
+    }
+
+    /** Oda kodunu bilen oyuncu ile odayi kuran yoneticiyi birbirinden ayirir. */
+    boolean isHost(HttpExchange exchange, Room room) {
+        return room != null && room.isHostToken(currentHostToken(exchange));
+    }
+
+    private static String cookieValue(HttpExchange exchange, String cookieName) {
+        List<String> cookies = exchange.getRequestHeaders().get("Cookie");
+        if (cookies == null) {
+            return null;
+        }
+        for (String header : cookies) {
+            for (String cookie : header.split(";")) {
+                String[] pair = cookie.trim().split("=", 2);
+                if (pair.length == 2 && cookieName.equals(pair[0])) {
+                    return pair[1];
+                }
+            }
+        }
+        return null;
     }
 
     /** Cerezdeki yonetici belirteci gecerli mi? */
@@ -279,6 +323,18 @@ final class ServerContext {
         send(exchange, status, "text/html; charset=UTF-8", html);
     }
 
+    void sendHostRequired(HttpExchange exchange) throws IOException {
+        sendHtml(exchange, 403, Html.page("Yönetici erişimi gerekli", """
+                <div class="screen">
+                  <div class="card center">
+                    <h1>Yönetici erişimi gerekiyor</h1>
+                    <p class="muted">Bu ekranı yalnızca odayı kuran tarayıcı açabilir.</p>
+                  </div>
+                  <div class="actions"><a class="btn" href="/">Ana sayfaya dön</a></div>
+                </div>
+                """));
+    }
+
     void send(HttpExchange exchange, int status, String contentType, String content)
             throws IOException {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
@@ -297,19 +353,19 @@ final class ServerContext {
      * Hoca localhost uzerinden acmissa telefonlar oraya baglanamayacagi icin
      * yerel ag adresine cevrilir.
      */
-    String joinUrl(HttpExchange exchange) {
+    String joinUrl(HttpExchange exchange, String roomCode) {
         String host = exchange.getRequestHeaders().getFirst("Host");
         if (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
-            List<String> addresses = localAddresses();
-            host = addresses.isEmpty() ? "localhost:" + port : addresses.get(0) + ":" + port;
+            String address = preferredLocalAddress();
+            host = address == null ? "localhost:" + getPort() : address + ":" + getPort();
         }
-        return "http://" + host + "/";
+        return "http://" + host + "/katil?kod=" + roomCode;
     }
 
     /** Katilim adresi icin QR kodu; uretilemezse bos dizge. */
-    String joinQr(HttpExchange exchange, int pixels) {
+    String joinQr(HttpExchange exchange, int pixels, String roomCode) {
         try {
-            return QrCode.encode(joinUrl(exchange)).toSvg(pixels, "#0d1117", "#f0f7fa");
+            return QrCode.encode(joinUrl(exchange, roomCode)).toSvg(pixels, "#0d1117", "#f0f7fa");
         } catch (RuntimeException e) {
             return "";
         }
@@ -328,7 +384,7 @@ final class ServerContext {
         List<String> found = new ArrayList<>();
         try {
             for (NetworkInterface nic : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!nic.isUp() || nic.isLoopback()) {
+                if (!nic.isUp() || nic.isLoopback() || isVirtualInterface(nic)) {
                     continue;
                 }
                 for (InetAddress address : Collections.list(nic.getInetAddresses())) {
@@ -342,5 +398,35 @@ final class ServerContext {
             // Ag bilgisi okunamadi; sadece localhost gosterilir.
         }
         return found;
+    }
+
+    /** Bazı Windows sürücüleri sanal adaptörü isVirtual() ile işaretlemez. */
+    private static boolean isVirtualInterface(NetworkInterface nic) {
+        if (nic.isVirtual()) {
+            return true;
+        }
+        String name = ((nic.getName() == null ? "" : nic.getName()) + " "
+                + (nic.getDisplayName() == null ? "" : nic.getDisplayName()))
+                .toLowerCase(java.util.Locale.ROOT);
+        return name.contains("virtualbox") || name.contains("vmware")
+                || name.contains("hyper-v") || name.contains("host-only")
+                || name.contains("wsl") || name.contains("docker");
+    }
+
+    /** UDP connect paket gondermeden varsayilan rotanin yerel adresini verir. */
+    private static String preferredLocalAddress() {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 53);
+            InetAddress address = socket.getLocalAddress();
+            String ip = address.getHostAddress();
+            if (address.isSiteLocalAddress() && !address.isLoopbackAddress()
+                    && !address.isAnyLocalAddress() && !ip.contains(":")) {
+                return ip;
+            }
+        } catch (Exception ignored) {
+            // Asagidaki liste, varsayilan rota okunamazsa guvenli geri donustur.
+        }
+        List<String> addresses = localAddresses();
+        return addresses.isEmpty() ? null : addresses.get(0);
     }
 }

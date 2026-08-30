@@ -74,6 +74,7 @@ public final class HomePages {
                              autocomplete="off" placeholder="Adın">
                       <button class="btn blue" type="submit">Katıl</button>
                     </div>
+                    %s
                   </form>
 
                   <p class="divider"><span>ya da tek başına</span></p>
@@ -82,6 +83,8 @@ public final class HomePages {
                     <label class="field" for="isim">Adın</label>
                     <input type="text" id="isim" name="isim" maxlength="20" required
                            autocomplete="off" placeholder="Adını yaz">
+
+                    %s
 
                     <div class="setlist">
                 %s        </div>
@@ -94,9 +97,40 @@ public final class HomePages {
                     <a class="plain center" href="/tablo">Lider tablosu</a>
                   </div>
                 </div>
-                """.formatted(ctx.getAllQuestions().size(), cards);
+                """.formatted(ctx.getAllQuestions().size(), preferenceFields(), preferenceFields(), cards);
 
         ctx.sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
+    }
+
+    private static String preferenceFields() {
+        StringBuilder themes = new StringBuilder();
+        for (GameSession.Theme theme : GameSession.Theme.values()) {
+            themes.append("<label class=\"pick\"><input type=\"radio\" name=\"tema\" value=\"")
+                    .append(theme.id()).append(theme == GameSession.Theme.GECE ? "\" checked>" : "\">")
+                    .append("<span class=\"pick-content\">").append(Html.escape(theme.label()))
+                    .append("</span></label>");
+        }
+
+        StringBuilder avatars = new StringBuilder();
+        for (GameSession.Avatar avatar : GameSession.Avatar.values()) {
+            avatars.append("<label class=\"pick avatar-choice\"><input type=\"radio\" name=\"avatar\" value=\"")
+                    .append(avatar.id()).append(avatar == GameSession.Avatar.ROKET ? "\" checked>" : "\">")
+                    .append("<span class=\"pick-content\">").append(avatar.svg())
+                    .append("<span>").append(Html.escape(avatar.label())).append("</span></span></label>");
+        }
+
+        return """
+                <div class="preference-grid">
+                  <fieldset class="preference-group">
+                    <legend>Tema seç</legend>
+                    <div class="preference-options">%s</div>
+                  </fieldset>
+                  <fieldset class="preference-group">
+                    <legend>Karakterini seç</legend>
+                    <div class="preference-options">%s</div>
+                  </fieldset>
+                </div>
+                """.formatted(themes, avatars);
     }
 
     /** Kendi kategorini, soru sayini ve sureni sectigin sayfa. */
@@ -191,7 +225,8 @@ public final class HomePages {
         quiz.setTimeLimitSeconds(seconds);
 
         String sessionId = UUID.randomUUID().toString();
-        ctx.getSessions().put(sessionId, new GameSession(name, quiz, null));
+        ctx.getSessions().put(sessionId, new GameSession(name, quiz, null,
+                GameSession.Theme.from(form.get("tema")), GameSession.Avatar.from(form.get("avatar"))));
         ctx.setSessionCookie(exchange, sessionId);
         ctx.redirect(exchange, "/quiz");
     }
@@ -199,7 +234,30 @@ public final class HomePages {
     /** Katilimci oda koduyla girer. */
     public void handleJoin(HttpExchange exchange) throws IOException {
         if (!"POST".equals(exchange.getRequestMethod())) {
-            ctx.redirect(exchange, "/");
+            String roomCode = ServerContext.query(exchange, "kod").trim();
+            if (roomCode.isEmpty()) {
+                ctx.redirect(exchange, "/");
+                return;
+            }
+            Room room = ctx.getRooms().get(roomCode);
+            if (room == null) {
+                ctx.sendHtml(exchange, 404, Html.page("Oda bulunamadı", "<div class=\"screen\"><h1>Oda bulunamadı</h1></div>"));
+                return;
+            }
+            String body = """
+                    <div class="screen">
+                      <p class="eyebrow">%s</p>
+                      <h1>Odaya katıl</h1>
+                      <form method="POST" action="/katil" class="joinbox">
+                        <input type="hidden" name="kod" value="%s">
+                        <label class="field" for="isim">Adın</label>
+                        <input type="text" id="isim" name="isim" maxlength="20" required autocomplete="off">
+                        %s
+                        <div class="actions"><button class="btn blue" type="submit">Oyuna katıl</button></div>
+                      </form>
+                    </div>
+                    """.formatted(Html.escape(room.getSet().getName()), Html.escape(roomCode), preferenceFields());
+            ctx.sendHtml(exchange, 200, Html.page("Odaya katıl", body));
             return;
         }
 
@@ -240,7 +298,8 @@ public final class HomePages {
             return;
         }
 
-        GameSession session = new GameSession(name, room.newQuiz(ctx.getAllQuestions()), room.getCode());
+        GameSession session = new GameSession(name, room.newQuiz(ctx.getAllQuestions()), room.getCode(),
+                GameSession.Theme.from(form.get("tema")), GameSession.Avatar.from(form.get("avatar")));
         room.addPlayer(session);
 
         String sessionId = UUID.randomUUID().toString();

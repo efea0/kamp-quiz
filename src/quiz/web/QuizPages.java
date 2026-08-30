@@ -5,12 +5,7 @@ import quiz.core.Quiz;
 import quiz.model.Question;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Bir oyuncunun quiz sirasinda gordugu ekranlar:
@@ -28,16 +23,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public final class QuizPages {
 
     private final ServerContext ctx;
-
-    /**
-     * Bu turda hangi sik hangi soruda isaretlendi; quiz.getHistory() ile ayni
-     * sirada tutulur. Quiz.AnswerResult isaretlenen sikki tasimiyor (yalnizca
-     * dogru/yanlis, sure ve soruyu), ama sonuc ekraninda "senin cevabin"i
-     * gostermek icin buna ihtiyacimiz var. Anahtar Quiz NESNESININ KENDISI
-     * (Quiz equals/hashCode override etmiyor, yani kimlik bazli); her yeni
-     * Quiz (orn. /tekrar ile baslayan tur) kendi bos listesiyle baslar.
-     */
-    private final Map<Quiz, List<Integer>> chosenAnswers = new ConcurrentHashMap<>();
 
     public QuizPages(ServerContext ctx) {
         this.ctx = ctx;
@@ -76,7 +61,7 @@ public final class QuizPages {
         String body = questionScreen(quiz, quiz.remainingSeconds(), quiz.getTimeLimitSeconds(),
                 quiz.getQuestionNumber(), quiz.getTotal());
 
-        ctx.sendHtml(exchange, 200, Html.page("Soru " + quiz.getQuestionNumber(), body));
+        sendPlayerPage(exchange, "Soru " + quiz.getQuestionNumber(), body, session, "");
     }
 
     /** Cevabi degerlendirir ve bir sonraki soruya yonlendirir. */
@@ -88,15 +73,26 @@ public final class QuizPages {
         }
 
         Quiz quiz = session.getQuiz();
+        Room room = session.getRoomCode() == null ? null : ctx.getRooms().get(session.getRoomCode());
         if (!"POST".equals(exchange.getRequestMethod()) || !quiz.hasNext()) {
             ctx.redirect(exchange, "/quiz");
             return;
         }
 
         Question question = quiz.currentQuestion();
+        if (room != null && room.isSynchronous()) {
+            room.expireIfNeeded();
+            if (room.getPhase() != Room.Phase.SORU
+                    || quiz.getQuestionNumber() - 1 != room.getIndex()) {
+                ctx.redirect(exchange, "/quiz");
+                return;
+            }
+        }
         int answer = ServerContext.parseIntOr(ctx.readForm(exchange).get("cevap"), -1);
         Quiz.AnswerResult result = quiz.submitAnswer(answer);
-        chosenAnswers.computeIfAbsent(quiz, k -> new CopyOnWriteArrayList<>()).add(answer);
+        if (room != null && room.isSynchronous() && result.correct()) {
+            room.recordCorrectAnswer(session, room.getIndex());
+        }
 
         session.setFeedback(new GameSession.Feedback(
                 result.correct(), result.timedOut(), result.earnedPoints(), question, answer));
@@ -140,6 +136,7 @@ public final class QuizPages {
                 <div class="screen">
                   <p class="eyebrow">%s</p>
                   <h1>%s</h1>
+                  <div class="result-avatar">%s</div>
                   <div class="bigscore">%d</div>
                   <p class="muted small">toplam puan</p>
 
@@ -147,7 +144,7 @@ public final class QuizPages {
                     <div class="stat"><b>%d/%d</b><span>Doğru</span></div>
                     <div class="stat"><b>%%%d</b><span>Başarı</span></div>
                   </div>
-                %s%s%s
+
                   <div class="actions">
                 %s      <a class="btn blue" href="/tablo">Lider tablosu</a>
                     <a class="btn ghost" href="/">Yeniden oyna</a>
@@ -156,12 +153,12 @@ public final class QuizPages {
                 """.formatted(
                 Html.escape(session.getPlayerName()),
                 verdictTitle(quiz.getPercentage()),
+                session.getAvatar().svg(),
                 quiz.getPoints(),
                 quiz.getScore(), quiz.getTotal(), quiz.getPercentage(),
-                categoryBreakdown(quiz), speedSummary(quiz), wrongReview(quiz),
                 retryButton(quiz));
 
-        ctx.sendHtml(exchange, 200, Html.page("Sonuç", body));
+        sendPlayerPage(exchange, "Sonuç", body, session, "");
     }
 
     /** Yanlis yapilan sorulari yeni bir tur olarak sunar. */
@@ -174,21 +171,18 @@ public final class QuizPages {
         }
 
         List<Question> wrong = previous.getQuiz().getWrongQuestions();
-        // Yanlis yoksa "ayni testi tekrar coz": tum sorular, cevaplanmis
-        // sirayla (previous.getQuiz() /sonuc'a ulastigina gore tamamen
-        // oynanmis olmali, yani gecmis tum sorulari icerir).
-        List<Question> pool = wrong.isEmpty() ? allAnsweredQuestions(previous.getQuiz()) : wrong;
-        if (pool.isEmpty()) {
+        if (wrong.isEmpty()) {
             ctx.redirect(exchange, "/sonuc");
             return;
         }
 
-        Quiz retry = new Quiz(pool);
+        Quiz retry = new Quiz(wrong);
         retry.shuffle();
         retry.setTimeLimitSeconds(previous.getQuiz().getTimeLimitSeconds());
 
         // Tekrar turu odanin siralamasina KATILMAZ; yoksa oda tablosu bozulurdu.
-        ctx.getSessions().put(sessionId, new GameSession(previous.getPlayerName(), retry, null));
+        ctx.getSessions().put(sessionId, new GameSession(previous.getPlayerName(), retry, null,
+                previous.getTheme(), previous.getAvatar()));
         ctx.redirect(exchange, "/quiz");
     }
 
@@ -297,6 +291,7 @@ public final class QuizPages {
         String why = question.hasExplanation()
                 ? "      <div class=\"why\">" + Html.escape(question.getExplanation()) + "</div>\n"
                 : "";
+        String reaction = reactionMarkup(session, fb.correct(), fb.timedOut(), session.getQuiz().getHistory().size());
 
         return """
                 <div class="screen">
@@ -310,6 +305,8 @@ public final class QuizPages {
                     <h3><span>%s</span><span class="gain">%s</span></h3>
                 %s      </div>
 
+                %s
+
                   <div class="actions">
                     <a class="btn %s" href="/devam">Devam</a>
                   </div>
@@ -319,7 +316,7 @@ public final class QuizPages {
                 Html.escape(question.getText()),
                 choices,
                 fb.correct() ? "ok" : "bad",
-                title, gain, why,
+                title, gain, why, reaction,
                 fb.correct() ? "" : "blue");
     }
 
@@ -333,13 +330,14 @@ public final class QuizPages {
         switch (room.getPhase()) {
             case LOBI -> sendWaiting(exchange, "Hazır ol",
                     Html.escape(session.getPlayerName()) + ", odadasın. Hoca başlatınca ilk soru gelecek.",
-                    room.playerCount() + " kişi bekliyor");
+                    room.playerCount() + " kişi bekliyor", -1, session);
 
             case SORU -> {
                 if (playerIndex > room.getIndex() || !quiz.hasNext()) {
                     sendWaiting(exchange, "Cevabın alındı",
                             "Diğerlerini bekliyoruz. Hoca cevabı açınca doğrusunu göreceksin.",
-                            "Soru " + (room.getIndex() + 1) + " / " + total);
+                            "Soru " + (room.getIndex() + 1) + " / " + total,
+                            room.remainingSeconds(), session);
                 } else {
                     session.clearFeedback();
                     ctx.sendHtml(exchange, 200, Html.page("Soru " + (room.getIndex() + 1),
@@ -360,19 +358,42 @@ public final class QuizPages {
     /** Bekleme ekrani: kendi kendine yenilenir. */
     private void sendWaiting(HttpExchange exchange, String title, String message, String meta)
             throws IOException {
+        sendWaiting(exchange, title, message, meta, -1, null);
+    }
+
+    private void sendWaiting(HttpExchange exchange, String title, String message, String meta,
+                             int serverRemaining, GameSession session) throws IOException {
+        String countdown = serverRemaining < 0 ? "" : """
+                    <div class="server-clock" data-server-remaining="%d">
+                      <b>%d</b><span>sn · sunucu saati</span>
+                    </div>
+                """.formatted(serverRemaining, serverRemaining);
+        String avatar = session == null ? "" : "<div class=\"waiting-avatar\">"
+                + session.getAvatar().svg() + "</div>\n";
         String body = """
                 <div class="screen">
                   <div class="body-area center" style="display:flex;flex-direction:column;
                        justify-content:center;flex:1">
                     <p class="eyebrow center">%s</p>
                     <h1 style="margin-bottom:14px">%s</h1>
+                %s
                     <p class="muted">%s</p>
                     <div class="pulse"></div>
+                %s
                   </div>
                 </div>
-                """.formatted(Html.escape(meta), Html.escape(title), Html.escape(message));
+                """.formatted(Html.escape(meta), Html.escape(title), avatar,
+                Html.escape(message), countdown);
+        sendPlayerPage(exchange, title, body, session,
+                "  <meta http-equiv=\"refresh\" content=\"2\">\n");
+    }
+
+    private void sendPlayerPage(HttpExchange exchange, String title, String body,
+                                GameSession session, String headExtra) throws IOException {
+        exchange.getResponseHeaders().set("Cache-Control", "no-store, no-cache, must-revalidate");
+        String theme = session == null ? "" : session.getTheme().cssClass();
         ctx.sendHtml(exchange, 200, Html.page(title, body,
-                "  <meta http-equiv=\"refresh\" content=\"2\">\n"));
+                headExtra + Html.playerNavigationGuard(), theme));
     }
 
     /** Senkron odada cevap acildiginda gosterilen ekran. */
@@ -402,8 +423,9 @@ public final class QuizPages {
                 break;
             }
             boolean me = player == session;
-            board.append("      <div class=\"row").append(me ? " me" : "").append("\">")
-                 .append("<span class=\"pos\">").append(rank++).append("</span>")
+            board.append("      <div class=\"row").append(me ? " me" : "").append("\">").append("<span class=\"avatar-cell\">")
+                 .append(player.getAvatar().svg())
+                 .append("</span><span class=\"pos\">").append(rank++).append("</span>")
                  .append("<span class=\"who\">").append(Html.escape(player.getPlayerName())).append("</span>")
                  .append("<span class=\"pts\">").append(player.getQuiz().getPoints()).append("</span>")
                  .append("</div>\n");
@@ -412,6 +434,7 @@ public final class QuizPages {
         String why = question != null && question.hasExplanation()
                 ? "      <div class=\"why\">" + Html.escape(question.getExplanation()) + "</div>\n"
                 : "";
+        String reaction = reactionMarkup(session, correct, mine != null && mine.timedOut(), history.size());
 
         return """
                 <div class="screen">
@@ -425,6 +448,8 @@ public final class QuizPages {
                     <h3><span>%s</span><span class="gain">%s</span></h3>
                 %s      </div>
 
+                %s
+
                   <div class="rank">
                 %s      </div>
                   <p class="muted small center" style="margin-top:16px">Hoca sonraki soruya geçince devam edeceğiz.</p>
@@ -437,189 +462,16 @@ public final class QuizPages {
                 correct ? "Doğru!" : "Yanlış",
                 mine == null ? "" : "+" + mine.earnedPoints() + " puan",
                 why,
+                reaction,
                 board);
     }
 
-    /**
-     * Bir onceki turda cevaplanmis TUM sorular, cevaplanma sirasiyla.
-     * /tekrar yanlis yoksa buradan "ayni testi tekrar coz" turu kurar.
-     */
-    private static List<Question> allAnsweredQuestions(Quiz quiz) {
-        List<Question> all = new ArrayList<>();
-        for (Quiz.AnswerResult result : quiz.getHistory()) {
-            all.add(result.question());
-        }
-        return all;
-    }
-
-    /**
-     * Kategori dokumu: her kategoride kac dogru/toplam ve yuzde, yatay
-     * cubukla. Tek kategorili bir testte ust bilgideki skor zaten yeterli
-     * oldugundan bu blok bos doner.
-     */
-    private static String categoryBreakdown(Quiz quiz) {
-        Map<String, int[]> tally = new LinkedHashMap<>();   // kategori -> [dogru, toplam]
-        for (String category : quiz.getCategories()) {
-            tally.put(category, new int[2]);
-        }
-        for (Quiz.AnswerResult result : quiz.getHistory()) {
-            int[] counts = tally.computeIfAbsent(result.question().getCategory(), k -> new int[2]);
-            counts[1]++;
-            if (result.correct()) {
-                counts[0]++;
-            }
-        }
-        if (tally.size() <= 1) {
-            return "";
-        }
-
-        String weakest = null;
-        int weakestPercent = 101;
-        for (Map.Entry<String, int[]> entry : tally.entrySet()) {
-            int[] counts = entry.getValue();
-            if (counts[1] == 0) {
-                continue;
-            }
-            int percent = Math.round(counts[0] * 100f / counts[1]);
-            if (percent < weakestPercent) {
-                weakestPercent = percent;
-                weakest = entry.getKey();
-            }
-        }
-
-        StringBuilder rows = new StringBuilder();
-        for (Map.Entry<String, int[]> entry : tally.entrySet()) {
-            int[] counts = entry.getValue();
-            if (counts[1] == 0) {
-                continue;
-            }
-            int percent = Math.round(counts[0] * 100f / counts[1]);
-            boolean isWeakest = entry.getKey().equals(weakest) && percent < 100;
-            rows.append("        <div class=\"catrow\">\n")
-                .append("          <div class=\"catrow-head\"><span class=\"catname\">")
-                .append(Html.escape(entry.getKey()))
-                .append("</span><span class=\"catfrac\">")
-                .append(counts[0]).append("/").append(counts[1])
-                .append(" · %").append(percent)
-                .append("</span></div>\n")
-                .append("          <div class=\"catbar").append(isWeakest ? " weak" : "")
-                .append("\"><i style=\"width:").append(percent).append("%\"></i></div>\n")
-                .append("        </div>\n");
-        }
-
-        String note = "";
-        if (weakest != null && weakestPercent < 100) {
-            note = "      <p class=\"catnote\">En çok zorlandığın konu: <b>"
-                    + Html.escape(weakest) + "</b> (%" + weakestPercent + ")</p>\n";
-        }
-
-        return """
-                      <p class="eyebrow" style="margin-top:26px">Konu dökümü</p>
-                      <div class="catlist">
-                %s      </div>
-                %s""".formatted(rows, note);
-    }
-
-    /** Ortalama cevap suresi ve en hizli dogru cevabin suresi. */
-    private static String speedSummary(Quiz quiz) {
-        List<Quiz.AnswerResult> history = quiz.getHistory();
-        if (history.isEmpty()) {
-            return "";
-        }
-
-        long totalMs = 0;
-        long fastestCorrectMs = -1;
-        for (Quiz.AnswerResult result : history) {
-            totalMs += result.elapsedMillis();
-            if (result.correct() && (fastestCorrectMs < 0 || result.elapsedMillis() < fastestCorrectMs)) {
-                fastestCorrectMs = result.elapsedMillis();
-            }
-        }
-
-        String avg = formatSeconds(totalMs / history.size());
-        String fastest = fastestCorrectMs < 0 ? "—" : formatSeconds(fastestCorrectMs);
-
-        return """
-                      <p class="eyebrow" style="margin-top:26px">Hız</p>
-                      <div class="stats">
-                        <div class="stat"><b>%s</b><span>Ortalama süre</span></div>
-                        <div class="stat"><b>%s</b><span>En hızlı doğru</span></div>
-                      </div>
-                """.formatted(avg, fastest);
-    }
-
-    /** Milisaniyeyi "8.3 sn" gibi bir metne cevirir. */
-    private static String formatSeconds(long millis) {
-        double seconds = Math.round(millis / 100.0) / 10.0;
-        String number = seconds == Math.rint(seconds)
-                ? String.valueOf((long) seconds)
-                : String.valueOf(seconds);
-        return number + " sn";
-    }
-
-    /**
-     * Yanlis yapilan her sorunun kalip okunacak gozden gecirmesi: soru,
-     * isaretlenen sik, dogru sik, aciklama. Yanlis yoksa bos doner.
-     */
-    private String wrongReview(Quiz quiz) {
-        List<Quiz.AnswerResult> history = quiz.getHistory();
-        List<Integer> chosen = chosenAnswers.getOrDefault(quiz, List.of());
-
-        StringBuilder cards = new StringBuilder();
-        int wrongCount = 0;
-        for (int i = 0; i < history.size(); i++) {
-            Quiz.AnswerResult result = history.get(i);
-            if (result.correct()) {
-                continue;
-            }
-            wrongCount++;
-
-            Question question = result.question();
-            String[] options = question.getOptions();
-            int chosenIndex = i < chosen.size() ? chosen.get(i) : -1;
-
-            String yourAnswer = (chosenIndex < 0 || chosenIndex >= options.length)
-                    ? "Süre doldu, cevap verilmedi"
-                    : Html.escape(options[chosenIndex]);
-
-            String why = question.hasExplanation()
-                    ? "        <p class=\"why\">" + Html.escape(question.getExplanation()) + "</p>\n"
-                    : "";
-
-            cards.append("""
-                        <div class="card wrongcard">
-                          <p class="eyebrow" style="margin-bottom:6px">%s</p>
-                          <p class="wrongq">%s</p>
-                          <p class="ans wrong">Senin cevabın: <b>%s</b></p>
-                          <p class="ans right">Doğru cevap: <b>%s</b></p>
-                    %s    </div>
-                    """.formatted(
-                    Html.escape(question.getCategory()),
-                    Html.escape(question.getText()),
-                    yourAnswer,
-                    Html.escape(question.getCorrectOption()),
-                    why));
-        }
-
-        if (wrongCount == 0) {
-            return "";
-        }
-
-        return """
-                      <details class="revlist" open>
-                        <summary>Yanlış yaptığın %d soru</summary>
-                %s      </details>
-                """.formatted(wrongCount, cards);
-    }
-
-    /** Yanlis varsa "tekrar coz" butonu; yoksa ayni testi tekrar baslat. */
+    /** Yanlis varsa "tekrar coz" butonu. */
     private static String retryButton(Quiz quiz) {
         int wrong = quiz.getWrongQuestions().size();
-        if (wrong == 0) {
-            return "    <a class=\"btn\" href=\"/tekrar\">Aynı testi tekrar çöz</a>\n";
-        }
-        return "    <a class=\"btn\" href=\"/tekrar\">" + wrong
-              + " yanlışını şimdi tekrar dene</a>\n";
+        return wrong == 0 ? ""
+                : "    <a class=\"btn\" href=\"/tekrar\">" + wrong
+                  + " yanlışını tekrar çöz</a>\n";
     }
 
     private static String verdictTitle(int percentage) {
@@ -628,4 +480,16 @@ public final class QuizPages {
         if (percentage >= 50)  return "Fena değil";
         return "Bir tur daha?";
     }
+
+    private String reactionMarkup(GameSession session, boolean correct, boolean timedOut, int seed) {
+        if (session == null) {
+            return "";
+        }
+        Room room = session.getRoomCode() == null ? null : ctx.getRooms().get(session.getRoomCode());
+        if (room != null && !room.reactionsEnabled()) {
+            return "";
+        }
+        return Reactions.studentFeedback(session, correct, timedOut, seed);
+    }
+
 }

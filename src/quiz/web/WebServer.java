@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Quiz'i yerel agda yayinlayan web sunucusu.
@@ -27,6 +28,8 @@ import java.util.concurrent.Executors;
 public class WebServer {
 
     private final ServerContext ctx;
+    private volatile HttpServer server;
+    private volatile ExecutorService executor;
 
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
                      Path questionsDir, Path setsDir, Scoreboard scoreboard, int port) {
@@ -34,47 +37,80 @@ public class WebServer {
     }
 
     public void start() throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(ctx.getPort()), 0);
+        start(true);
+    }
+
+    /** Smoke testi gibi programatik kullanimlarda banner yazmadan sunucuyu acar. */
+    public void startQuietly() throws IOException {
+        start(false);
+    }
+
+    private void start(boolean announce) throws IOException {
+        HttpServer httpServer = HttpServer.create(new InetSocketAddress(ctx.getPort()), 0);
 
         HomePages homePages = new HomePages(ctx);
         QuizPages quizPages = new QuizPages(ctx);
         RoomPages roomPages = new RoomPages(ctx);
+        ExportPages exportPages = new ExportPages(ctx);
         BoardPage boardPage = new BoardPage(ctx);
         GeneratePages generatePages = new GeneratePages(ctx);
-        ExportPages exportPages = new ExportPages(ctx);
 
         // ---- rota tablosu: hangi URL hangi sayfaya gidiyor ----
-        server.createContext("/", homePages::handleHome);
-        server.createContext("/start", homePages::handleStart);
-        server.createContext("/ayarla", homePages::handleCustom);
-        server.createContext("/katil", homePages::handleJoin);
+        httpServer.createContext("/", homePages::handleHome);
+        httpServer.createContext("/start", homePages::handleStart);
+        httpServer.createContext("/ayarla", homePages::handleCustom);
+        httpServer.createContext("/katil", homePages::handleJoin);
 
-        server.createContext("/quiz", quizPages::handleQuiz);
-        server.createContext("/cevap", quizPages::handleAnswer);
-        server.createContext("/devam", quizPages::handleContinue);
-        server.createContext("/sonuc", quizPages::handleResult);
-        server.createContext("/tekrar", quizPages::handleRetry);
+        httpServer.createContext("/quiz", quizPages::handleQuiz);
+        httpServer.createContext("/cevap", quizPages::handleAnswer);
+        httpServer.createContext("/devam", quizPages::handleContinue);
+        httpServer.createContext("/sonuc", quizPages::handleResult);
+        httpServer.createContext("/tekrar", quizPages::handleRetry);
 
-        server.createContext("/kur", roomPages::handleHostSetup);
-        server.createContext("/oda", roomPages::handleHostPanel);
-        server.createContext("/ekran", roomPages::handleScreen);
-        server.createContext("/rapor", roomPages::handleReport);
+        httpServer.createContext("/kur", roomPages::handleHostSetup);
+        httpServer.createContext("/oda", roomPages::handleHostPanel);
+        httpServer.createContext("/ekran", roomPages::handleScreen);
+        httpServer.createContext("/rapor", roomPages::handleReport);
+        httpServer.createContext("/disaktar/oda", exportPages::handleRoomCsv);
+        httpServer.createContext("/disaktar/sorular", exportPages::handleQuestionsCsv);
 
-        server.createContext("/disaktar/oda", exportPages::handleRoomCsv);
-        server.createContext("/disaktar/sorular", exportPages::handleQuestionsCsv);
+        httpServer.createContext("/tablo", boardPage::handleBoard);
+        httpServer.createContext("/uret", generatePages::handleGenerate);
 
-        server.createContext("/tablo", boardPage::handleBoard);
-        server.createContext("/uret", generatePages::handleGenerate);
-
-        server.createContext("/style.css", exchange ->
+        httpServer.createContext("/style.css", exchange ->
                 ctx.send(exchange, 200, "text/css; charset=UTF-8", Html.CSS));
 
         // Tek is parcacigi olsaydi bir kisi sayfayi beklerken digerleri kilitlenirdi.
-        server.setExecutor(Executors.newFixedThreadPool(16));
-        server.start();
+        ExecutorService threadPool = Executors.newFixedThreadPool(16);
+        httpServer.setExecutor(threadPool);
+        this.server = httpServer;
+        this.executor = threadPool;
+        ctx.setBoundPort(httpServer.getAddress().getPort());
+        httpServer.start();
 
-        printAddresses();
-        printAiStatus();
+        if (announce) {
+            printAddresses();
+            printAiStatus();
+        }
+    }
+
+    /** Test sunucusunu ve ona ait is parcaciklarini kapatir. */
+    public void stop() {
+        HttpServer running = server;
+        if (running != null) {
+            running.stop(0);
+            server = null;
+        }
+        ExecutorService threadPool = executor;
+        if (threadPool != null) {
+            threadPool.shutdownNow();
+            executor = null;
+        }
+    }
+
+    /** Sunucunun gercekten dinledigi portu verir; 0 ile baslatilan testlerde de calisir. */
+    public int getBoundPort() {
+        return ctx.getPort();
     }
 
     /** Baglanti adreslerini ekrana basar; katilimcilar bunu telefona yazacak. */

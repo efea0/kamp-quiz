@@ -40,20 +40,11 @@ public class QuestionGenerator {
     private static final String OPENROUTER_BASE = "https://openrouter.ai/api/v1";
     private static final String OPENROUTER_MODEL = "deepseek/deepseek-chat";
 
-    /** Anahtar dosyalarinin varsayilan yeri. */
     private static final Path KEY_DIR =
             Path.of(System.getProperty("user.home"), ".config", "kamp-quiz");
 
-    /**
-     * Yonerge (prompt) dosyalarinin okundugu klasor. Calisma dizinine gore
-     * gorelidir (questions/ ve sets/ klasorleriyle ayni mantik).
-     */
-    private static final Path PROMPTS_DIR = Path.of("prompts");
-
-    /** Hangi servise konusuyoruz. */
     public enum Provider { GEMINI, OPENROUTER }
 
-    /** Tek bir servis tanimi. */
     private record Endpoint(Provider provider, String apiKey, String baseUrl, String model) {
         String label() {
             return (provider == Provider.OPENROUTER ? "OpenRouter" : "Gemini") + " · " + model;
@@ -66,7 +57,6 @@ public class QuestionGenerator {
      */
     private final List<Endpoint> endpoints;
 
-    /** Baslangicta kullaniciya gosterilecek uyarilar (or. dosya izinleri). */
     private final List<String> warnings = new ArrayList<>();
 
     private final HttpClient http;
@@ -100,7 +90,6 @@ public class QuestionGenerator {
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     }
 
-    /** Test icin: tek bir servisi dogrudan verir. */
     QuestionGenerator(Provider provider, String apiKey, String baseUrl, String model) {
         this.endpoints = List.of(new Endpoint(provider, trim(apiKey), stripSlash(baseUrl), model));
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
@@ -134,7 +123,6 @@ public class QuestionGenerator {
         return "";
     }
 
-    /** Anahtar dosyasini okur ve izinlerini denetler. */
     private static String readKeyFile(Path path, List<String> warnings, boolean required) {
         try {
             String key = Files.readString(path, StandardCharsets.UTF_8).strip();
@@ -152,7 +140,6 @@ public class QuestionGenerator {
         }
     }
 
-    /** Dosyayi baskalari da okuyabiliyorsa uyarir. */
     private static void checkPermissions(Path path, List<String> warnings) {
         try {
             Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
@@ -180,12 +167,10 @@ public class QuestionGenerator {
         return (value == null || value.isBlank()) ? fallback : value;
     }
 
-    /** En az bir servis tanimli mi? Degilse uretim ozelligi kapali gosterilir. */
     public boolean isEnabled() {
         return !endpoints.isEmpty();
     }
 
-    /** Ekranda gosterilecek etiket: "Gemini · model  →  OpenRouter · model" */
     public String describe() {
         if (endpoints.isEmpty()) {
             return "tanımsız";
@@ -200,129 +185,59 @@ public class QuestionGenerator {
         return out.toString();
     }
 
-    /** Baslangic uyarilari (anahtar dosyasi izinleri gibi). */
     public List<String> getWarnings() {
         return List.copyOf(warnings);
     }
 
-    /**
-     * Gomulu (varsayilan) uretim yonergesi. Yer tutucular:
-     *   {seviye}  -> zorluk seviyesi (kolay/orta/zor)
-     *   {konu}    -> konu basligi
-     *   {adet}    -> istenen soru sayisi
-     *
-     * prompts/soru-uret.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-uret.txt.ornek (uzantisini silip etkinlestirin).
-     */
-    private static final String DEFAULT_GENERATE_PROMPT = """
-            Sen bir bilgi yarismasi soru yazarisin. Turkce, {seviye} seviyesinde,
-            "{konu}" konusunda TAM {adet} adet coktan secmeli soru yaz.
-
-            CIKTI BICIMI cok onemli. Sadece asagidaki bicimde satirlar yaz,
-            baska hicbir sey yazma (giris cumlesi, numaralandirma, markdown, kod blogu YOK):
-
-            Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
-            > Dogru cevabin kisa nedeni.
-
-            KURALLAR:
-            - Ayirici karakter dikey cizgi (|). Soru metninde ve siklarda dikey cizgi KULLANMA.
-            - Her soruda tam 4 sik olsun.
-            - dogruNo 1 ile 4 arasinda bir sayidir; 1 = ilk sik.
-            - Her sorunun hemen altina '>' ile baslayan tek satirlik bir aciklama yaz.
-            - Aciklama nedeni soylesin ve sik karistirilan sikki ayirt etsin.
-            - Dogru cevaplar hep ayni sirada olmasin, dagitilsin.
-            - Bilgiler dogru ve tartismasiz olsun; tarihsel veya teknik hata yapma.
-            - Her soru tek satirda olsun, satir sonu ekleme.
-            """;
-
-    /**
-     * Gomulu (varsayilan) duzenleme yonergesi. Yer tutucular:
-     *   {talimat} -> kullanicinin duzenleme istegi
-     *   {paket}   -> duzenlenecek mevcut soru paketi metni
-     *
-     * prompts/soru-duzenle.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-duzenle.txt.ornek (uzantisini silip etkinlestirin).
-     */
-    private static final String DEFAULT_REVISE_PROMPT = """
-            Asagida bir bilgi yarismasi soru paketi var. Kullanicinin istegine gore
-            bu paketi duzenle ve TAM AYNI BICIMDE geri ver.
-
-            KULLANICININ ISTEGI:
-            {talimat}
-
-            BICIM KURALLARI (degistirme):
-            Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
-            > Dogru cevabin kisa nedeni.
-
-            - Sadece duzenlenmis paketi yaz; aciklama, giris cumlesi, markdown, kod blogu YOK.
-            - Dikey cizgi sadece ayirici olarak kullanilir.
-            - dogruNo 1 ile 4 arasindadir.
-
-            MEVCUT PAKET:
-            {paket}
-            """;
-
-    /** Verilen konuda yeni bir soru paketi metni uretir. */
     public String generate(String topic, int count, String level) throws IOException {
-        String prompt = promptText("soru-uret.txt", DEFAULT_GENERATE_PROMPT)
-                .replace("{seviye}", level)
-                .replace("{konu}", topic)
-                .replace("{adet}", String.valueOf(count));
+        String prompt = """
+                Sen bir bilgi yarismasi soru yazarisin. Turkce, %s seviyesinde,
+                "%s" konusunda TAM %d adet coktan secmeli soru yaz.
+
+                CIKTI BICIMI cok onemli. Sadece asagidaki bicimde satirlar yaz,
+                baska hicbir sey yazma (giris cumlesi, numaralandirma, markdown, kod blogu YOK):
+
+                Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
+                > Dogru cevabin kisa nedeni.
+
+                KURALLAR:
+                - Ayirici karakter dikey cizgi (|). Soru metninde ve siklarda dikey cizgi KULLANMA.
+                - Her soruda tam 4 sik olsun.
+                - dogruNo 1 ile 4 arasinda bir sayidir; 1 = ilk sik.
+                - Her sorunun hemen altina '>' ile baslayan tek satirlik bir aciklama yaz.
+                - Aciklama nedeni soylesin ve sik karistirilan sikki ayirt etsin.
+                - Dogru cevaplar hep ayni sirada olmasin, dagitilsin.
+                - Bilgiler dogru ve tartismasiz olsun; tarihsel veya teknik hata yapma.
+                - Her soru tek satirda olsun, satir sonu ekleme.
+                """.formatted(level, topic, count);
 
         return callModel(prompt);
     }
 
-    /** Var olan taslagi verilen talimata gore yeniden yazar. */
     public String revise(String draft, String instruction) throws IOException {
-        String prompt = promptText("soru-duzenle.txt", DEFAULT_REVISE_PROMPT)
-                .replace("{talimat}", instruction)
-                .replace("{paket}", draft);
+        String prompt = """
+                Asagida bir bilgi yarismasi soru paketi var. Kullanicinin istegine gore
+                bu paketi duzenle ve TAM AYNI BICIMDE geri ver.
+
+                KULLANICININ ISTEGI:
+                %s
+
+                BICIM KURALLARI (degistirme):
+                Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
+                > Dogru cevabin kisa nedeni.
+
+                - Sadece duzenlenmis paketi yaz; aciklama, giris cumlesi, markdown, kod blogu YOK.
+                - Dikey cizgi sadece ayirici olarak kullanilir.
+                - dogruNo 1 ile 4 arasindadir.
+
+                MEVCUT PAKET:
+                %s
+                """.formatted(instruction, draft);
 
         return callModel(prompt);
     }
 
-    /**
-     * prompts/&lt;dosyaAdi&gt; dosyasini okur; varsa ve okunabiliyorsa onu
-     * doner (yorum satirlari ayiklanmis halde), yoksa ya da herhangi bir
-     * sebeple okunamazsa SESSIZCE gomulu (builtin) metne duser. Bu yuzden
-     * dosya sistemiyle ilgili hicbir sorun uygulamanin calismasini durdurmaz.
-     */
-    private static String promptText(String fileName, String builtin) {
-        Path path = PROMPTS_DIR.resolve(fileName);
-        try {
-            if (Files.isRegularFile(path) && Files.isReadable(path)) {
-                String withoutComments = stripCommentLines(Files.readString(path, StandardCharsets.UTF_8));
-                if (!withoutComments.isBlank()) {
-                    return withoutComments;
-                }
-            }
-        } catch (IOException | RuntimeException e) {
-            // Dosya okunamadi (izin, bozuk kodlama, vb.) - gomulu metne dusuluyor.
-        }
-        return builtin;
-    }
-
-    /**
-     * '#' ile baslayan satirlari atlar. Boylece kullanicilar yonerge
-     * dosyalarinin basina yer tutuculari aciklayan yorum satirlari
-     * ekleyebilir; bu satirlar modele gonderilen metne dahil edilmez.
-     */
-    private static String stripCommentLines(String text) {
-        StringBuilder result = new StringBuilder();
-        for (String line : text.split("\n", -1)) {
-            if (line.strip().startsWith("#")) {
-                continue;
-            }
-            result.append(line).append('\n');
-        }
-        return result.toString().strip();
-    }
-
-    /**
-     * Tanimli servisleri SIRAYLA dener. Ilki hata verirse (kota dolmus,
-     * servis kapali, model bulunamadi) sessizce ikincisine gecer.
-     * Hepsi basarisiz olursa toplu hata mesaji doner.
-     */
+    // Bir saglayici gecici olarak kullanilamazsa diger tanimli saglayici denenir.
     private String callModel(String prompt) throws IOException {
         if (!isEnabled()) {
             throw new IOException("API anahtarı tanımlı değil.");
@@ -342,14 +257,12 @@ public class QuestionGenerator {
         throw new IOException(problems.toString());
     }
 
-    /** Tek bir servise istek gonderir. */
     private String callEndpoint(Endpoint endpoint, String prompt) throws IOException {
         String escaped = Json.escape(prompt);
         String body;
         HttpRequest.Builder builder;
 
         if (endpoint.provider() == Provider.OPENROUTER) {
-            // OpenAI uyumlu bicim; OpenRouter disindaki cogu servis de bunu kullanir.
             body = """
                     {"model":"%s","messages":[{"role":"user","content":"%s"}],"temperature":0.7}
                     """.formatted(Json.escape(endpoint.model()), escaped);
@@ -390,7 +303,6 @@ public class QuestionGenerator {
                     + maskele(detail, endpoint.apiKey()));
         }
 
-        // Gemini metni "text", OpenAI uyumlu servisler "content" altinda dondurur.
         String key = endpoint.provider() == Provider.OPENROUTER ? "content" : "text";
         List<String> parts = Json.valuesOf(response.body(), key);
         parts.removeIf(String::isBlank);
@@ -403,7 +315,7 @@ public class QuestionGenerator {
         return temizle(text);
     }
 
-    /** Model bazen kod blogu isaretleri ekler; onlari ayikla. */
+    // Model kod blogu isaretleri ekleyebildigi icin pakete yalnizca icerik doner.
     private static String temizle(String text) {
         String result = text.strip();
         if (result.startsWith("```")) {

@@ -38,25 +38,13 @@ public class QuestionBank {
     private static final String DIFFICULTY_PREFIX = "zorluk:";
 
     private QuestionBank() {
-        // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
     }
 
-    /**
-     * Klasordeki TUM .txt dosyalarini okur.
-     * Uyarilari kimsenin gormedigi surum; ekrana basmaz.
-     */
     public static List<Question> loadFromDirectory(Path directory) throws IOException {
         return loadFromDirectory(directory, new ArrayList<>());
     }
 
-    /**
-     * Klasordeki TUM .txt dosyalarini okur ve bozuk satir uyarilarini
-     * verilen listeye YAZAR, ekrana basmaz.
-     *
-     * Bu ayrim onemli: core paketi ekrani bilmez. Uyariyi kimin nasil
-     * gosterecegine arayuz karar verir - terminalde satir olarak, web'de
-     * sayfada. Boylece ayni kod iki arayuzde de calisir.
-     */
+    // Core paketi ekrani bilmez; uyarinin nasil gosterilecegine arayuz karar verir.
     public static List<Question> loadFromDirectory(Path directory, List<String> warnings)
             throws IOException {
         if (!Files.isDirectory(directory)) {
@@ -77,20 +65,16 @@ public class QuestionBank {
         return all;
     }
 
-    /** Tek bir dosyayi okur; uyarilari yok sayar. */
     public static List<Question> loadFromFile(Path file) throws IOException {
         return loadFromFile(file, new ArrayList<>());
     }
 
-    /** Tek bir dosyayi okur. Bozuk satirlari atlar, uyariyi listeye ekler. */
     public static List<Question> loadFromFile(Path file, List<String> warnings)
             throws IOException {
         List<Question> questions = new ArrayList<>();
         List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
 
-        // Once dosyanin basligini ara; yoksa dosya adindan uret.
         String category = findTitle(lines).orElseGet(() -> categoryOf(file));
-        // Dosya geneli varsayilan zorluk; yoksa null (Question kendi varsayilanini uygular).
         Question.Difficulty fileDifficulty = findDifficulty(lines).orElse(null);
 
         // Aciklama satiri ('>') sorudan SONRA geldigi icin soruyu hemen kurmuyoruz;
@@ -103,7 +87,7 @@ public class QuestionBank {
             String line = lines.get(i).trim();
 
             if (line.isEmpty() || line.startsWith("#")) {
-                continue;   // yorum veya bos satir -> atla
+                continue;
             }
 
             if (line.startsWith(">")) {
@@ -116,7 +100,6 @@ public class QuestionBank {
                 continue;
             }
 
-            // Yeni bir soru satiri geldi: bekleyeni tamamla
             addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
                     file, pendingLineNumber, warnings);
 
@@ -125,14 +108,12 @@ public class QuestionBank {
             pendingExplanation.setLength(0);
         }
 
-        // Dosya bitti; son bekleyeni de tamamla
         addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
                 file, pendingLineNumber, warnings);
 
         return questions;
     }
 
-    /** Bekleyen soru satirini ayristirip listeye ekler. */
     private static void addPending(List<Question> questions, String line,
                                    StringBuilder explanation, String category,
                                    Question.Difficulty fileDifficulty,
@@ -149,7 +130,6 @@ public class QuestionBank {
         }
     }
 
-    /** Bir metin satirini Question nesnesine cevirir. */
     private static Question parseLine(String line, String category, String explanation,
                                       Question.Difficulty fileDifficulty) {
         String[] parts = line.split("\\|");
@@ -192,10 +172,6 @@ public class QuestionBank {
         return new Question(text, options, humanNumber - 1, category, explanation, difficulty);
     }
 
-    /**
-     * Sorularda gecen kategorileri, tekrarsiz ve ilk gorulme sirasiyla verir.
-     * Hem konsol hem web arayuzu bunu kullanir.
-     */
     public static List<String> categoriesOf(List<Question> questions) {
         Set<String> unique = new LinkedHashSet<>();
         for (Question q : questions) {
@@ -204,7 +180,6 @@ public class QuestionBank {
         return new ArrayList<>(unique);
     }
 
-    /** Sadece belirli bir kategorideki sorulari suzer. */
     public static List<Question> byCategory(List<Question> questions, String category) {
         List<Question> result = new ArrayList<>();
         for (Question q : questions) {
@@ -215,7 +190,6 @@ public class QuestionBank {
         return result;
     }
 
-    /** Sadece belirli bir zorluktaki sorulari suzer. */
     public static List<Question> byDifficulty(List<Question> questions,
                                                Question.Difficulty difficulty) {
         List<Question> result = new ArrayList<>();
@@ -227,7 +201,6 @@ public class QuestionBank {
         return result;
     }
 
-    /** Dosyada '# baslik: ...' satiri varsa onun degerini bulur. */
     private static Optional<String> findTitle(List<String> lines) {
         for (String raw : lines) {
             String line = raw.trim();
@@ -245,7 +218,6 @@ public class QuestionBank {
         return Optional.empty();
     }
 
-    /** Dosyada '# zorluk: ...' satiri varsa onun degerini bulur. */
     private static Optional<Question.Difficulty> findDifficulty(List<String> lines) {
         for (String raw : lines) {
             String line = raw.trim();
@@ -264,7 +236,6 @@ public class QuestionBank {
         return Optional.empty();
     }
 
-    /** "genel-kultur.txt" -> "genel kultur" */
     private static String categoryOf(Path file) {
         String name = file.getFileName().toString();
         int dot = name.lastIndexOf('.');

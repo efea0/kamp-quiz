@@ -1,6 +1,5 @@
 package quiz.test;
 
-import quiz.ai.QuestionGenerator;
 import quiz.core.QuestionBank;
 import quiz.core.Quiz;
 import quiz.core.QuizSet;
@@ -46,7 +45,8 @@ public class SelfTest {
         testSets(sets, questions);
         testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
-        testQuestionGeneratorSurvivesMissingPromptsDir();
+        testWebMvpContracts();
+        WebSmokeTest.run();
 
         System.out.println();
         System.out.println("Geçen: " + passed + "   Kalan: " + failed);
@@ -277,6 +277,78 @@ public class SelfTest {
                 plainSet.build(questions).size() == 5 && !plainSet.hasDifficultyFilter());
     }
 
+    /** Web MVP'sinin davranış sözleşmelerini dar bir kaynak denetimiyle korur. */
+    private static void testWebMvpContracts() throws IOException {
+        StringBuilder webText = new StringBuilder();
+        try (var files = Files.list(Path.of("src", "quiz", "web"))) {
+            for (Path file : files.filter(f -> f.toString().endsWith(".java")).sorted().toList()) {
+                webText.append(Files.readString(file, StandardCharsets.UTF_8));
+            }
+        }
+        String server = webText.toString();
+        String session = Files.readString(Path.of("src", "quiz", "web", "GameSession.java"),
+                StandardCharsets.UTF_8);
+        String html = Files.readString(Path.of("src", "quiz", "web", "Html.java"),
+                StandardCharsets.UTF_8);
+
+        check("Senkron bekleme ekranı sunucu kalan süresini taşıyor",
+                server.contains("serverRemaining") && server.contains("data-server-remaining"));
+        check("Senkron oda süresi bitince sunucuda açılıyor",
+                server.contains("expireIfNeeded") && server.contains("room.expireIfNeeded()"));
+        check("Katılım akışında tema seçimi var",
+                server.contains("name=\\\"tema\\\"") && server.contains("Tema"));
+        check("Katılım akışında avatar seçimi var",
+                server.contains("name=\\\"avatar\\\"") && server.contains("Avatar"));
+        check("Seçilen avatar bekleme, sıra ve sonuçta korunuyor",
+                server.contains("waiting-avatar") && server.contains("avatar-cell")
+                        && server.contains("result-avatar"));
+        check("Hoca tepkileri tamamen kapatabiliyor",
+                server.contains("tepkiler") && server.contains("checkbox")
+                        && server.contains("reactionsEnabled"));
+        check("Oyuncu oturumu tema ve avatarı tutuyor",
+                session.contains("Theme theme") && session.contains("Avatar avatar"));
+        check("Projeksiyon hızlı doğru oyuncusunun tepkisini gösteriyor",
+                server.contains("fastestCorrect") && server.contains("hostLine"));
+        check("Oda ayarları açılır menü yerine seçim kartı kullanıyor",
+                server.contains("setup-options") && server.contains("setup-pick-content")
+                        && server.contains("type=\\\"radio\\\""));
+        check("Seçim kartları klavye odağını ve mobil düzeni destekliyor",
+                html.contains(".setup-pick input:focus-visible")
+                        && html.contains("@media (max-width: 520px)"));
+        check("Özgün tepki animasyonları azaltılmış hareketi destekliyor",
+                html.contains("reaction-correct") && html.contains("prefers-reduced-motion"));
+        check("QR varsayılan rotadaki ağı tercih ediyor",
+                server.contains("preferredLocalAddress") && server.contains("DatagramSocket"));
+        check("QR sanal ağ arayüzünü otomatik seçmiyor",
+                server.contains("isVirtual()") && server.contains("isSiteLocalAddress()"));
+        check("Avatar tam gövdeli ve parçalı SVG üretiyor",
+                session.contains("avatar-character") && session.contains("character-arm")
+                        && session.contains("face-smile") && session.contains("face-tear"));
+        check("Animasyonlar avatar parçalarını hedefliyor",
+                html.contains(".reaction-correct-1 .avatar-svg .avatar-character")
+                        && html.contains(".reaction-wrong-2 .avatar-svg .character-head")
+                        && html.contains("@keyframes avatar-"));
+        check("Maç sonu tepkisi sahne, rozet ve confetti katmanlarına sahip",
+                html.contains("reaction-stage") && html.contains("reaction-badge")
+                        && html.contains("reaction-confetti") && html.contains("hero-win-pop"));
+        check("QR doğrudan oda kodlu katılım adresi üretiyor",
+                server.contains("/katil?kod=") && server.contains("joinUrl(exchange, room.getCode())"));
+        check("QR ile açılan sayfa kodu tekrar sormadan gizli taşıyor",
+                server.contains("type=\"hidden\" name=\"kod\"")
+                        && server.contains("getRequestURI().getPath()")
+                        && server.contains("Odaya katıl"));
+        check("Oyuncu geri tuşu önceki soruyu açamıyor",
+                server.contains("Cache-Control") && html.contains("popstate")
+                        && html.contains("pageshow"));
+        check("Projeksiyon ekranında yönetici paneline dönüş var",
+                server.contains("Yönetici paneline dön") && server.contains("/oda?kod="));
+        check("Projeksiyon yenilenince kaydırma konumunu koruyor",
+                server.contains("projectionNavigationGuard")
+                        && html.contains("kampQuizProjectionScroll")
+                        && html.contains("sessionStorage")
+                        && html.contains("scrollTo"));
+    }
+
     /**
      * Mimarinin tek kurali: core ve model paketleri EKRANI BILMEZ.
      *
@@ -284,6 +356,7 @@ public class SelfTest {
      * unutulmasin diye; birisi core icine System.out yazarsa test kirmizi olur.
      */
     private static void testCoreDoesNotPrint() throws IOException {
+
         for (String pkg : new String[]{"core", "model"}) {
             Path dir = Path.of("src", "quiz", pkg);
             if (!Files.isDirectory(dir)) {
@@ -312,28 +385,9 @@ public class SelfTest {
         return false;
     }
 
-    /**
-     * prompts/soru-uret.txt ve prompts/soru-duzenle.txt isteğe bağlıdır
-     * (bkz. quiz.ai.QuestionGenerator). QuestionGenerator kurucusu bu
-     * dosyalara / klasöre hiç dokunmaz -- yönerge metni yalnızca generate()
-     * ve revise() çağrıldığında, o an okunur ve dosya yoksa sessizce koda
-     * gömülü metne düşülür. Bu yüzden "prompts" klasörü hiç var olmasa
-     * (silinse, taşınsa) bile kurucu asla patlamamalı.
-     */
-    private static void testQuestionGeneratorSurvivesMissingPromptsDir() {
-        boolean constructed;
-        try {
-            new QuestionGenerator();
-            constructed = true;
-        } catch (RuntimeException e) {
-            constructed = false;
-        }
-        check("QuestionGenerator, prompts klasörü olmasa bile kurulabiliyor", constructed);
-    }
-
     // --------------------------------------------------------- yardimcilar
 
-    private static void check(String what, boolean condition) {
+    static void check(String what, boolean condition) {
         if (condition) {
             passed++;
         } else {
