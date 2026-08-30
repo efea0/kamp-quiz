@@ -1,5 +1,5 @@
-# baslik: Özgürlük ve Kültür
-# aciklama: Özgür yazılım ağırlıklı, genel kültürle tamamlanan 15 soruluk tur
+# baslik: Özgürlük ve Akademik Kültür
+# aciklama: Özgür yazılım, akademik etik ve bilgiye erişim üzerine 15 soruluk tur
 # sure: 20
 Özgür Yazılım = 8
-Genel Kültür = 7
+Üniversite ve Akademik Okuryazarlık = 7

@@ -1,16 +1,33 @@
-# MATEMATİK SORU PAKETİ
-# baslik: Matematik
-# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
+# baslik: Veri ve Sayısal Okuryazarlık
+# aciklama: Üniversitede ders, araştırma ve günlük kararlar için gerekli temel veri becerileri
+# Biçim: Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo | zorluk
 
-7 x 8 kaçtır? | 54 | 56 | 63 | 48 | 2
-> 7'yi 8 kez toplarsan 56 eder. 63, 7x9 ile karıştırılan yaygın bir çarpım tablosu hatasıdır.
-Bir üçgenin iç açıları toplamı kaç derecedir? | 90 | 180 | 270 | 360 | 2
-> Herhangi bir üçgenin iç açıları toplamı her zaman 180 derecedir. 360 derece ise dörtgenlerin iç açı toplamıdır, sık karıştırılır.
-144 sayısının karekökü kaçtır? | 11 | 12 | 13 | 14 | 2
-> 12 x 12 = 144 olduğu için karekök 12'dir. 11x11=121 ve 13x13=169 olduğundan diğer şıklar tutmaz.
-Pi sayısının virgülden sonraki ilk iki basamağı nedir? | 14 | 41 | 15 | 12 | 1
-> Pi sayısı 3,14159... şeklinde başlar; virgülden sonraki ilk iki basamak 14'tür.
-2 üzeri 10 kaçtır? | 512 | 1000 | 1024 | 2048 | 3
-> 2'yi 10 kez kendisiyle çarparsan 1024 eder. Bilgisayarda 1 KB'ın 1000 değil 1024 bayt olmasının nedeni budur.
-Bir karenin çevresi 20 ise bir kenarı kaçtır? | 4 | 5 | 6 | 10 | 2
-> Karenin çevresi 4 kenarın toplamıdır, yani kenar = çevre / 4 = 20 / 4 = 5. 10, çevrenin yarısı olan alan formülüyle karıştırılabilir.
+80'in yüzde 25'i kaçtır? | 10 | 15 | 20 | 25 | 3 | kolay
+> Yüzde 25, dörtte bir demektir; 80 / 4 = 20.
+
+2, 4 ve 6 sayılarının aritmetik ortalaması kaçtır? | 3 | 4 | 5 | 6 | 2 | kolay
+> Toplam 12, gözlem sayısı 3 olduğu için ortalama 12 / 3 = 4'tür.
+
+1, 3 ve 8 sayılarının medyanı kaçtır? | 1 | 3 | 4 | 8 | 2 | kolay
+> Sıralanmış üç değerin ortasındaki değer medyandır; burada medyan 3'tür.
+
+Standart sapma genel olarak neyi ölçer? | Verilerin ortalama çevresindeki yayılımını | Gözlem sayısını | En büyük değeri | Ölçüm birimini | 1 | orta
+> Standart sapma büyüdükçe değerler ortalamadan daha geniş bir alana yayılmış demektir.
+
+Adil bir paranın bir kez atılmasında tura gelme olasılığı nedir? | %25 | %40 | %50 | %75 | 3 | kolay
+> İki eş olası sonuçtan biri tura olduğu için olasılık 1/2, yani yüzde 50'dir.
+
+Bir bayt kaç bitten oluşur? | 2 | 4 | 8 | 16 | 3 | kolay
+> Bir bayt 8 bitten oluşur; bit yalnızca 0 veya 1 değerini alır.
+
+Bir ankette katılımcıların seçilme biçimi neden önemlidir? | Örneklemin evreni ne kadar temsil ettiğini etkiler | Soruların dilini otomatik düzeltir | Sonuçları her zaman kesinleştirir | Anketi deney haline getirir | 1 | orta
+> Seçim yöntemi yanlıysa sonuçlar yalnızca ankete katılan grubu yansıtabilir.
+
+Bir grafikte tüm değerlerin aynı görünmesi için hangi durum şüphe uyandırır? | Ölçeğin veya eksen aralığının veriyi saklaması | Renklerin farklı olması | Başlığın bulunması | Verinin tablo halinde verilmesi | 1 | orta
+> Ölçek, aralık veya kesilmiş eksen görsel karşılaştırmayı yanıltabilir; grafik ham değerlerle kontrol edilmelidir.
+
+Bir p-değeri 0,03 olduğunda aşağıdakilerden hangisi kesin olarak söylenemez? | Etkinin pratik olarak önemli olduğu | Sonucun seçilen istatistiksel ölçüte göre anlamlı olabileceği | Varsayım altında bu kadar uç sonuç görülme olasılığının düşük olduğu | İstatistiksel değerlendirme yapılması gerektiği | 1 | zor
+> İstatistiksel anlamlılık etkinin büyüklüğünü veya pratik önemini tek başına göstermez.
+
+Ölçüm sonuçlarını karşılaştırırken birimlerin aynı olması neden gereklidir? | Sayıların aynı ölçekte yorumlanabilmesi için | Verinin rastgeleleşmesi için | Ortalama alınamaması için | Grafik çizilememesi için | 1 | kolay
+> Metre ile santimetre gibi farklı birimleri dönüştürmeden yapılan karşılaştırmalar yanlış sonuca götürebilir.

@@ -12,14 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * "Sunum modu" ekranlari — hocanin bir oda acip sinifi yonettigi akis:
- *
- *   /kur    Hocanin oda actigi sayfa: hazir testlerden birini secer
- *   /oda    Hoca paneli: oda kodu, katilimcilar, senkron akis dugmeleri
- *   /ekran  Buyuk ekrana yansitilan canli siralama
- *   /rapor  Hangi soru en cok yanlis yapildi
- */
 public final class RoomPages {
 
     private final ServerContext ctx;
@@ -28,7 +20,7 @@ public final class RoomPages {
         this.ctx = ctx;
     }
 
-    /** Hocanin oda actigi sayfa: hazir testlerden birini secer. */
+
     public void handleHostSetup(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
             Map<String, String> form = ctx.readForm(exchange);
@@ -90,7 +82,7 @@ public final class RoomPages {
         ctx.sendHtml(exchange, 200, Html.page("Oda kur", body));
     }
 
-    /** Hocanin paneli: kod, katilimcilar ve projeksiyon baglantisi. */
+
     public void handleHostPanel(HttpExchange exchange) throws IOException {
         Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
         if (room == null) {
@@ -98,7 +90,7 @@ public final class RoomPages {
             return;
         }
 
-        // Senkron odada hoca akisi buradan yonetir.
+
         if ("POST".equals(exchange.getRequestMethod())) {
             switch (ctx.readForm(exchange).getOrDefault("islem", "")) {
                 case "basla"   -> room.start(ctx.getAllQuestions());
@@ -155,8 +147,8 @@ public final class RoomPages {
                 """.formatted(
                 Html.escape(room.getSet().getName()),
                 room.getCode(),
-                ctx.joinQr(exchange, 190),
-                Html.escape(ctx.joinUrl(exchange)),
+                ctx.joinQr(exchange, 190, room.getCode()),
+                Html.escape(ctx.joinUrl(exchange, room.getCode())),
                 room.playerCount(),
                 room.getSet().totalQuestions(),
                 room.isSharedOrder() ? "herkese aynı" : "kişiye özel",
@@ -168,7 +160,7 @@ public final class RoomPages {
                 "  <meta http-equiv=\"refresh\" content=\"4\">\n"));
     }
 
-    /** Buyuk ekranda gosterilen canli siralama. Kendi kendine yenilenir. */
+
     public void handleScreen(HttpExchange exchange) throws IOException {
         Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
         if (room == null) {
@@ -179,10 +171,10 @@ public final class RoomPages {
         StringBuilder list = new StringBuilder();
         List<GameSession> standings = room.standings();
 
-        // Projeksiyonda kaydirma yapilamaz: ekrana ne sigiyorsa o gorunur.
-        // Bu yuzden sadece ilk EKRANDA_GOSTERILEN kisi listelenir, gerisi
-        // tek satirlik bir ozetle belirtilir. 25 kisilik sinifta bile
-        // siralama ve tepki seridi ayni ekranda kalir.
+
+
+
+
         int gosterilecek = Math.min(standings.size(), EKRANDA_GOSTERILEN);
 
         if (standings.isEmpty()) {
@@ -218,18 +210,24 @@ public final class RoomPages {
                   </div>
 
                 %s
+                %s
+                %s
                   <div class="rank big">
                 %s      </div>
 
+                %s
                   <p class="muted small center" style="margin-top:18px">%d katılımcı · %s</p>
                 </div>
                 """.formatted(
                 Html.escape(room.getSet().getName()),
                 room.getCode(),
-                ctx.joinQr(exchange, 108),
-                Html.escape(ctx.joinUrl(exchange)),
+                ctx.joinQr(exchange, 108, room.getCode()),
+                Html.escape(ctx.joinUrl(exchange, room.getCode())),
+                projectionQuestionBlock(room),
+                projectionDashboard(room),
                 reactionsBlock(room, standings),
                 list,
+                projectionSoundBlock(room),
                 room.playerCount(),
                 room.everyoneFinished() ? "test bitti" : "devam ediyor");
 
@@ -237,14 +235,159 @@ public final class RoomPages {
                 "  <meta http-equiv=\"refresh\" content=\"3\">\n"));
     }
 
-    // ------------------------------------------------------- canli tepki seridi
 
-    /**
-     * Siralamanin altinda gosterilen tepki seridi. Test bittiyse sabit bir
-     * kapanis ozeti, aksi halde her yenilemede farkli donen tek satirlik
-     * bir tepki uretir. Hic cevap yoksa serit tamamen gizlenir.
-     */
-    /** Projeksiyonda aynı anda gösterilecek en fazla katılımcı sayısı. */
+
+
+    private String projectionDashboard(Room room) {
+        boolean synchronous = room.isSynchronous();
+        int total = room.questionCount(ctx.getAllQuestions());
+        int current = synchronous && room.getPhase() != Room.Phase.LOBI ? room.getIndex() + 1 : 0;
+        int remaining = current == 0 ? total : Math.max(0, total - current);
+        int seconds = synchronous && room.getPhase() == Room.Phase.SORU
+                ? room.remainingSeconds() : 0;
+        String phase = switch (room.getPhase()) {
+            case LOBI -> "Bekleniyor";
+            case SORU -> "Cevaplanıyor";
+            case CEVAP -> "Cevap açık";
+            case BITTI -> "Tamamlandı";
+        };
+        String currentLabel = current == 0 ? "—" : current + " / " + total;
+        String remainingLabel = synchronous ? String.valueOf(remaining) : "—";
+        String secondsLabel = synchronous && room.getPhase() == Room.Phase.SORU
+                ? seconds + " sn" : "—";
+        String countLabel = synchronous ? room.currentAnswerCount() + " / " + room.playerCount() : "—";
+
+        return """
+                <section class="projection-dashboard" aria-label="Quiz durumu">
+                  <div class="dash-stat"><span>Durum</span><b>%s</b></div>
+                  <div class="dash-stat"><span>Süre</span><b id="projectionTimer">%s</b></div>
+                  <div class="dash-stat"><span>Şu anki soru</span><b>%s</b></div>
+                  <div class="dash-stat"><span>Kalan soru</span><b>%s</b></div>
+                  <div class="dash-stat"><span>Cevaplayan</span><b>%s</b></div>
+                </section>
+                <script>
+                  (function () {
+                    var remaining = %d;
+                    var timer = document.getElementById('projectionTimer');
+                    if (!timer || remaining <= 0) return;
+                    window.setInterval(function () {
+                      remaining = Math.max(0, remaining - 1);
+                      timer.textContent = remaining + ' sn';
+                    }, 1000);
+                  })();
+                </script>
+                """.formatted(Html.escape(phase), Html.escape(secondsLabel),
+                Html.escape(currentLabel), Html.escape(remainingLabel),
+                Html.escape(countLabel), seconds);
+    }
+
+
+    private String projectionSoundBlock(Room room) {
+        String soundKey = room.isSynchronous()
+                ? "sync:" + room.getPhase() + ":" + room.getIndex()
+                : "free:" + room.nextScreenTick();
+        return """
+                <div class="projection-tools">
+                  <button class="sound-toggle" id="sesAc" type="button">🔇 Sesi aç</button>
+                </div>
+                <script>
+                  (function () {
+                    var key = "%s";
+                    var button = document.getElementById("sesAc");
+                    var audio = null;
+                    function tone(frequency, duration, delay) {
+                      if (!audio) return;
+                      var now = audio.currentTime + (delay || 0);
+                      var oscillator = audio.createOscillator();
+                      var gain = audio.createGain();
+                      oscillator.frequency.value = frequency;
+                      oscillator.type = "sine";
+                      gain.gain.setValueAtTime(0.0001, now);
+                      gain.gain.exponentialRampToValueAtTime(0.09, now + 0.015);
+                      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                      oscillator.connect(gain).connect(audio.destination);
+                      oscillator.start(now);
+                      oscillator.stop(now + duration + 0.02);
+                    }
+                    function activate(playWelcome) {
+                      var AudioCtor = window.AudioContext || window.webkitAudioContext;
+                      if (!AudioCtor) return;
+                      audio = audio || new AudioCtor();
+                      audio.resume().then(function () {
+                        localStorage.setItem("kampQuizSound", "1");
+                        button.classList.add("active");
+                        button.textContent = "🔊 Ses açık";
+                        if (playWelcome) tone(660, 0.12);
+                      });
+                    }
+                    button.addEventListener("click", function () { activate(true); });
+                    if (localStorage.getItem("kampQuizSound") === "1") {
+                      button.classList.add("active");
+                      button.textContent = "🔊 Ses açık";
+                      try {
+                        activate(false);
+                        var previous = localStorage.getItem("kampQuizLastSound");
+                        if (previous && previous !== key) {
+                          tone(key.indexOf(":CEVAP:") >= 0 ? 740 : 520, 0.1);
+                        }
+                        localStorage.setItem("kampQuizLastSound", key);
+                      } catch (ignored) { }
+                    }
+                  })();
+                </script>
+                """.formatted(Html.escape(soundKey));
+    }
+
+
+    private String projectionQuestionBlock(Room room) {
+        if (!room.isSynchronous()) {
+            return "";
+        }
+        if (room.getPhase() == Room.Phase.LOBI) {
+            return "      <div class=\"projection-state\">Hoca başlatınca soru burada görünecek.</div>\n";
+        }
+        if (room.getPhase() == Room.Phase.BITTI) {
+            return "";
+        }
+
+        Question question = room.currentQuestion(ctx.getAllQuestions());
+        if (question == null) {
+            return "";
+        }
+
+        boolean revealed = room.getPhase() == Room.Phase.CEVAP;
+        StringBuilder choices = new StringBuilder();
+        String[] options = question.getOptions();
+        for (int i = 0; i < options.length; i++) {
+            String state = revealed && question.isCorrect(i) ? " correct" : "";
+            choices.append("          <div class=\"projection-choice").append(state).append("\">")
+                   .append("<b>").append(Html.letter(i)).append("</b>")
+                   .append("<span>").append(Html.escape(options[i])).append("</span></div>\n");
+        }
+
+        return """
+                <section class="projection-question%s">
+                  <div class="projection-question-head">
+                    <p class="eyebrow">Soru %d / %d</p>
+                    <span class="answer-count">%d / %d cevap</span>
+                  </div>
+                  <h2>%s</h2>
+                  <div class="projection-choices">
+                %s      </div>
+                </section>
+                """.formatted(
+                revealed ? " revealed" : "",
+                room.getIndex() + 1,
+                room.questionCount(ctx.getAllQuestions()),
+                room.currentAnswerCount(),
+                room.playerCount(),
+                Html.escape(question.getText()),
+                choices);
+    }
+
+
+
+
     private static final int EKRANDA_GOSTERILEN = 8;
 
     private String reactionsBlock(Room room, List<GameSession> standings) {
@@ -265,9 +408,9 @@ public final class RoomPages {
         return finished ? closingSummary(standings) : rotatingReaction(room, standings);
     }
 
-    /** Test bitince gosterilen sabit ozet: sinif ortalamasi, en zor soru, en hizli dogru, kusursuzlar. */
+
     private String closingSummary(List<GameSession> standings) {
-        Map<String, int[]> counts = new LinkedHashMap<>();   // soru metni -> [soruldu, yanlis]
+        Map<String, int[]> counts = new LinkedHashMap<>();
         int totalAsked = 0;
         int totalCorrect = 0;
         String fastestName = null;
@@ -344,15 +487,12 @@ public final class RoomPages {
                 """.formatted(rows);
     }
 
-    /**
-     * Devam eden testte, o anki verilerden hesaplanan tepki adaylari arasindan
-     * birini secip doner. Hangisinin secilecegi odanin yenileme sayacina gore
-     * doner, boylece ekran her 3 saniyede farkli bir cumle gosterir.
-     */
+
+
     private String rotatingReaction(Room room, List<GameSession> standings) {
         List<String> candidates = new ArrayList<>();
 
-        // 1) Seri: en uzun ardisik dogru zinciri (en az 3 olunca anlamli).
+
         String streakName = null;
         int bestStreak = 0;
         for (GameSession player : standings) {
@@ -375,7 +515,7 @@ public final class RoomPages {
                     + bestStreak + " doğru");
         }
 
-        // 2) Son sorunun zorlugu: en son ortaklasa cevaplanan soruyu kac kisi bildi.
+
         Map<String, Integer> lastAnsweredCount = new LinkedHashMap<>();
         for (GameSession player : standings) {
             List<Quiz.AnswerResult> history = player.getQuiz().getHistory();
@@ -412,7 +552,7 @@ public final class RoomPages {
             }
         }
 
-        // 3) O ana kadarki en hizli dogru cevap.
+
         String fastestName = null;
         long fastestMillis = Long.MAX_VALUE;
         for (GameSession player : standings) {
@@ -428,7 +568,7 @@ public final class RoomPages {
                     + "</b>, " + seconds(fastestMillis));
         }
 
-        // 4) Sinif ortalamasi.
+
         int totalAsked = 0;
         int totalCorrect = 0;
         for (GameSession player : standings) {
@@ -446,14 +586,14 @@ public final class RoomPages {
                     + "\">%" + average + "</b>");
         }
 
-        // 5) Yukselen: bir onceki yenilemeye gore en cok basamak cikan oyuncu.
+
         Room.RankClimb climb = room.climbSinceLastScreen(standings);
         if (climb != null) {
             candidates.add("<b class=\"good\">" + Html.escape(climb.name()) + "</b> " + climb.gain()
                     + " sıra yükseldi");
         }
 
-        // 6) En zor soru: en yuksek yanlis oranli soru (gurultu olmasin diye en az 2 kisi cevaplamis olsun).
+
         Map<String, int[]> counts = new LinkedHashMap<>();
         for (GameSession player : standings) {
             for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
@@ -496,17 +636,17 @@ public final class RoomPages {
                 """.formatted(candidates.get(pick));
     }
 
-    /** Milisaniyeyi "2.3 saniye" bicimine cevirir. */
+
     private static String seconds(long millis) {
         return String.format(Locale.ROOT, "%.1f saniye", millis / 1000.0);
     }
 
-    /** Uzun soru metnini ekrana sigacak sekilde kisaltir. */
+
     private static String kisa(String text) {
         return text.length() > 46 ? text.substring(0, 46) + "…" : text;
     }
 
-    /** Hoca icin yanlis raporu: hangi soru en cok yanlis yapildi. */
+
     public void handleReport(HttpExchange exchange) throws IOException {
         Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
         if (room == null) {
@@ -514,7 +654,7 @@ public final class RoomPages {
             return;
         }
 
-        // Soru metni -> [soruldu, yanlis]  +  temsil eden soru nesnesi
+
         Map<String, int[]> counts = new LinkedHashMap<>();
         Map<String, Question> byText = new LinkedHashMap<>();
 
@@ -534,7 +674,7 @@ public final class RoomPages {
         rows.sort((a, b) -> {
             double ra = a.getValue()[1] / (double) a.getValue()[0];
             double rb = b.getValue()[1] / (double) b.getValue()[0];
-            return Double.compare(rb, ra);   // en cok yanlis yapilan basa
+            return Double.compare(rb, ra);
         });
 
         StringBuilder list = new StringBuilder();
@@ -589,7 +729,7 @@ public final class RoomPages {
         ctx.sendHtml(exchange, 200, Html.page("Yanlış raporu", body));
     }
 
-    /** Senkron odada hocanin akis dugmeleri. Serbest odada bos doner. */
+
     private String hostControls(Room room) {
         if (!room.isSynchronous()) {
             return "";

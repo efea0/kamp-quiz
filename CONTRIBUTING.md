@@ -10,24 +10,17 @@ yeni bir soru paketi eklemek — 5 dakika sürer.
 ### Adım adım
 
 ```bash
-# 1) Projeyi bilgisayarına indir (bir kez yapılır)
 git clone https://github.com/efea0/kamp-quiz.git
 cd kamp-quiz
 
-# 2) Her zaman güncel main'den başla
 git checkout main
 git pull origin main
 
-# 3) Kendine bir dal (branch) aç
 git checkout -b soru/tarih-paketi
 
-# 4) questions/ klasörüne yeni bir .txt dosyası ekle
-#    (aşağıdaki biçime bak)
 
-# 5) Test et - senin soruların yükleniyor mu?
-./run.sh          # Windows'ta: run.bat
+./run.sh
 
-# 6) Değişikliği kaydet ve gönder
 git add questions/tarih.txt
 git commit -m "Tarih soru paketi eklendi (10 soru)"
 git push -u origin soru/tarih-paketi
@@ -169,15 +162,15 @@ sınıflarına tek satır dokunulmadı.
 - Metot ve değişken adları `kucukHarfle` (camelCase): `getQuestionNumber`
 - Sabitler `BUYUK_HARFLE`: `QUESTIONS_DIR`
 - Girinti: 4 boşluk (tab değil)
-- Kod İngilizce, yorumlar Türkçe
+- Kod İngilizce; yorum yalnızca davranış için gerekli olduğunda yazılır
 
 ### Göndermeden önce
 
 ```bash
-./run.sh test     # ZORUNLU — 200'den fazla denetim, hepsi geçmeli
-./run.sh          # elle de bir tur oyna
-./run.sh web      # web modu da açılıyor mu?
-git status        # istemediğin dosya eklenmiş mi?
+./run.sh test
+./run.sh
+./run.sh web
+git status
 ```
 
 `./run.sh test` kırmızı veriyorsa gönderme. Hangi denetimin kaldığını yazar.

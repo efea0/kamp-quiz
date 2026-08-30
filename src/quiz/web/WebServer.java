@@ -11,19 +11,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Executors;
 
-/**
- * Quiz'i yerel agda yayinlayan web sunucusu.
- *
- * Java'nin icinde hazir gelen HttpServer kullanilir; hicbir dis kutuphane yok.
- * Ayni Wi-Fi'daki telefonlar tarayiciyla baglanip quize katilabilir.
- *
- * Bu sinif SADECE sunucuyu kurar: paylasilan durumu {@link ServerContext}
- * icinde toplar, her sayfa grubu icin bir sayfa nesnesi olusturur ve
- * URL'leri o nesnelerin metotlarina baglar. Sayfalarin kendisi (HTML uretmek,
- * formu okumak, yonlendirmek) `pages/` altindaki siniflardadir — o siniflar
- * "hangi sayfa ne yapiyor" sorusunun cevabini tasir, bu sinif sadece
- * "hangi URL hangi sayfaya gidiyor" sorusunu.
- */
 public class WebServer {
 
     private final ServerContext ctx;
@@ -43,7 +30,7 @@ public class WebServer {
         GeneratePages generatePages = new GeneratePages(ctx);
         ExportPages exportPages = new ExportPages(ctx);
 
-        // ---- rota tablosu: hangi URL hangi sayfaya gidiyor ----
+
         server.createContext("/", homePages::handleHome);
         server.createContext("/start", homePages::handleStart);
         server.createContext("/ayarla", homePages::handleCustom);
@@ -69,7 +56,7 @@ public class WebServer {
         server.createContext("/style.css", exchange ->
                 ctx.send(exchange, 200, "text/css; charset=UTF-8", Html.CSS));
 
-        // Tek is parcacigi olsaydi bir kisi sayfayi beklerken digerleri kilitlenirdi.
+
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
 
@@ -77,7 +64,7 @@ public class WebServer {
         printAiStatus();
     }
 
-    /** Baglanti adreslerini ekrana basar; katilimcilar bunu telefona yazacak. */
+
     private void printAddresses() {
         System.out.println();
         System.out.println("=========================================");
@@ -95,7 +82,7 @@ public class WebServer {
         System.out.println("=========================================");
     }
 
-    /** Uretim ozelliginin durumunu ve varsa uyarilari basar. */
+
     private void printAiStatus() {
         var generator = ctx.getGenerator();
         if (generator.isEnabled()) {

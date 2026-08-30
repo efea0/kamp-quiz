@@ -11,17 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Giris ekranlarini ve tek kisilik/oda katilim akisinin baslangicini yonetir:
- *
- *   /        Ana sayfa — isim + hazir test kartlari
- *   /ayarla  Kendi kategori/soru sayisi/sureni secme sayfasi
- *   /start   Formu isler, oturum acar, quize yonlendirir
- *   /katil   Oda koduyla katilim
- *
- * Sayfalarin nasil ciziledigi hakkinda fikir edinmek icin en basiti olan
- * bu sinifla baslamak iyi bir yer.
- */
 public final class HomePages {
 
     private final ServerContext ctx;
@@ -30,7 +19,7 @@ public final class HomePages {
         this.ctx = ctx;
     }
 
-    /** Giris sayfasi: isim + hazir test kartlari. */
+
     public void handleHome(HttpExchange exchange) throws IOException {
         if (!"/".equals(exchange.getRequestURI().getPath())) {
             ctx.sendHtml(exchange, 404, Html.page("Bulunamadı", """
@@ -59,6 +48,7 @@ public final class HomePages {
             cards.append("      <p class=\"muted small\">Hazır test bulunamadı. sets/ klasörüne bir .txt ekleyebilirsin.</p>\n");
         }
 
+        String invitedCode = ServerContext.query(exchange, "kod");
         String body = """
                 <div class="screen">
                   <p class="eyebrow">Kamp Quiz</p>
@@ -69,7 +59,7 @@ public final class HomePages {
                     <label class="field" for="kod">Oda kodun varsa</label>
                     <div class="joinrow">
                       <input type="text" id="kod" name="kod" inputmode="numeric" maxlength="4"
-                             pattern="[0-9]{4}" placeholder="0000" class="codeinput" required>
+                             pattern="[0-9]{4}" placeholder="0000" class="codeinput" value="%s" required>
                       <input type="text" name="isim" maxlength="20" required
                              autocomplete="off" placeholder="Adın">
                       <button class="btn blue" type="submit">Katıl</button>
@@ -94,12 +84,12 @@ public final class HomePages {
                     <a class="plain center" href="/tablo">Lider tablosu</a>
                   </div>
                 </div>
-                """.formatted(ctx.getAllQuestions().size(), cards);
+                """.formatted(ctx.getAllQuestions().size(), Html.escape(invitedCode), cards);
 
         ctx.sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
     }
 
-    /** Kendi kategorini, soru sayini ve sureni sectigin sayfa. */
+
     public void handleCustom(HttpExchange exchange) throws IOException {
         List<String> categories = QuestionBank.categoriesOf(ctx.getAllQuestions());
 
@@ -153,7 +143,7 @@ public final class HomePages {
         ctx.sendHtml(exchange, 200, Html.page("Kendin ayarla", body));
     }
 
-    /** Formu isler, oturum acar ve quize yonlendirir. */
+
     public void handleStart(HttpExchange exchange) throws IOException {
         if (!"POST".equals(exchange.getRequestMethod())) {
             ctx.redirect(exchange, "/");
@@ -169,7 +159,7 @@ public final class HomePages {
 
         QuizSet set = ctx.findSet(form.get("set"));
         if (set != null) {
-            // Hazir test: sorulari set kendisi secer ve karistirir.
+
             pool = set.build(ctx.getAllQuestions());
             count = pool.size();
             seconds = set.getTimeLimitSeconds();
@@ -196,7 +186,7 @@ public final class HomePages {
         ctx.redirect(exchange, "/quiz");
     }
 
-    /** Katilimci oda koduyla girer. */
+
     public void handleJoin(HttpExchange exchange) throws IOException {
         if (!"POST".equals(exchange.getRequestMethod())) {
             ctx.redirect(exchange, "/");
@@ -218,7 +208,7 @@ public final class HomePages {
             return;
         }
 
-        // Ayni tarayici bu odada zaten oynuyorsa yeni oyuncu acma, oyununa dondur.
+
         GameSession existing = ctx.currentSession(exchange);
         if (existing != null && room.getCode().equals(existing.getRoomCode())) {
             ctx.redirect(exchange, "/quiz");

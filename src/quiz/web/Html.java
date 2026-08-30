@@ -1,23 +1,17 @@
 package quiz.web;
 
-/**
- * HTML uretimi icin kucuk yardimci.
- * Sablon motoru kullanmiyoruz; bagimlilik eklememek icin metin birlestiriyoruz.
- */
 final class Html {
 
     private Html() {
     }
 
-    /** Her sayfanin ortak iskeleti. */
+
     static String page(String title, String body) {
         return page(title, body, "");
     }
 
-    /**
-     * head bolumune ek satir koyabilen surum.
-     * Otomatik yenilenen ekranlar icin: meta http-equiv="refresh"
-     */
+
+
     static String page(String title, String body, String headExtra) {
         return """
                 <!DOCTYPE html>
@@ -35,10 +29,8 @@ final class Html {
                 """.formatted(escape(title), headExtra, body);
     }
 
-    /**
-     * Metindeki HTML anlamli karakterleri zararsiz hale getirir.
-     * Bu olmadan bir soru metnindeki '<' isareti sayfanin yapisini bozabilir.
-     */
+
+
     static String escape(String text) {
         if (text == null) {
             return "";
@@ -50,16 +42,13 @@ final class Html {
                    .replace("'", "&#39;");
     }
 
-    /** Sik numarasini harfe cevirir: 0 -> A, 1 -> B ... */
+
     static String letter(int index) {
         return index < 26 ? String.valueOf((char) ('A' + index)) : String.valueOf(index + 1);
     }
 
     static final String CSS = """
-            /* ------------------------------------------------------------------
-               Koyu tema. Renkler rol adiyla tanimlanir; boylece tema tek yerden
-               degisir ve sayfalarda ham renk kodu gecmez.
-               ------------------------------------------------------------------ */
+
             :root {
               --bg:        #131f24;
               --surface:   #1b2b32;
@@ -81,7 +70,7 @@ final class Html {
               --gold:       #ffc800;
 
               --radius: 16px;
-              --shadow: 4px;   /* butonlarin alt kalinligi */
+              --shadow: 4px;
             }
 
             * { box-sizing: border-box; }
@@ -109,16 +98,14 @@ final class Html {
               flex-direction: column;
             }
 
-            /* Form da dikey flex olmali; yoksa icindeki .actions "margin-top:auto"
-               ile asagi itilemez ve buton sayfanin ortasinda asili kalir. */
+
             .screen > form { display: flex; flex-direction: column; flex: 1; }
 
-            /* ---------- ustbilgi: ilerleme + sayac ---------- */
+
 
             .topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
 
-            /* Dikkat: .screen bir dikey flex konteyneri. Buraya flex:1 yazilirsa
-               cubuk yatayda degil DIKEYDE buyur ve sayfayi kaplar. */
+
             .bar { flex: none; height: 14px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
             .topbar .bar { flex: 1; }
             .bar > i {
@@ -137,7 +124,7 @@ final class Html {
             }
             .clock.hurry { color: var(--red); }
 
-            /* ---------- metin ---------- */
+
 
             h1 { font-size: 1.7rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.4px; }
             h2 { font-size: 1.35rem; font-weight: 800; margin: 0 0 22px; line-height: 1.3; letter-spacing: -0.2px; }
@@ -150,7 +137,7 @@ final class Html {
               text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
             }
 
-            /* ---------- siklar ---------- */
+
 
             .choices { display: grid; gap: 12px; margin: 0 0 26px; }
 
@@ -182,14 +169,14 @@ final class Html {
             .choice input:checked + span::before { border-color: var(--blue); color: var(--blue); }
             .choice input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-            /* cevap sonrasi durumlar */
+
             .choice.is-right > span  { background: var(--green-soft); border-color: var(--green); }
             .choice.is-right > span::before { border-color: var(--green); color: var(--green); }
             .choice.is-wrong > span  { background: var(--red-soft); border-color: var(--red); }
             .choice.is-wrong > span::before { border-color: var(--red); color: var(--red); }
             .choice.is-dim > span { opacity: 0.5; }
 
-            /* ---------- hazir test kartlari ---------- */
+
 
             .setlist { display: grid; gap: 12px; margin-top: 4px; }
             .setcard {
@@ -211,7 +198,7 @@ final class Html {
               text-transform: uppercase; color: var(--blue);
             }
 
-            /* ---------- butonlar ---------- */
+
 
             .btn {
               display: block; width: 100%;
@@ -239,7 +226,7 @@ final class Html {
 
             .actions { margin-top: auto; padding-top: 20px; display: grid; gap: 12px; }
 
-            /* ---------- cevap sonrasi geri bildirim ---------- */
+
 
             .verdict {
               border-radius: var(--radius);
@@ -258,7 +245,7 @@ final class Html {
             .verdict .gain { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
             .verdict .why { margin-top: 10px; font-size: 0.95rem; color: var(--text); opacity: .9; }
 
-            /* ---------- kartlar, formlar ---------- */
+
 
             .card {
               background: var(--surface);
@@ -283,7 +270,7 @@ final class Html {
             }
             input[type=text]:focus, select:focus { outline: 0; border-color: var(--blue); }
 
-            /* ---------- sonuc ---------- */
+
 
             .bigscore {
               font-size: 3.4rem; font-weight: 800; line-height: 1;
@@ -300,7 +287,7 @@ final class Html {
             .stat span { font-size: 0.7rem; font-weight: 800; letter-spacing: 1.1px;
                          text-transform: uppercase; color: var(--muted); }
 
-            /* ---------- lider tablosu ---------- */
+
 
             .rank { display: grid; gap: 8px; }
             .rank .row {
@@ -319,7 +306,7 @@ final class Html {
             .rank .pts { font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
             .rank .sub { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 
-            /* ---------- oda kodu ve projeksiyon ---------- */
+
 
             .joinbox { margin: 22px 0 4px; }
             .joinrow { display: flex; gap: 10px; align-items: stretch; }
@@ -376,11 +363,11 @@ final class Html {
 
             .screen.wide {
               max-width: 1000px;
-              padding: 18px 28px 20px;   /* perdede her piksel degerli */
+              padding: 18px 28px 20px;
             }
             .screen.wide h1 { font-size: clamp(1.4rem, 2.6vw, 2.1rem); }
             .screen.wide .eyebrow { margin-bottom: 4px; }
-            /* Projeksiyonda kaydirma yok: satirlar 720p ekrana sigacak kadar sik. */
+
             .rank.big { gap: 6px; }
             .rank.big .row { padding: 10px 18px; font-size: 1.05rem; }
             .rank.big .pos { flex: 0 0 36px; font-size: 1.15rem; }
@@ -389,7 +376,7 @@ final class Html {
             .screen.wide .codebox { padding: 8px 12px; }
             .screen.wide .codebox b { font-size: 1.6rem; }
 
-            /* ---------- taslak duzenleyici ---------- */
+
 
             .draft {
               width: 100%; padding: 14px; font-size: 0.82rem; line-height: 1.6;
@@ -407,92 +394,83 @@ final class Html {
               color: var(--text); margin: 0 0 14px;
             }
 
-            /* ---------- canli tepki seridi (/ekran) ---------- */
-
-            .reaction {
-              margin-top: 22px;
-              padding: 18px 26px;
-              border-radius: var(--radius);
-              background: var(--surface);
-              border: 2px solid var(--line);
-              border-bottom-width: var(--shadow);
-              text-align: center;
+            .projection-dashboard {
+              display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0 16px;
             }
-            .reaction .tag {
-              font-size: 0.72rem; font-weight: 800; letter-spacing: 1.4px;
-              text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+            .dash-stat {
+              min-width: 0; padding: 9px 10px; background: var(--surface-2);
+              border: 2px solid var(--line-soft); border-radius: 10px; text-align: center;
             }
-            .reaction p:not(.tag) { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.2px; }
-            .reaction b.good { color: var(--green); }
-            .reaction b.bad  { color: var(--red); }
-            .reaction b.info { color: var(--blue); }
-
-            /* kapanis ozeti: tek satir yerine kucuk bir liste */
-            .reaction.summary { text-align: left; }
-            .reaction.summary ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-            .reaction.summary li {
-              display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+            .dash-stat span {
+              display: block; color: var(--muted); font-size: .62rem; font-weight: 800;
+              letter-spacing: .8px; text-transform: uppercase; white-space: nowrap;
             }
-            .reaction.summary li span.label { color: var(--muted); font-size: 0.95rem; }
-            .reaction.summary li b { font-size: 1.3rem; font-weight: 800; text-align: right; }
-
-            /* ---------- yanlis raporu ---------- */
-
-            .missbar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
-            .missbar span { display: block; height: 100%; background: var(--red); border-radius: 999px; }
-            .missmeta { margin: 10px 0 0; font-size: 0.8rem; color: var(--muted); }
-            .missmeta b { color: var(--red); }
-
-            .notice {
-              border: 2px solid var(--gold); border-radius: var(--radius);
-              background: rgba(255, 200, 0, 0.1); color: var(--text);
-              padding: 14px 16px; margin-bottom: 18px; font-size: 0.875rem;
+            .dash-stat b {
+              display: block; margin-top: 4px; font-size: clamp(.85rem, 1.6vw, 1.2rem);
+              font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             }
-            code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-                   font-size: 0.85em; color: var(--blue); }
-
-            /* bekleme ekranindaki nabiz */
-            .pulse {
-              width: 54px; height: 54px; margin: 30px auto 0;
-              border-radius: 50%; border: 3px solid var(--line);
-              border-top-color: var(--blue); animation: spin 1.1s linear infinite;
+            @media (max-width: 700px) {
+              .projection-dashboard { grid-template-columns: repeat(3, 1fr); }
             }
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 
-            .center { text-align: center; }
-            a { color: var(--blue); }
-            a.plain { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 0.9rem; }
-            a.plain:hover { color: var(--text); }
 
-            /* ---------- sonuc ekrani: konu dokumu ---------- */
-
-            .catlist { display: grid; gap: 16px; margin: 4px 0 4px; }
-            .catrow-head {
-              display: flex; align-items: baseline; justify-content: space-between;
-              gap: 10px; margin-bottom: 7px;
+            .projection-question {
+              margin: 14px 0 18px; padding: 18px 22px 20px;
+              background: var(--surface); border: 2px solid var(--line);
+              border-radius: var(--radius); border-bottom-width: var(--shadow);
+              animation: question-in .4s ease both;
             }
-            .catname { font-weight: 700; font-size: 0.92rem; }
-            .catfrac {
-              font-size: 0.8rem; color: var(--muted);
-              font-variant-numeric: tabular-nums; white-space: nowrap;
+            .projection-question.revealed { border-color: var(--green); }
+            .projection-question-head {
+              display: flex; align-items: center; justify-content: space-between; gap: 16px;
             }
-            .catbar { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
-            .catbar > i { display: block; height: 100%; border-radius: 999px; background: var(--blue); }
-            .catbar.weak > i { background: var(--red); }
-            .catnote { font-size: 0.85rem; color: var(--muted); margin: 14px 0 0; }
-            .catnote b { color: var(--red); }
-
-            /* ---------- sonuc ekrani: yanlislarin gozden gecirmesi ---------- */
-
-            .revlist { margin: 26px 0 4px; }
-            .revlist > summary {
-              cursor: pointer; font-weight: 800; font-size: 0.98rem;
-              padding: 14px 4px; list-style: none;
-              border-bottom: 2px solid var(--line-soft); margin-bottom: 14px;
+            .projection-question .eyebrow { margin: 0; }
+            .projection-question h2 { margin: 6px 0 15px; font-size: clamp(1.25rem, 2.2vw, 1.9rem); }
+            .answer-count { color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; }
+            .projection-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .projection-choice {
+              display: flex; align-items: center; gap: 12px; min-height: 48px;
+              padding: 10px 13px; background: var(--surface-2);
+              border: 2px solid var(--line-soft); border-radius: 12px;
+              animation: choice-in .35s ease both;
             }
-            .revlist > summary::-webkit-details-marker { display: none; }
-            /* DIKKAT: CSS kacisi (\25b8) Java metin blogunda ISE YARAMAZ.
+            .projection-choice:nth-child(2) { animation-delay: .04s; }
+            .projection-choice:nth-child(3) { animation-delay: .08s; }
+            .projection-choice:nth-child(4) { animation-delay: .12s; }
+            .projection-choice b {
+              flex: 0 0 27px; height: 27px; display: grid; place-items: center;
+              border: 2px solid var(--line); border-radius: 8px; color: var(--muted); font-size: .8rem;
+            }
+            .projection-choice span { font-weight: 650; }
+            .projection-choice.correct {
+              background: var(--green-soft); border-color: var(--green);
+              animation: correct-pulse .65s ease both;
+            }
+            .projection-choice.correct b { color: var(--green); border-color: var(--green); }
+            .projection-state {
+              margin: 18px 0; padding: 26px; text-align: center;
+              border: 2px dashed var(--line); border-radius: var(--radius); color: var(--muted);
+            }
+            .projection-tools { display: flex; justify-content: flex-end; margin-top: -4px; }
+            .sound-toggle {
+              border: 2px solid var(--line); border-radius: 999px; padding: 7px 12px;
+              background: var(--surface); color: var(--muted); font: inherit; font-size: .78rem;
+              font-weight: 800; cursor: pointer;
+            }
+            .sound-toggle.active { color: var(--green); border-color: var(--green); }
+            .rank.big .row { animation: row-in .35s ease both; }
+            .rank.big .row:nth-child(2) { animation-delay: .04s; }
+            .rank.big .row:nth-child(3) { animation-delay: .08s; }
+            .rank.big .row:nth-child(4) { animation-delay: .12s; }
+            @keyframes question-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+            @keyframes choice-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+            @keyframes row-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+            @keyframes correct-pulse { 0% { transform: scale(.98); } 60% { transform: scale(1.015); } 100% { transform: scale(1); } }
+            @media (prefers-reduced-motion: reduce) {
+              .projection-question, .projection-choice, .rank.big .row { animation: none; }
+            }
+
+            ekran) ---------- ** kapanis ozeti: tek satir yerine kucuk bir liste ** ---------- yanlis raporu ---------- ** bekleme ekranindaki nabiz ** ---------- sonuc ekrani: konu dokumu ---------- ** ---------- sonuc ekrani: yanlislarin gozden gecirmesi ---------- ** DIKKAT: CSS kacisi (\25b8) Java metin blogunda ISE YARAMAZ.
                Java "\25"i sekizlik kacis olarak okur, geriye "b8" metni kalir.
                Bu yuzden karakterin kendisi yaziliyor. */
             .revlist > summary::before { content: "▸  "; color: var(--blue); }

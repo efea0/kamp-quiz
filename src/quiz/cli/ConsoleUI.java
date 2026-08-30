@@ -7,10 +7,6 @@ import quiz.model.Question;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * Konsol arayuzu: ekrana basma ve klavyeden okuma isleri BURADA toplanir.
- * Quiz mantigi burada yoktur; o quiz.core paketinde.
- */
 public class ConsoleUI {
 
     private final Scanner scanner;
@@ -27,24 +23,24 @@ public class ConsoleUI {
         System.out.println();
     }
 
-    /** Bos gecilmeyen bir metin sorar. */
+
     public String askText(String prompt, String defaultValue) {
         System.out.print(prompt);
         if (!scanner.hasNextLine()) {
             System.out.println();
-            return defaultValue;   // girdi akisi bitti (or. dosyadan besleme)
+            return defaultValue;
         }
         String input = scanner.nextLine().trim();
         return input.isEmpty() ? defaultValue : input;
     }
 
-    /** min-max araliginda bir sayi sorar; yanlis girisi affeder ve tekrar sorar. */
+
     public int askNumber(String prompt, int min, int max) {
         while (true) {
             System.out.print(prompt);
             if (!scanner.hasNextLine()) {
                 System.out.println();
-                return min;   // girdi akisi bitti, guvenli varsayilan
+                return min;
             }
             String input = scanner.nextLine().trim();
 
@@ -61,7 +57,7 @@ public class ConsoleUI {
         }
     }
 
-    /** Quiz'i bastan sona oynatir. */
+
     public void play(Quiz quiz) {
         System.out.println("Başlıyoruz! Toplam " + quiz.getTotal() + " soru.");
         System.out.println("Soru başına " + quiz.getTimeLimitSeconds()
@@ -86,7 +82,7 @@ public class ConsoleUI {
             quiz.startQuestionTimer();
             int humanAnswer = askNumber("Cevabın (1-" + options.length + "): ", 1, options.length);
 
-            // Insan 1'den sayar, dizi 0'dan -> cevir
+
             Quiz.AnswerResult result = quiz.submitAnswer(humanAnswer - 1);
 
             double seconds = result.elapsedMillis() / 1000.0;

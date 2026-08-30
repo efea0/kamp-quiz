@@ -1,0 +1,32 @@
+# baslik: Web, HTTP ve API
+# aciklama: Web uygulamalarını anlamak için istek, yanıt ve API temelleri
+
+HTTP 200 durum kodu genel olarak neyi belirtir? | İsteğin başarılı olduğunu | Kalıcı yönlendirmeyi | Yetkisiz erişimi | Sunucu hatasını | 1 | kolay
+> 200, isteğin başarıyla işlendiğini belirten genel başarı durum kodudur.
+
+HTTP 404 ne anlama gelir? | İstenen kaynağın bulunamadığını | İsteğin başarılı olduğunu | Sunucunun kapandığını | Şifrelemenin tamamlandığını | 1 | kolay
+> 404, sunucunun istenen URI için kaynak bulamadığını ifade eder.
+
+POST yöntemi çoğunlukla hangi amaçla kullanılır? | Sunucuya veri göndermek veya yeni kaynak oluşturmak | Sadece sayfa okumak | DNS çözmek | Bağlantıyı kapatmak | 1 | kolay
+> POST, form verisi veya JSON gibi bir gövdeyi sunucuya gönderme senaryolarında kullanılır.
+
+Idempotent bir isteğin özelliği nedir? | Aynı isteğin tekrarlanmasının hedef durum üzerindeki etkisinin ilkinden sonra değişmemesi | Her zaman hata vermesi | Yalnızca tarayıcıda çalışması | Şifre içermemesi | 1 | zor
+> PUT ve GET gibi yöntemler tipik olarak idempotent kabul edilir; POST genellikle aynı kaynağı tekrar tekrar oluşturabilir.
+
+JSON hangi tür veri biçimidir? | Yapılandırılmış metin veri biçimi | Görüntü sıkıştırma biçimi | Ağ kablosu standardı | İşletim sistemi | 1 | kolay
+> JSON, nesne ve dizi gibi yapılarla uygulamalar arasında veri taşımak için kullanılan metin tabanlı bir formattır.
+
+API ne sağlar? | Yazılımların belirli işlev ve verilere tanımlı arayüzle erişmesini | Yalnızca görsel tasarımı | Donanımın elektrik almasını | Dosyaların fiziksel taşınmasını | 1 | kolay
+> API, bir yazılımın başka bir yazılımla hangi kurallar ve veri biçimleri üzerinden konuşacağını tanımlar.
+
+HTTPS'nin HTTP'den temel farkı nedir? | TLS ile iletişimi şifreleyip sunucuyu doğrulamaya yardımcı olması | Her zaman daha hızlı olması | Port kullanmaması | Yalnızca yerelde çalışması | 1 | orta
+> HTTPS, HTTP trafiğini TLS üzerinden taşır; sertifika doğrulaması da sunucu kimliğinin kontrolüne yardımcı olur.
+
+Bir API'de kimlik doğrulama ile yetkilendirme arasındaki fark nedir? | Kimlik doğrulama kimsin, yetkilendirme ne yapabilirsin sorusudur | İkisi tamamen aynıdır | İlki yalnızca ağ hızıdır | İkincisi parola üretir | 1 | orta
+> Kullanıcının kimliğini doğrulamak, hangi kaynaklara veya işlemlere izin verildiğini belirlemekten farklıdır.
+
+CORS hangi ortamda önem kazanır? | Bir web sayfası başka bir origin'e istek yaptığında | Dosya sıkıştırırken | CPU seçerken | Terminal geçmişini silerken | 1 | zor
+> Tarayıcılar origin'ler arası istekleri güvenlik politikalarıyla sınırlar; sunucu uygun CORS başlıklarıyla izin verebilir.
+
+Bir HTTP yanıtındaki Content-Type başlığı neyi belirtir? | Yanıt gövdesinin medya/veri türünü | Sunucunun fiziksel konumunu | Kullanıcının parolasını | İsteğin gecikmesini | 1 | orta
+> `application/json` veya `text/html` gibi Content-Type değerleri gövdenin nasıl yorumlanacağını bildirir.

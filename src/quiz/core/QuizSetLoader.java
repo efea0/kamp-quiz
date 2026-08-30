@@ -13,28 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/**
- * sets/ klasorundeki .txt dosyalarini okuyup QuizSet nesnelerine cevirir.
- *
- * Dosya bicimi (bkz. sets/*.txt ornekleri):
- *     # baslik: Sabah Testi
- *     # aciklama: Gunu acmak icin kisa karisik tur      (istege bagli)
- *     # sure: 15                                        (istege bagli, yoksa 20)
- *     # zorluk: kolay                                   (istege bagli, yoksa tum zorluklar)
- *     Kategori Adi = sayi
- *     Baska Kategori = sayi
- *
- * - '#' ile baslayan diger satirlar yorumdur, atlanir
- * - Bos satirlar atlanir
- * - Kategori adlari questions/*.txt dosyalarindaki '# baslik:' degerleriyle
- *   BIREBIR eslesmeli; eslesmezse QuizSet.build() o kategoriden 0 soru getirir
- * - '# zorluk:' satiri 'kolay'/'orta'/'zor' degerlerinden birini alir;
- *   build() o zorluktaki sorulari oncelikli secer (bkz. QuizSet.build())
- *
- * Bu ozellik ISTEGE BAGLIDIR: sets/ klasoru yoksa ya da bossa, program
- * hata vermeden bos liste doner ve normal (rastgele N soru) mod calismaya
- * devam eder.
- */
 public class QuizSetLoader {
 
     private static final String TITLE_PREFIX = "baslik:";
@@ -44,24 +22,22 @@ public class QuizSetLoader {
     private static final int DEFAULT_TIME_LIMIT_SECONDS = 20;
 
     private QuizSetLoader() {
-        // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
+
     }
 
-    /** Klasordeki TUM .txt dosyalarini okur, dosya adina gore sirali doner. */
-    /** Uyarilari yok sayan surum. */
+
+
     public static List<QuizSet> loadFromDirectory(Path directory) {
         return loadFromDirectory(directory, new ArrayList<>());
     }
 
-    /**
-     * Setleri okur; bozuk satir uyarilarini verilen listeye YAZAR, ekrana basmaz.
-     * core paketi ekrani bilmez; uyariyi arayuz gosterir.
-     */
+
+
     public static List<QuizSet> loadFromDirectory(Path directory, List<String> warnings) {
         List<QuizSet> sets = new ArrayList<>();
 
         if (!Files.isDirectory(directory)) {
-            // Ozellik istege bagli: klasor yoksa sessizce bos liste don.
+
             return sets;
         }
 
@@ -81,7 +57,7 @@ public class QuizSetLoader {
         return sets;
     }
 
-    /** Tek bir dosyayi okur. Bozuk satirlari atlar ama uyari basar. */
+
     private static Optional<QuizSet> loadFromFile(Path file, List<String> warnings) {
         List<String> lines;
         try {
@@ -102,7 +78,7 @@ public class QuizSetLoader {
             int lineNumber = i + 1;
 
             if (line.isEmpty()) {
-                continue;   // bos satir -> atla
+                continue;
             }
 
             if (line.startsWith("#")) {
@@ -136,11 +112,11 @@ public class QuizSetLoader {
                                 + raw + "'");
                     }
                 }
-                // diger '#' satirlari sade yorumdur, sessizce atla
+
                 continue;
             }
 
-            // "Kategori Adi = sayi" satiri bekleniyor
+
             int eq = line.indexOf('=');
             if (eq < 0) {
                 warnings.add(file.getFileName() + " -> " + lineNumber

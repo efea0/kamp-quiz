@@ -15,15 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Projenin kendi kendini sinamasi.  Calistirmak icin:  ./run.sh test
- *
- * Dis test kutuphanesi (JUnit) kullanmiyoruz cunku projenin kurali
- * sifir bagimlilik. Yaptigi is basit: bir sey bekledigimiz gibi degilse
- * ekrana yazar ve program hata koduyla biter.
- *
- * Katkida bulunuyorsan, gonderdigin degisiklikten SONRA bunu calistir.
- */
 public class SelfTest {
 
     private static int passed = 0;
@@ -41,6 +32,7 @@ public class SelfTest {
         testDifficultyLineParsing();
         testDifficultyFileHeader();
         testScoring();
+        testStagedScoring();
         testTimerDoesNotRestart();
         testRetryList();
         testSets(sets, questions);
@@ -57,7 +49,7 @@ public class SelfTest {
         System.out.println("Her şey yolunda.");
     }
 
-    // ------------------------------------------------------------ testler
+
 
     private static void testQuestionsLoad(List<Question> questions) {
         check("Soru paketleri yükleniyor", !questions.isEmpty());
@@ -83,7 +75,7 @@ public class SelfTest {
         check("Aralık dışı doğru cevap reddediliyor",
                 throwsError(() -> new Question("Soru?", new String[]{"a", "b"}, 5, "t", "")));
 
-        // Kapsulleme: disaridan alinan dizi degistirilse bile soru bozulmamali
+
         String[] options = {"doğru", "yanlış"};
         Question question = new Question("Soru?", options, 0, "t", "");
         options[0] = "BOZULDU";
@@ -109,7 +101,7 @@ public class SelfTest {
                 nullDifficulty.getDifficulty() == Question.Difficulty.ORTA);
     }
 
-    /** Dosya biçiminde satır sonundaki isteğe bağlı zorluk sütunu doğru okunuyor mu? */
+
     private static void testDifficultyLineParsing() throws IOException {
         Path file = writeTempQuestionsFile(
                 "# baslik: Gecici Zorluk Testi\n"
@@ -135,7 +127,7 @@ public class SelfTest {
         }
     }
 
-    /** '# zorluk: ...' dosya başlığı, satırda zorluk belirtilmeyen sorulara uygulanıyor mu? */
+
     private static void testDifficultyFileHeader() throws IOException {
         Path file = writeTempQuestionsFile(
                 "# baslik: Gecici Baslik Testi\n"
@@ -180,10 +172,23 @@ public class SelfTest {
         check("Geçmişte 2 kayıt var", quiz.getHistory().size() == 2);
     }
 
-    /**
-     * Sayfa yenilenince sure sifirlanmamali; yoksa ogrenci soruyu
-     * defalarca yenileyip sinirsiz sure kazanirdi.
-     */
+
+    private static void testStagedScoring() {
+        Question q = new Question("Senkron soru?", new String[]{"dogru", "yanlis"}, 0, "t", "");
+        Quiz quiz = new Quiz(List.of(q));
+        quiz.startQuestionTimer();
+
+        Quiz.AnswerResult preview = quiz.previewAnswer(0);
+        check("Taslak cevap skoru hemen değiştirmiyor",
+                quiz.getScore() == 0 && quiz.getPoints() == 0 && quiz.getHistory().isEmpty());
+
+        quiz.commitAnswer(preview);
+        check("Taslak cevap commit edilince skor güncelleniyor",
+                quiz.getScore() == 1 && quiz.getPoints() == preview.earnedPoints());
+        check("Taslak cevap commit edilince geçmişe yazılıyor",
+                quiz.getHistory().size() == 1 && !quiz.hasNext());
+    }
+
     private static void testTimerDoesNotRestart() throws InterruptedException {
         Quiz quiz = new Quiz(List.of(
                 new Question("A?", new String[]{"1", "2"}, 0, "t", "")));
@@ -192,7 +197,7 @@ public class SelfTest {
         Thread.sleep(60);
         long first = quiz.elapsedMillis();
 
-        quiz.startQuestionTimer();   // sayfa yenilendi
+        quiz.startQuestionTimer();
         long second = quiz.elapsedMillis();
 
         check("Sayaç ikinci çağrıda sıfırlanmıyor", second >= first);
@@ -205,9 +210,9 @@ public class SelfTest {
         Quiz quiz = new Quiz(List.of(q1, q2));
 
         quiz.startQuestionTimer();
-        quiz.submitAnswer(0);              // doğru
+        quiz.submitAnswer(0);
         quiz.startQuestionTimer();
-        quiz.submitAnswer(1);              // yanlış
+        quiz.submitAnswer(1);
 
         List<Question> wrong = quiz.getWrongQuestions();
         check("Tekrar listesinde sadece yanlışlar var", wrong.size() == 1);
@@ -230,11 +235,11 @@ public class SelfTest {
         }
     }
 
-    /** Zorluk süzgeçli bir setin doğru sayıda soru ürettiğini denetler. */
+
     private static void testDifficultyFilteredSet(List<Question> questions) {
         List<String> categories = QuestionBank.categoriesOf(questions);
         if (!categories.contains("Linux Temelleri")) {
-            // questions/linux.txt yoksa (ornegin baska bir ortamda) testi sessizce atla.
+
             return;
         }
 
@@ -242,7 +247,7 @@ public class SelfTest {
         int kolaySayisi = QuestionBank.byDifficulty(categoryPool, Question.Difficulty.KOLAY).size();
         check("Linux Temelleri kategorisinde en az 1 kolay soru var", kolaySayisi >= 1);
 
-        // Tam olarak eldeki kolay soru sayısı kadar istenirse, hepsi kolay gelmeli.
+
         Map<String, Integer> exactCounts = new LinkedHashMap<>();
         exactCounts.put("Linux Temelleri", kolaySayisi);
         QuizSet exactSet = new QuizSet("Kolay Tur", "", 20, exactCounts, Question.Difficulty.KOLAY);
@@ -259,7 +264,7 @@ public class SelfTest {
         }
         check("Yeterli soru varken sadece istenen zorluktan seçiliyor", allEasy);
 
-        // Eldekinden fazlası istenirse, eksik diğer zorluklardan tamamlanmalı (hata firlatmamali).
+
         int wanted = kolaySayisi + 3;
         Map<String, Integer> overCounts = new LinkedHashMap<>();
         overCounts.put("Linux Temelleri", wanted);
@@ -269,7 +274,7 @@ public class SelfTest {
         check("Zorluk süzgeçli set, eksik kaldığında diğer zorluklardan tamamlıyor",
                 overBuilt.size() == expected);
 
-        // Zorluk süzgeci olmayan bir set, eski davranışı aynen korumalı.
+
         Map<String, Integer> plainCounts = new LinkedHashMap<>();
         plainCounts.put("Linux Temelleri", 5);
         QuizSet plainSet = new QuizSet("Karma Tur", "", 20, plainCounts);
@@ -277,12 +282,8 @@ public class SelfTest {
                 plainSet.build(questions).size() == 5 && !plainSet.hasDifficultyFilter());
     }
 
-    /**
-     * Mimarinin tek kurali: core ve model paketleri EKRANI BILMEZ.
-     *
-     * Bu denetim kaynak kodun kendisini okur. Kural bir kez yazilip
-     * unutulmasin diye; birisi core icine System.out yazarsa test kirmizi olur.
-     */
+
+
     private static void testCoreDoesNotPrint() throws IOException {
         for (String pkg : new String[]{"core", "model"}) {
             Path dir = Path.of("src", "quiz", pkg);
@@ -298,12 +299,12 @@ public class SelfTest {
         }
     }
 
-    /** Yorum satirlarini atlayarak gercek bir System.out cagrisi var mi bakar. */
+
     private static boolean printsToScreen(Path file) throws IOException {
         for (String raw : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             String line = raw.trim();
             if (line.startsWith("*") || line.startsWith("//") || line.startsWith("/*")) {
-                continue;   // yorum; kural bu satirda anlatiliyor olabilir
+                continue;
             }
             if (line.contains("System.out") || line.contains("System.err")) {
                 return true;
@@ -312,14 +313,8 @@ public class SelfTest {
         return false;
     }
 
-    /**
-     * prompts/soru-uret.txt ve prompts/soru-duzenle.txt isteğe bağlıdır
-     * (bkz. quiz.ai.QuestionGenerator). QuestionGenerator kurucusu bu
-     * dosyalara / klasöre hiç dokunmaz -- yönerge metni yalnızca generate()
-     * ve revise() çağrıldığında, o an okunur ve dosya yoksa sessizce koda
-     * gömülü metne düşülür. Bu yüzden "prompts" klasörü hiç var olmasa
-     * (silinse, taşınsa) bile kurucu asla patlamamalı.
-     */
+
+
     private static void testQuestionGeneratorSurvivesMissingPromptsDir() {
         boolean constructed;
         try {
@@ -331,7 +326,7 @@ public class SelfTest {
         check("QuestionGenerator, prompts klasörü olmasa bile kurulabiliyor", constructed);
     }
 
-    // --------------------------------------------------------- yardimcilar
+
 
     private static void check(String what, boolean condition) {
         if (condition) {
@@ -355,7 +350,7 @@ public class SelfTest {
         return text.length() > 40 ? text.substring(0, 40) + "..." : text;
     }
 
-    /** Zorluk ayrıştırma testleri için geçici bir soru dosyası yazar. */
+
     private static Path writeTempQuestionsFile(String content) throws IOException {
         Path file = Files.createTempFile("selftest-questions-", ".txt");
         Files.writeString(file, content, StandardCharsets.UTF_8);

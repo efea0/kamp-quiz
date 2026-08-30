@@ -14,25 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Google Gemini ile soru paketi uretir ve duzenler.
- *
- * Iki saglayici desteklenir:
- *
- *   Google Gemini:
- *     export GEMINI_API_KEY="..."
- *     export GEMINI_MODEL="gemini-2.5-flash"        # istege bagli
- *
- *   OpenRouter (ve OpenAI uyumlu her servis):
- *     export OPENROUTER_API_KEY="..."
- *     export OPENROUTER_MODEL="saglayici/model"     # istege bagli
- *
- * API ANAHTARI KODA YAZILMAZ, ortam degiskeninden okunur. Ikisi de tanimliysa
- * OpenRouter tercih edilir; AI_PROVIDER=gemini ile bu degistirilebilir.
- *
- * Anahtar yoksa sinif "kapali" durumda kalir; uygulama calismaya devam eder,
- * sadece uretim sayfasi devre disi gorunur.
- */
 public class QuestionGenerator {
 
     private static final String GEMINI_BASE = "https://generativelanguage.googleapis.com";
@@ -40,33 +21,29 @@ public class QuestionGenerator {
     private static final String OPENROUTER_BASE = "https://openrouter.ai/api/v1";
     private static final String OPENROUTER_MODEL = "deepseek/deepseek-chat";
 
-    /** Anahtar dosyalarinin varsayilan yeri. */
+
     private static final Path KEY_DIR =
             Path.of(System.getProperty("user.home"), ".config", "kamp-quiz");
 
-    /**
-     * Yonerge (prompt) dosyalarinin okundugu klasor. Calisma dizinine gore
-     * gorelidir (questions/ ve sets/ klasorleriyle ayni mantik).
-     */
+
+
     private static final Path PROMPTS_DIR = Path.of("prompts");
 
-    /** Hangi servise konusuyoruz. */
+
     public enum Provider { GEMINI, OPENROUTER }
 
-    /** Tek bir servis tanimi. */
+
     private record Endpoint(Provider provider, String apiKey, String baseUrl, String model) {
         String label() {
             return (provider == Provider.OPENROUTER ? "OpenRouter" : "Gemini") + " · " + model;
         }
     }
 
-    /**
-     * Denenecek servisler, SIRAYLA. Ilki basarisiz olursa ikincisine gecilir.
-     * Varsayilan sira: once Gemini (ucretsiz kota), sonra OpenRouter.
-     */
+
+
     private final List<Endpoint> endpoints;
 
-    /** Baslangicta kullaniciya gosterilecek uyarilar (or. dosya izinleri). */
+
     private final List<String> warnings = new ArrayList<>();
 
     private final HttpClient http;
@@ -88,7 +65,7 @@ public class QuestionGenerator {
                     envOr("OPENROUTER_MODEL", OPENROUTER_MODEL)));
         }
 
-        // AI_PROVIDER yazilmissa o servis basa alinir.
+
         String preferred = trim(System.getenv("AI_PROVIDER")).toLowerCase();
         if (!preferred.isEmpty()) {
             Provider first = preferred.startsWith("openrouter") || preferred.startsWith("openai")
@@ -100,22 +77,14 @@ public class QuestionGenerator {
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     }
 
-    /** Test icin: tek bir servisi dogrudan verir. */
+
     QuestionGenerator(Provider provider, String apiKey, String baseUrl, String model) {
         this.endpoints = List.of(new Endpoint(provider, trim(apiKey), stripSlash(baseUrl), model));
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     }
 
-    /**
-     * Anahtari sirayla arar:
-     *   1) XXX_API_KEY_FILE  -> gosterilen dosyanin icerigi
-     *   2) XXX_API_KEY       -> ortam degiskeninin kendisi
-     *   3) ~/.config/kamp-quiz/<varsayilan dosya>
-     *
-     * Dosyadan okumak ortam degiskeninden daha guvenlidir: ortam degiskeni
-     * kabuk gecmisine dusebilir ve `env` ciktisinda gorunur; dosya ise 600
-     * izniyle korunabilir.
-     */
+
+
     private static String resolveKey(String envName, String defaultFile, List<String> warnings) {
         String fromFileEnv = trim(System.getenv(envName + "_FILE"));
         if (!fromFileEnv.isEmpty()) {
@@ -134,7 +103,7 @@ public class QuestionGenerator {
         return "";
     }
 
-    /** Anahtar dosyasini okur ve izinlerini denetler. */
+
     private static String readKeyFile(Path path, List<String> warnings, boolean required) {
         try {
             String key = Files.readString(path, StandardCharsets.UTF_8).strip();
@@ -152,7 +121,7 @@ public class QuestionGenerator {
         }
     }
 
-    /** Dosyayi baskalari da okuyabiliyorsa uyarir. */
+
     private static void checkPermissions(Path path, List<String> warnings) {
         try {
             Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
@@ -163,7 +132,7 @@ public class QuestionGenerator {
                         + "  ->  düzeltmek için:  chmod 600 " + path);
             }
         } catch (UnsupportedOperationException | IOException e) {
-            // Windows'ta POSIX izinleri yok; sessizce gec.
+
         }
     }
 
@@ -180,12 +149,12 @@ public class QuestionGenerator {
         return (value == null || value.isBlank()) ? fallback : value;
     }
 
-    /** En az bir servis tanimli mi? Degilse uretim ozelligi kapali gosterilir. */
+
     public boolean isEnabled() {
         return !endpoints.isEmpty();
     }
 
-    /** Ekranda gosterilecek etiket: "Gemini · model  →  OpenRouter · model" */
+
     public String describe() {
         if (endpoints.isEmpty()) {
             return "tanımsız";
@@ -200,20 +169,13 @@ public class QuestionGenerator {
         return out.toString();
     }
 
-    /** Baslangic uyarilari (anahtar dosyasi izinleri gibi). */
+
     public List<String> getWarnings() {
         return List.copyOf(warnings);
     }
 
-    /**
-     * Gomulu (varsayilan) uretim yonergesi. Yer tutucular:
-     *   {seviye}  -> zorluk seviyesi (kolay/orta/zor)
-     *   {konu}    -> konu basligi
-     *   {adet}    -> istenen soru sayisi
-     *
-     * prompts/soru-uret.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-uret.txt.ornek (uzantisini silip etkinlestirin).
-     */
+
+
     private static final String DEFAULT_GENERATE_PROMPT = """
             Sen bir bilgi yarismasi soru yazarisin. Turkce, {seviye} seviyesinde,
             "{konu}" konusunda TAM {adet} adet coktan secmeli soru yaz.
@@ -235,14 +197,8 @@ public class QuestionGenerator {
             - Her soru tek satirda olsun, satir sonu ekleme.
             """;
 
-    /**
-     * Gomulu (varsayilan) duzenleme yonergesi. Yer tutucular:
-     *   {talimat} -> kullanicinin duzenleme istegi
-     *   {paket}   -> duzenlenecek mevcut soru paketi metni
-     *
-     * prompts/soru-duzenle.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-duzenle.txt.ornek (uzantisini silip etkinlestirin).
-     */
+
+
     private static final String DEFAULT_REVISE_PROMPT = """
             Asagida bir bilgi yarismasi soru paketi var. Kullanicinin istegine gore
             bu paketi duzenle ve TAM AYNI BICIMDE geri ver.
@@ -262,7 +218,7 @@ public class QuestionGenerator {
             {paket}
             """;
 
-    /** Verilen konuda yeni bir soru paketi metni uretir. */
+
     public String generate(String topic, int count, String level) throws IOException {
         String prompt = promptText("soru-uret.txt", DEFAULT_GENERATE_PROMPT)
                 .replace("{seviye}", level)
@@ -272,7 +228,7 @@ public class QuestionGenerator {
         return callModel(prompt);
     }
 
-    /** Var olan taslagi verilen talimata gore yeniden yazar. */
+
     public String revise(String draft, String instruction) throws IOException {
         String prompt = promptText("soru-duzenle.txt", DEFAULT_REVISE_PROMPT)
                 .replace("{talimat}", instruction)
@@ -281,12 +237,8 @@ public class QuestionGenerator {
         return callModel(prompt);
     }
 
-    /**
-     * prompts/&lt;dosyaAdi&gt; dosyasini okur; varsa ve okunabiliyorsa onu
-     * doner (yorum satirlari ayiklanmis halde), yoksa ya da herhangi bir
-     * sebeple okunamazsa SESSIZCE gomulu (builtin) metne duser. Bu yuzden
-     * dosya sistemiyle ilgili hicbir sorun uygulamanin calismasini durdurmaz.
-     */
+
+
     private static String promptText(String fileName, String builtin) {
         Path path = PROMPTS_DIR.resolve(fileName);
         try {
@@ -297,16 +249,13 @@ public class QuestionGenerator {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            // Dosya okunamadi (izin, bozuk kodlama, vb.) - gomulu metne dusuluyor.
+
         }
         return builtin;
     }
 
-    /**
-     * '#' ile baslayan satirlari atlar. Boylece kullanicilar yonerge
-     * dosyalarinin basina yer tutuculari aciklayan yorum satirlari
-     * ekleyebilir; bu satirlar modele gonderilen metne dahil edilmez.
-     */
+
+
     private static String stripCommentLines(String text) {
         StringBuilder result = new StringBuilder();
         for (String line : text.split("\n", -1)) {
@@ -318,11 +267,8 @@ public class QuestionGenerator {
         return result.toString().strip();
     }
 
-    /**
-     * Tanimli servisleri SIRAYLA dener. Ilki hata verirse (kota dolmus,
-     * servis kapali, model bulunamadi) sessizce ikincisine gecer.
-     * Hepsi basarisiz olursa toplu hata mesaji doner.
-     */
+
+
     private String callModel(String prompt) throws IOException {
         if (!isEnabled()) {
             throw new IOException("API anahtarı tanımlı değil.");
@@ -342,14 +288,14 @@ public class QuestionGenerator {
         throw new IOException(problems.toString());
     }
 
-    /** Tek bir servise istek gonderir. */
+
     private String callEndpoint(Endpoint endpoint, String prompt) throws IOException {
         String escaped = Json.escape(prompt);
         String body;
         HttpRequest.Builder builder;
 
         if (endpoint.provider() == Provider.OPENROUTER) {
-            // OpenAI uyumlu bicim; OpenRouter disindaki cogu servis de bunu kullanir.
+
             body = """
                     {"model":"%s","messages":[{"role":"user","content":"%s"}],"temperature":0.7}
                     """.formatted(Json.escape(endpoint.model()), escaped);
@@ -365,8 +311,8 @@ public class QuestionGenerator {
                     .header("x-goog-api-key", endpoint.apiKey());
         }
 
-        // Anahtar HER IKI SAGLAYICIDA DA basliga konur, URL'ye degil.
-        // URL'ye konsaydi hata mesajlarina ve vekil sunucu gunluklerine sizabilirdi.
+
+
         HttpRequest request = builder
                 .timeout(Duration.ofSeconds(90))
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -390,7 +336,7 @@ public class QuestionGenerator {
                     + maskele(detail, endpoint.apiKey()));
         }
 
-        // Gemini metni "text", OpenAI uyumlu servisler "content" altinda dondurur.
+
         String key = endpoint.provider() == Provider.OPENROUTER ? "content" : "text";
         List<String> parts = Json.valuesOf(response.body(), key);
         parts.removeIf(String::isBlank);
@@ -403,7 +349,7 @@ public class QuestionGenerator {
         return temizle(text);
     }
 
-    /** Model bazen kod blogu isaretleri ekler; onlari ayikla. */
+
     private static String temizle(String text) {
         String result = text.strip();
         if (result.startsWith("```")) {
@@ -419,7 +365,7 @@ public class QuestionGenerator {
         return result.strip();
     }
 
-    /** Bir metinde anahtar gecerse gizler. Son savunma hatti. */
+
     private static String maskele(String text, String apiKey) {
         if (text == null) {
             return "bilinmeyen hata";

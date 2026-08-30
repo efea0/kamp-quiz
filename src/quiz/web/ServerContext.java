@@ -10,6 +10,7 @@ import quiz.model.Question;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLDecoder;
@@ -24,22 +25,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Sunucunun tum sayfalari arasinda PAYLASILAN durum ve yardimci metotlar.
- *
- * Eskiden bunlarin hepsi WebServer sinifinin alanlariydi. WebServer buyudukce
- * okunmasi zorlastigi icin, sayfa mantigi ayri siniflara (pages/ altina)
- * tasindi; bu sinif da o sayfalarin ihtiyac duydugu ortak seyleri (soru
- * havuzu, acik odalar, oturumlar, kucuk yardimci metotlar) tek yerde tutar.
- *
- * Bir sayfa sinifi (orn. QuizPages) constructor'inda bir ServerContext alir
- * ve ihtiyaci olan her seye oradan ulasir.
- */
 final class ServerContext {
 
     private static final String COOKIE_NAME = "qsid";
 
-    /** Uretilen paket kaydedilince yeniden yuklendigi icin final degil. */
+
     private volatile List<Question> allQuestions;
     private volatile List<QuizSet> sets;
 
@@ -49,17 +39,14 @@ final class ServerContext {
     private final QuestionGenerator generator;
     private final int port;
 
-    /** Oyuncu oturumlari. Ayni anda birden fazla istek geldigi icin es zamanli harita. */
+
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
 
-    /** Acik odalar: kod -> oda. */
+
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
-    /**
-     * Uretim sayfasinin parolasi. QUIZ_ADMIN_KEY tanimliysa /uret kilitlenir.
-     * Anahtar zaten hicbir sayfada gorunmuyor; bu kilit, agdaki baskalarinin
-     * senin API kotani harcamasini engellemek icin.
-     */
+
+
     private final String adminKey = System.getenv("QUIZ_ADMIN_KEY") == null
             ? "" : System.getenv("QUIZ_ADMIN_KEY").trim();
     private final Set<String> adminTokens = ConcurrentHashMap.newKeySet();
@@ -76,7 +63,7 @@ final class ServerContext {
         this.port = port;
     }
 
-    // --------------------------------------------------------------- durum
+
 
     List<Question> getAllQuestions() {
         return allQuestions;
@@ -130,9 +117,9 @@ final class ServerContext {
         return adminTokens;
     }
 
-    /** Yeni paket kaydedildikten sonra sorulari ve setleri diskten tazeler. */
+
     void reloadContent() throws IOException {
-        // core paketi ekrani bilmez; uyarilari toplayip BURADA basiyoruz.
+
         List<String> warnings = new ArrayList<>();
         setAllQuestions(QuestionBank.loadFromDirectory(questionsDir, warnings));
         setSets(QuizSetLoader.loadFromDirectory(setsDir, warnings));
@@ -141,7 +128,7 @@ final class ServerContext {
         }
     }
 
-    /** Adiyla bir hazir seti bulur. */
+
     QuizSet findSet(String name) {
         if (name == null || name.isBlank()) {
             return null;
@@ -154,7 +141,7 @@ final class ServerContext {
         return null;
     }
 
-    /** Kullanilmayan 4 haneli bir oda kodu uretir. */
+
     String newRoomCode() {
         for (int deneme = 0; deneme < 200; deneme++) {
             String code = String.format("%04d", random.nextInt(10000));
@@ -165,14 +152,14 @@ final class ServerContext {
         throw new IllegalStateException("Boş oda kodu bulunamadı.");
     }
 
-    // ------------------------------------------------------------ oturumlar
+
 
     void setSessionCookie(HttpExchange exchange, String sessionId) {
         exchange.getResponseHeaders().add("Set-Cookie",
                 COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
     }
 
-    /** Cerezdeki oturum kimligini dondurur. */
+
     String currentSessionId(HttpExchange exchange) {
         List<String> cookies = exchange.getRequestHeaders().get("Cookie");
         if (cookies == null) {
@@ -189,13 +176,13 @@ final class ServerContext {
         return null;
     }
 
-    /** Tarayicidan gelen cerezle oturumu bulur. */
+
     GameSession currentSession(HttpExchange exchange) {
         String id = currentSessionId(exchange);
         return id == null ? null : sessions.get(id);
     }
 
-    /** Cerezdeki yonetici belirteci gecerli mi? */
+
     boolean isAdmin(HttpExchange exchange) {
         List<String> cookies = exchange.getRequestHeaders().get("Cookie");
         if (cookies == null) {
@@ -212,9 +199,9 @@ final class ServerContext {
         return false;
     }
 
-    // --------------------------------------------------------------- istek
 
-    /** URL'deki ?anahtar=deger degerini okur. */
+
+
     static String query(HttpExchange exchange, String key) {
         String raw = exchange.getRequestURI().getRawQuery();
         if (raw == null) {
@@ -229,7 +216,7 @@ final class ServerContext {
         return "";
     }
 
-    /** POST govdesindeki 'a=1&b=2' bicimini haritaya cevirir. */
+
     Map<String, String> readForm(HttpExchange exchange) throws IOException {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         Map<String, String> form = new HashMap<>();
@@ -267,11 +254,11 @@ final class ServerContext {
         return name.length() > 20 ? name.substring(0, 20) : name;
     }
 
-    // ---------------------------------------------------------------- yanit
+
 
     void redirect(HttpExchange exchange, String location) throws IOException {
         exchange.getResponseHeaders().set("Location", location);
-        exchange.sendResponseHeaders(303, -1);   // 303 = "gordum, simdi suraya git"
+        exchange.sendResponseHeaders(303, -1);
         exchange.close();
     }
 
@@ -289,33 +276,58 @@ final class ServerContext {
         }
     }
 
-    // ------------------------------------------------------------- katilim
 
-    /**
-     * Katilim adresini uretir. Tarayicinin gonderdigi Host basligini kullanir;
-     * boylece hocanin adres cubuğunda ne yaziyorsa QR'da da o cikar.
-     * Hoca localhost uzerinden acmissa telefonlar oraya baglanamayacagi icin
-     * yerel ag adresine cevrilir.
-     */
-    String joinUrl(HttpExchange exchange) {
+
+
+
+    String joinUrl(HttpExchange exchange, String roomCode) {
         String host = exchange.getRequestHeaders().getFirst("Host");
-        if (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
-            List<String> addresses = localAddresses();
-            host = addresses.isEmpty() ? "localhost:" + port : addresses.get(0) + ":" + port;
+        if (isLocalHost(host)) {
+            host = preferredLocalAddress().map(ip -> ip + ":" + port)
+                    .orElse("localhost:" + port);
         }
-        return "http://" + host + "/";
+        String suffix = roomCode == null || roomCode.isBlank() ? "" : "?kod=" + roomCode;
+        return "http://" + host + "/" + suffix;
     }
 
-    /** Katilim adresi icin QR kodu; uretilemezse bos dizge. */
-    String joinQr(HttpExchange exchange, int pixels) {
+    private static boolean isLocalHost(String host) {
+        return host == null || host.isBlank() || host.startsWith("localhost")
+                || host.startsWith("127.0.0.1") || host.startsWith("0.0.0.0");
+    }
+
+    private static java.util.Optional<String> preferredLocalAddress() {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 53);
+            InetAddress address = socket.getLocalAddress();
+            if (address != null && address.isSiteLocalAddress()
+                    && !address.getHostAddress().contains(":")) {
+                return java.util.Optional.of(address.getHostAddress());
+            }
+        } catch (Exception ignored) {
+        }
+        return localAddresses().stream().findFirst();
+    }
+
+
+    String joinUrl(HttpExchange exchange) {
+        return joinUrl(exchange, "");
+    }
+
+
+    String joinQr(HttpExchange exchange, int pixels, String roomCode) {
         try {
-            return QrCode.encode(joinUrl(exchange)).toSvg(pixels, "#0d1117", "#f0f7fa");
+            return QrCode.encode(joinUrl(exchange, roomCode)).toSvg(pixels, "#0d1117", "#f0f7fa");
         } catch (RuntimeException e) {
             return "";
         }
     }
 
-    /** "Soru 3/15" ya da "bitti" seklinde ilerleme etiketi. */
+
+    String joinQr(HttpExchange exchange, int pixels) {
+        return joinQr(exchange, pixels, "");
+    }
+
+
     static String progressLabel(GameSession player) {
         var quiz = player.getQuiz();
         return quiz.hasNext()
@@ -323,7 +335,7 @@ final class ServerContext {
                 : "bitti " + quiz.getScore() + "/" + quiz.getTotal();
     }
 
-    /** Bilgisayarin yerel agdaki IPv4 adreslerini bulur. */
+
     static List<String> localAddresses() {
         List<String> found = new ArrayList<>();
         try {
@@ -339,7 +351,7 @@ final class ServerContext {
                 }
             }
         } catch (Exception e) {
-            // Ag bilgisi okunamadi; sadece localhost gosterilir.
+
         }
         return found;
     }

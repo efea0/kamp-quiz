@@ -1,0 +1,6 @@
+# baslik: Ortak Üniversite Becerileri
+# aciklama: Her bölüm için akademik okuryazarlık, veri ve iletişim temelleri
+# sure: 20
+Üniversite ve Akademik Okuryazarlık = 4
+Veri ve Sayısal Okuryazarlık = 3
+İletişim ve Medya Okuryazarlığı = 3

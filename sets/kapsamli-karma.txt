@@ -1,10 +1,13 @@
 # baslik: Kapsamlı Karma Test
-# aciklama: Tüm kategorilerden dengeli 20 soruluk genel test
+# aciklama: Teknik, akademik ve sosyal bilim temellerinden dengeli 20 soruluk test
 # sure: 20
-Ağ Temelleri = 3
-Linux Temelleri = 3
-Donanım Temelleri = 3
-Özgür Yazılım = 3
-Yazılım Temelleri = 3
-Genel Kültür = 3
-Matematik = 2
+Ağ Temelleri = 2
+Linux Temelleri = 2
+Donanım Temelleri = 2
+Özgür Yazılım = 2
+Yazılım Temelleri = 2
+Sunucu Kurulumu ve Yönetimi = 2
+Web, HTTP ve API = 2
+Üniversite ve Akademik Okuryazarlık = 2
+Veri ve Sayısal Okuryazarlık = 2
+İşletme Temelleri = 2

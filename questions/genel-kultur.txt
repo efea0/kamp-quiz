@@ -1,21 +1,33 @@
-# GENEL KÜLTÜR SORU PAKETİ
-# baslik: Genel Kültür
-# Biçim:  Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo
-# doğruNo 1'den başlar (1 = ilk şık). '#' ile başlayan satırlar yorumdur.
+# baslik: Üniversite ve Akademik Okuryazarlık
+# aciklama: Her bölümden öğrencinin kullanabileceği araştırma, etik ve eleştirel düşünme temelleri
+# Biçim: Soru metni | şık1 | şık2 | şık3 | şık4 | doğruNo | zorluk
 
-Türkiye'nin en uzun nehri hangisidir? | Kızılırmak | Fırat | Sakarya | Dicle | 1
-> Kızılırmak 1355 km ile Türkiye sınırları içindeki en uzun nehirdir. Fırat daha uzun olsa da kaynağı Türkiye'de olup büyük bölümü ülke dışına akar.
-Dünyanın en büyük okyanusu hangisidir? | Atlas | Hint | Pasifik | Arktik | 3
-> Pasifik Okyanusu, yüzölçümü bakımından diğer tüm okyanusların toplamına yakın büyüklükte, dünyanın en büyük okyanusudur.
-Mona Lisa tablosunu kim yapmıştır? | Van Gogh | Picasso | Leonardo da Vinci | Michelangelo | 3
-> Mona Lisa'yı Leonardo da Vinci 16. yüzyılın başında yapmıştır. Michelangelo aynı dönemin ressamıdır ama bu eseri o yapmamıştır.
-Bir yılda kaç hafta vardır? | 48 | 50 | 52 | 54 | 3
-> Bir yıl 365 gün, bir hafta 7 gündür; 365'i 7'ye böldüğünde 52 hafta ve birkaç gün fazlalık çıkar.
-Güneş sistemindeki en büyük gezegen hangisidir? | Satürn | Jüpiter | Neptün | Dünya | 2
-> Jüpiter, çapı Dünya'nın yaklaşık 11 katı olan güneş sistemindeki en büyük gezegendir. Satürn ikinci sıradadır, halkalarıyla karıştırılır.
-İstanbul Boğazı hangi iki denizi birleştirir? | Ege - Akdeniz | Karadeniz - Marmara | Marmara - Ege | Karadeniz - Akdeniz | 2
-> İstanbul Boğazı, Karadeniz ile Marmara Denizi'ni birleştirir. Ege ile Marmara'yı birleştiren ise Çanakkale Boğazı'dır.
-İnsan vücudundaki en büyük organ hangisidir? | Kalp | Beyin | Deri | Karaciğer | 3
-> Deri, vücudun tamamını kaplaması nedeniyle en büyük organdır. Karaciğer ise iç organlar arasında en büyüğüdür, bu yüzden sık karıştırılır.
-Nobel Ödülü hangi ülkeler tarafından verilir? | Norveç ve İsveç | Almanya | Fransa | ABD | 1
-> Ödüller İsveç kurumları tarafından verilir, yalnızca Barış Ödülü Norveç'te bir komite tarafından verilir; bu yüzden ikisi birlikte anılır.
+Hakemli (peer-reviewed) bir makalenin temel özelliği nedir? | Yayınlanmadan önce alan uzmanlarınca değerlendirilmesi | Her zaman ücretsiz olması | Yalnızca tek yazarlı olması | Sadece deney içermesi | 1 | kolay
+> Hakemli çalışma, yayımlanmadan önce aynı alandaki uzmanların yöntem ve sonuçlarını değerlendirdiği bir süreçten geçer.
+
+İntihal (plagiarism) nedir? | Başkasının fikrini veya metnini kaynak göstermeden kullanmak | Bir makaleyi özetlemek | Veriyi tabloya dönüştürmek | Bir çalışmayı tekrar etmek | 1 | kolay
+> Bir fikri, ifadeyi veya veriyi sahibini belirtmeden kendininmiş gibi sunmak akademik intihaldir.
+
+Bir araştırma hipotezi nasıl olmalıdır? | Test edilebilir ve yanlışlanabilir | Her koşulda kesin doğru | Ölçülemeyen bir kanaat | Yalnızca tek kelimeden oluşan | 1 | orta
+> İyi bir hipotez gözlenebilir verilerle sınanabilir ve gerektiğinde yanlış olduğu gösterilebilir.
+
+Korelasyon hakkında hangisi doğrudur? | İki değişkenin birlikte değişimini gösterir, tek başına nedensellik kanıtlamaz | Her zaman neden-sonuç ilişkisi kurar | Yalnızca deneylerde kullanılır | Değişkenlerin aynı olduğunu gösterir | 1 | orta
+> İki değişken birlikte değişse bile aralarında üçüncü bir değişken veya tesadüf bulunabilir; korelasyon nedensellik değildir.
+
+Birincil kaynak hangisine örnektir? | Bir araştırmanın özgün veri ve bulgularını yayımlayan makale | Ders kitabındaki özet | Ansiklopedi maddesi | Haber yorum köşesi | 1 | orta
+> Birincil kaynak olayın veya araştırmanın özgün kayıtlarını içerir; diğerleri çoğunlukla ikincil yorum veya özet kaynaklardır.
+
+Bir araştırmada örneklem neyi ifade eder? | Evreni temsil etmek üzere seçilen katılımcı grubunu | Araştırmanın başlığını | Kullanılan yazılımı | Sonuç bölümünü | 1 | kolay
+> Evrenin tamamına ulaşmak yerine, onu temsil etmesi beklenen daha küçük katılımcı grubundan veri toplanır.
+
+Bir grafiğin y eksenini sıfırdan başlatmamak hangi riski artırır? | Farkların olduğundan büyük görünmesi | Verinin otomatik silinmesi | Örneklemin büyümesi | Ölçüm biriminin değişmesi | 1 | orta
+> Eksen aralığı daraltılırsa küçük farklar görsel olarak abartılabilir; grafik ölçeği açıkça belirtilmelidir.
+
+Açık erişim (open access) neyi anlatır? | Araştırma çıktısına internetten ücretsiz erişilebilmesini | Makalenin hakemsiz olmasını | Verinin mutlaka anonim olmasını | Çalışmanın kısa olmasını | 1 | kolay
+> Açık erişim, okuyucunun çalışmaya ücret ödemeden ulaşabilmesiyle ilgilidir; kalite veya hakemlik hakkında tek başına hüküm vermez.
+
+Bir çalışmanın tekrarlanabilirliği neden önemlidir? | Başka araştırmacıların aynı yöntemi uygulayıp sonucu sınayabilmesi için | Sonucun kesinlikle doğru olduğunu garanti ettiği için | Kaynakça gerektirmediği için | Araştırmayı kısalttığı için | 1 | orta
+> Yöntem ve veriler yeterince açık olduğunda bağımsız araştırmacılar bulguları yeniden sınayabilir.
+
+Çıkar çatışması beyanı ne işe yarar? | Araştırmacının sonucu etkileyebilecek maddi veya kurumsal ilişkilerini görünür kılar | Sonucu otomatik olarak değiştirir | Makaleyi hakemlikten çıkarır | Veriyi gizler | 1 | zor
+> Çıkar çatışmasını açıklamak, okuyucunun bulguları değerlendirirken olası etkileri bilmesini sağlar.
