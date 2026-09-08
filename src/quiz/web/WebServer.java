@@ -26,6 +26,9 @@ import java.util.concurrent.Executors;
  */
 public class WebServer {
 
+    /** Duman testinin başlattığı sunucuyu kapatabilmesi için son örnek. */
+    private static volatile HttpServer lastStarted;
+
     private final ServerContext ctx;
 
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
@@ -72,9 +75,19 @@ public class WebServer {
         // Tek is parcacigi olsaydi bir kisi sayfayi beklerken digerleri kilitlenirdi.
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
+        lastStarted = server;
 
         printAddresses();
         printAiStatus();
+    }
+
+    /** Yalnızca WebSmokeTest kullanır: testten sonra dinlemeyi bırakır. */
+    public static void stopLastStarted() {
+        HttpServer running = lastStarted;
+        if (running != null) {
+            running.stop(0);
+            lastStarted = null;
+        }
     }
 
     /** Baglanti adreslerini ekrana basar; katilimcilar bunu telefona yazacak. */

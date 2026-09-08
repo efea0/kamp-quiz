@@ -47,6 +47,7 @@ public class SelfTest {
         testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
         testQuestionGeneratorSurvivesMissingPromptsDir();
+        WebSmokeTest.run();
 
         System.out.println();
         System.out.println("Geçen: " + passed + "   Kalan: " + failed);
@@ -55,6 +56,9 @@ public class SelfTest {
             System.exit(1);
         }
         System.out.println("Her şey yolunda.");
+        // Duman testinin web sunucusu thread havuzu non-daemon kaldığı için
+        // JVM kendiliğinden kapanmaz; temiz çıkış için açıkça bırakıyoruz.
+        System.exit(0);
     }
 
     // ------------------------------------------------------------ testler
@@ -333,7 +337,8 @@ public class SelfTest {
 
     // --------------------------------------------------------- yardimcilar
 
-    private static void check(String what, boolean condition) {
+    /** Tek denetim noktası: WebSmokeTest de buraya yazarak sayacı paylaşır. */
+    static void check(String what, boolean condition) {
         if (condition) {
             passed++;
         } else {
