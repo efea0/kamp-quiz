@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Bir oyun odasi: hoca acar, katilimcilar 4 haneli kodla girer.
  *
- * Oda ayni testi paylasan oyuncular kumesidir. Soru sirasi iki turlu olabilir:
+ * Soru sirasi iki turlu olabilir:
  *
  *   PAYLASIK (varsayilan)  Herkes ayni sorulari ayni sirada gorur.
  *                          Kahoot/Wayground boyle calisir; perdedeki siralama
@@ -25,28 +25,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   KISIYE OZEL            Her oyuncuya ayri secim ve ayri sira verilir.
  *                          Yan yana oturanlar kopyalayamaz ama siralama
  *                          "kim hangi soruda" bilgisini kaybeder.
- *
- * Hangisinin kullanilacagina odayi kuran karar verir.
  */
 class Room {
 
-    /** Odanin akis bicimi. */
     enum Mode {
-        /** Herkes kendi hizinda ilerler. */
         SERBEST,
-        /** Herkes ayni soruda; hocayi bekler. Kahoot duzeni. */
         SENKRON
     }
 
-    /** Senkron odada odanin o anki durumu. */
     enum Phase {
-        /** Katilimcilar bekleniyor, oyun baslamadi. */
         LOBI,
-        /** Soru ekranda, sure isliyor. */
         SORU,
-        /** Cevap aciklandi, siralama gosteriliyor. */
         CEVAP,
-        /** Test bitti. */
         BITTI
     }
 
@@ -57,7 +47,7 @@ class Room {
 
     // --- senkron akisin durumu ---
     private volatile Phase phase = Phase.LOBI;
-    private volatile int index = 0;              // herkesin bulundugu soru
+    private volatile int index = 0;
     private volatile long questionStartedAt = 0;
     private final long createdAt = System.currentTimeMillis();
 
@@ -67,10 +57,7 @@ class Room {
     /** Odadaki isimler (kucuk harfe cevrilmis). Ayni isim iki kez giremez. */
     private final Set<String> takenNames = ConcurrentHashMap.newKeySet();
 
-    /**
-     * Katilimcilar. Ayni anda birden fazla istek listeyi degistirebilecegi icin
-     * es zamanli erisime uygun liste kullaniyoruz.
-     */
+    /** Birden fazla istek ayni anda listeyi degistirebilmelidir. */
     private final List<GameSession> players = new CopyOnWriteArrayList<>();
 
     // --- projeksiyon ekranindaki canli tepki seridi icin ---
@@ -133,7 +120,7 @@ class Room {
         if (phase != Phase.LOBI) {
             return;
         }
-        questionList(allQuestions);   // listeyi uret
+        questionList(allQuestions);
         index = 0;
         phase = Phase.SORU;
         questionStartedAt = System.currentTimeMillis();
@@ -200,8 +187,6 @@ class Room {
 
     /**
      * Odaya giren oyuncu icin quiz uretir.
-     *
-     * Paylasik sirada ilk oyuncu listeyi uretir, sonrakiler ayni listeyi alir.
      * Uretimin bir kez olmasi icin senkronize; iki kisi ayni anda katilirsa
      * ikisi de ayni sorulari gormeli.
      */
@@ -216,7 +201,6 @@ class Room {
         return quiz;
     }
 
-    /** Bu isim odada zaten var mi? */
     boolean isNameTaken(String name) {
         return takenNames.contains(normalize(name));
     }

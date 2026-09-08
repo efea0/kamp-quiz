@@ -351,18 +351,37 @@ public final class RoomPages {
      */
     private String rotatingReaction(Room room, List<GameSession> standings) {
         List<String> candidates = new ArrayList<>();
+        addStreakCandidate(candidates, standings);
+        addCurrentQuestionCandidate(candidates, standings);
+        addFastestCandidate(candidates, standings);
+        addAverageCandidate(candidates, standings);
+        addClimbCandidate(candidates, room, standings);
+        addHardestCandidate(candidates, standings);
 
-        // 1) Seri: en uzun ardisik dogru zinciri (en az 3 olunca anlamli).
+        if (candidates.isEmpty()) {
+            return "";
+        }
+
+        int pick = Math.floorMod(room.nextScreenTick(), candidates.size());
+        return """
+                <div class="reaction">
+                  <p class="tag">Canlı tepki</p>
+                  <p>%s</p>
+                </div>
+                """.formatted(candidates.get(pick));
+    }
+
+    /** En uzun ardisik dogru zinciri (en az 3 olunca anlamli). */
+    private static void addStreakCandidate(List<String> candidates, List<GameSession> standings) {
         String streakName = null;
         int bestStreak = 0;
         for (GameSession player : standings) {
-            List<Quiz.AnswerResult> history = player.getQuiz().getHistory();
             int streak = 0;
-            for (int i = history.size() - 1; i >= 0; i--) {
-                if (history.get(i).correct()) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                if (result.correct()) {
                     streak++;
                 } else {
-                    break;
+                    streak = 0;
                 }
             }
             if (streak > bestStreak) {
@@ -374,8 +393,11 @@ public final class RoomPages {
             candidates.add("<b class=\"good\">" + Html.escape(streakName) + "</b> üst üste "
                     + bestStreak + " doğru");
         }
+    }
 
-        // 2) Son sorunun zorlugu: en son ortaklasa cevaplanan soruyu kac kisi bildi.
+    /** En son ortaklasa cevaplanan soruyu kac kisinin bildigi. */
+    private static void addCurrentQuestionCandidate(List<String> candidates,
+                                                    List<GameSession> standings) {
         Map<String, Integer> lastAnsweredCount = new LinkedHashMap<>();
         for (GameSession player : standings) {
             List<Quiz.AnswerResult> history = player.getQuiz().getHistory();
@@ -392,27 +414,31 @@ public final class RoomPages {
                 currentQuestion = entry.getKey();
             }
         }
-        if (currentQuestion != null) {
-            int asked = 0;
-            int correct = 0;
-            for (GameSession player : standings) {
-                for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
-                    if (result.question().getText().equals(currentQuestion)) {
-                        asked++;
-                        if (result.correct()) {
-                            correct++;
-                        }
+        if (currentQuestion == null) {
+            return;
+        }
+
+        int asked = 0;
+        int correct = 0;
+        for (GameSession player : standings) {
+            for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
+                if (result.question().getText().equals(currentQuestion)) {
+                    asked++;
+                    if (result.correct()) {
+                        correct++;
                     }
                 }
             }
-            if (asked > 0) {
-                candidates.add("Son soruyu " + asked + " kişiden <b class=\""
-                        + (correct * 2 >= asked ? "good" : "bad") + "\">" + correct
-                        + "</b>'sı bildi");
-            }
         }
+        if (asked > 0) {
+            candidates.add("Son soruyu " + asked + " kişiden <b class=\""
+                    + (correct * 2 >= asked ? "good" : "bad") + "\">" + correct
+                    + "</b>'sı bildi");
+        }
+    }
 
-        // 3) O ana kadarki en hizli dogru cevap.
+    /** O ana kadarki en hizli dogru cevap. */
+    private static void addFastestCandidate(List<String> candidates, List<GameSession> standings) {
         String fastestName = null;
         long fastestMillis = Long.MAX_VALUE;
         for (GameSession player : standings) {
@@ -427,8 +453,10 @@ public final class RoomPages {
             candidates.add("En hızlı doğru: <b class=\"info\">" + Html.escape(fastestName)
                     + "</b>, " + seconds(fastestMillis));
         }
+    }
 
-        // 4) Sinif ortalamasi.
+    /** Sinif ortalamasi. */
+    private static void addAverageCandidate(List<String> candidates, List<GameSession> standings) {
         int totalAsked = 0;
         int totalCorrect = 0;
         for (GameSession player : standings) {
@@ -445,15 +473,20 @@ public final class RoomPages {
                     + (average >= 60 ? "good" : average < 35 ? "bad" : "info")
                     + "\">%" + average + "</b>");
         }
+    }
 
-        // 5) Yukselen: bir onceki yenilemeye gore en cok basamak cikan oyuncu.
+    /** Yukselen: bir onceki yenilemeye gore en cok basamak cikan oyuncu. */
+    private static void addClimbCandidate(List<String> candidates, Room room,
+                                          List<GameSession> standings) {
         Room.RankClimb climb = room.climbSinceLastScreen(standings);
         if (climb != null) {
             candidates.add("<b class=\"good\">" + Html.escape(climb.name()) + "</b> " + climb.gain()
                     + " sıra yükseldi");
         }
+    }
 
-        // 6) En zor soru: en yuksek yanlis oranli soru (gurultu olmasin diye en az 2 kisi cevaplamis olsun).
+    /** En zor soru: en yuksek yanlis oranli soru (gurultu olmasin diye en az 2 kisi cevaplamis olsun). */
+    private static void addHardestCandidate(List<String> candidates, List<GameSession> standings) {
         Map<String, int[]> counts = new LinkedHashMap<>();
         for (GameSession player : standings) {
             for (Quiz.AnswerResult result : player.getQuiz().getHistory()) {
@@ -482,18 +515,6 @@ public final class RoomPages {
             candidates.add("En çok yanlış: <b class=\"bad\">" + Html.escape(kisa(hardestText))
                     + "</b> · %" + hardestPercent);
         }
-
-        if (candidates.isEmpty()) {
-            return "";
-        }
-
-        int pick = Math.floorMod(room.nextScreenTick(), candidates.size());
-        return """
-                <div class="reaction">
-                  <p class="tag">Canlı tepki</p>
-                  <p>%s</p>
-                </div>
-                """.formatted(candidates.get(pick));
     }
 
     /** Milisaniyeyi "2.3 saniye" bicimine cevirir. */
