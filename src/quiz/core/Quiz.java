@@ -11,46 +11,37 @@ import java.util.Set;
 /**
  * Bir quiz oturumu: soru listesini tutar, sirayi ilerletir, skoru sayar.
  *
- * Bu sinif EKRANI HIC BILMEZ. System.out.println burada gecmez.
- * Kural: is mantigi (core) ile ekran (cli) birbirinden ayridir.
- * Boylece ayni Quiz sinifini yarin web sunucusunda da kullanabiliriz.
+ * Bu sinif EKRANI HIC BILMEZ. Kural: is mantigi (core) ile ekran birbirinden
+ * ayridir; boylece ayni Quiz hem konsolda hem web sunucusunda kullanilabilir.
  */
 public class Quiz {
 
-    /** Dogru cevabin taban puani. */
     private static final int BASE_POINTS = 500;
-    /** Hizli cevaba verilen en fazla ek puan. */
     private static final int MAX_SPEED_BONUS = 500;
     private static final int DEFAULT_TIME_LIMIT_SECONDS = 20;
 
-    /**
-     * Bir sorunun cevaplanma sonucu.
-     * Arayuzun ekrana basmak icin ihtiyac duydugu her seyi tek pakette dondurur.
-     */
+    /** Arayuzun ekrana basmak icin ihtiyac duydugu her seyi tek pakette dondurur. */
     public record AnswerResult(boolean correct, boolean timedOut,
                                int earnedPoints, long elapsedMillis, Question question) {
     }
 
     private final List<Question> questions;
-    private int currentIndex = 0;   // su an kacinci sorudayiz
-    private int score = 0;          // kac dogru yaptik
-    private int points = 0;         // hiz bonuslu toplam puan
+    private int currentIndex = 0;
+    private int score = 0;
+    private int points = 0;
 
     private int timeLimitSeconds = DEFAULT_TIME_LIMIT_SECONDS;
-    private long questionStartedAt = 0;   // 0 = sayac baslatilmadi
+    private long questionStartedAt = 0;
 
-    /**
-     * Verilen her cevabin kaydi. Iki ise yariyor:
-     *   - "yanlislarini tekrar coz" modu
-     *   - hocanin gordugu yanlis raporu
-     */
+    /** Verilen her cevabin kaydi; tekrar modu ve yanlis raporu bunu kullanir. */
     private final List<AnswerResult> history = new ArrayList<>();
 
     public Quiz(List<Question> questions) {
         if (questions == null || questions.isEmpty()) {
             throw new IllegalArgumentException("Quiz en az 1 soru icermeli.");
         }
-        this.questions = new ArrayList<>(questions);   // kendi kopyamiz
+        // Disaridan gelen listeyi saklariz; sonradan degistirilirse quiz bozulmasin.
+        this.questions = new ArrayList<>(questions);
     }
 
     /** Sorulari karistirir; her oyunda sira farkli olsun diye. */
@@ -76,9 +67,8 @@ public class Quiz {
     /**
      * Soru ekrana gelince cagrilir; sure buradan itibaren sayilir.
      *
-     * Ayni soru icin ikinci kez cagrilmasi sayaci SIFIRLAMAZ. Aksi halde
-     * oyuncu sayfayi yenileyerek sureyi bastan baslatip her soruda
-     * tam hiz bonusu alabilirdi.
+     * Ayni soru icin ikinci cagri sayaci SIFIRLAMAZ. Aksi halde oyuncu
+     * sayfayi yenileyerek her soruda tam hiz bonusu alabilirdi.
      */
     public void startQuestionTimer() {
         if (questionStartedAt == 0) {
@@ -109,9 +99,7 @@ public class Quiz {
 
     /**
      * Cevabi isler: dogruysa skoru ve puani artirir, her durumda sonraki soruya gecer.
-     *
-     * Puanlama: dogru cevap 500 taban puan alir; ustune kalan sureye orantili
-     * en fazla 500 hiz bonusu eklenir. Sure dolduysa cevap yanlis sayilir.
+     * Sure dolduysa cevap yanlis sayilir.
      */
     public AnswerResult submitAnswer(int answerIndex) {
         Question question = currentQuestion();
@@ -187,7 +175,6 @@ public class Quiz {
         return wrong;
     }
 
-    /** Bu quizde hangi kategoriler var? */
     public Set<String> getCategories() {
         Set<String> categories = new LinkedHashSet<>();
         for (Question q : questions) {

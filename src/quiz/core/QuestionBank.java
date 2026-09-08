@@ -21,15 +21,11 @@ import java.util.stream.Stream;
  *     Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo
  *     Soru metni | sik1 | sik2 | sik3 | sik4 | dogruNo | zorluk   (istege bagli sutun)
  *
- * - dogruNo INSANIN saydigi gibi 1'den baslar (1 = ilk sik)
- * - Son sutun 'kolay'/'orta'/'zor' kelimelerinden biriyse (buyuk/kucuk harf
- *   onemsiz) zorluk olarak okunur; o zaman dogru cevap SONDAN IKINCI sutundur.
- *   Bu sutun yoksa eski bicim aynen calisir.
- * - '#' ile baslayan satirlar yorumdur, atlanir
- * - Bos satirlar atlanir
- * - '# baslik: Genel Kultur' satiri kategoriye gorunen bir ad verir
- * - '# zorluk: zor' satiri dosyadaki TUM sorulara varsayilan zorluk verir;
- *   satir sonundaki zorluk sutunu varsa onu ezer (satir her zaman kazanir)
+ * - dogruNo 1'den baslar (1 = ilk sik)
+ * - Son sutun 'kolay'/'orta'/'zor' ise zorluk olarak okunur; o zaman dogru
+ *   cevap SONDAN IKINCI sutundur. Bu sutun yoksa eski bicim aynen calisir.
+ * - '# baslik: X' kategoriye gorunen ad verir; '# zorluk: X' dosya geneli
+ *   varsayilan zorluk verir (satir sonundaki sutun her zaman kazanir).
  * - '>' ile baslayan satir, bir onceki sorunun aciklamasidir
  */
 public class QuestionBank {
@@ -38,13 +34,9 @@ public class QuestionBank {
     private static final String DIFFICULTY_PREFIX = "zorluk:";
 
     private QuestionBank() {
-        // Bu sinifin nesnesi uretilmez; sadece hazir (static) metotlari kullanilir.
     }
 
-    /**
-     * Klasordeki TUM .txt dosyalarini okur.
-     * Uyarilari kimsenin gormedigi surum; ekrana basmaz.
-     */
+    /** Klasordeki TUM .txt dosyalarini okur; uyarilari yok sayar. */
     public static List<Question> loadFromDirectory(Path directory) throws IOException {
         return loadFromDirectory(directory, new ArrayList<>());
     }
@@ -54,8 +46,7 @@ public class QuestionBank {
      * verilen listeye YAZAR, ekrana basmaz.
      *
      * Bu ayrim onemli: core paketi ekrani bilmez. Uyariyi kimin nasil
-     * gosterecegine arayuz karar verir - terminalde satir olarak, web'de
-     * sayfada. Boylece ayni kod iki arayuzde de calisir.
+     * gosterecegine arayuz karar verir; boylece ayni kod iki arayuzde de calisir.
      */
     public static List<Question> loadFromDirectory(Path directory, List<String> warnings)
             throws IOException {
@@ -88,9 +79,7 @@ public class QuestionBank {
         List<Question> questions = new ArrayList<>();
         List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
 
-        // Once dosyanin basligini ara; yoksa dosya adindan uret.
         String category = findTitle(lines).orElseGet(() -> categoryOf(file));
-        // Dosya geneli varsayilan zorluk; yoksa null (Question kendi varsayilanini uygular).
         Question.Difficulty fileDifficulty = findDifficulty(lines).orElse(null);
 
         // Aciklama satiri ('>') sorudan SONRA geldigi icin soruyu hemen kurmuyoruz;
@@ -103,7 +92,7 @@ public class QuestionBank {
             String line = lines.get(i).trim();
 
             if (line.isEmpty() || line.startsWith("#")) {
-                continue;   // yorum veya bos satir -> atla
+                continue;
             }
 
             if (line.startsWith(">")) {
@@ -116,7 +105,6 @@ public class QuestionBank {
                 continue;
             }
 
-            // Yeni bir soru satiri geldi: bekleyeni tamamla
             addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
                     file, pendingLineNumber, warnings);
 
@@ -125,7 +113,6 @@ public class QuestionBank {
             pendingExplanation.setLength(0);
         }
 
-        // Dosya bitti; son bekleyeni de tamamla
         addPending(questions, pendingLine, pendingExplanation, category, fileDifficulty,
                 file, pendingLineNumber, warnings);
 
@@ -161,8 +148,7 @@ public class QuestionBank {
 
         String text = parts[0].trim();
 
-        // Son sutun zorluk kelimesiyse (kolay/orta/zor), dogru cevap numarasi
-        // SONDAN IKINCI sutuna kayar; degilse eski bicim aynen gecerlidir.
+        // Son sutun zorluk kelimesiyse dogru cevap numarasi SONDAN IKINCI sutuna kayar.
         String lastPart = parts[parts.length - 1].trim();
         Optional<Question.Difficulty> lineDifficulty = parts.length >= 5
                 ? Question.Difficulty.fromText(lastPart)
@@ -185,17 +171,12 @@ public class QuestionBank {
                     "Son sutun bir sayi olmali, gelen deger: '" + correctRaw + "'");
         }
 
-        // Satirdaki zorluk > dosya genelindeki zorluk > Question'in kendi varsayilani (ORTA).
-        Question.Difficulty difficulty = lineDifficulty.orElse(fileDifficulty);
-
-        // Insan 1'den sayar, dizi 0'dan. Cevirme burada yapilir.
-        return new Question(text, options, humanNumber - 1, category, explanation, difficulty);
+        // Insan 1'den sayar, dizi 0'dan.
+        return new Question(text, options, humanNumber - 1, category, explanation,
+                lineDifficulty.orElse(fileDifficulty));
     }
 
-    /**
-     * Sorularda gecen kategorileri, tekrarsiz ve ilk gorulme sirasiyla verir.
-     * Hem konsol hem web arayuzu bunu kullanir.
-     */
+    /** Sorularda gecen kategorileri, tekrarsiz ve ilk gorulme sirasiyla verir. */
     public static List<String> categoriesOf(List<Question> questions) {
         Set<String> unique = new LinkedHashSet<>();
         for (Question q : questions) {
@@ -229,36 +210,25 @@ public class QuestionBank {
 
     /** Dosyada '# baslik: ...' satiri varsa onun degerini bulur. */
     private static Optional<String> findTitle(List<String> lines) {
-        for (String raw : lines) {
-            String line = raw.trim();
-            if (!line.startsWith("#")) {
-                continue;
-            }
-            String withoutHash = line.substring(1).trim();
-            if (withoutHash.toLowerCase().startsWith(TITLE_PREFIX)) {
-                String title = withoutHash.substring(TITLE_PREFIX.length()).trim();
-                if (!title.isEmpty()) {
-                    return Optional.of(title);
-                }
-            }
-        }
-        return Optional.empty();
+        return findHeader(lines, TITLE_PREFIX).flatMap(value ->
+                value.isEmpty() ? Optional.empty() : Optional.of(value));
     }
 
     /** Dosyada '# zorluk: ...' satiri varsa onun degerini bulur. */
     private static Optional<Question.Difficulty> findDifficulty(List<String> lines) {
+        return findHeader(lines, DIFFICULTY_PREFIX).flatMap(Question.Difficulty::fromText);
+    }
+
+    /** '#' satirlari icinde verilen oneki tasan ilk satirin degerini dondurur. */
+    private static Optional<String> findHeader(List<String> lines, String prefix) {
         for (String raw : lines) {
             String line = raw.trim();
             if (!line.startsWith("#")) {
                 continue;
             }
             String withoutHash = line.substring(1).trim();
-            if (withoutHash.toLowerCase().startsWith(DIFFICULTY_PREFIX)) {
-                String value = withoutHash.substring(DIFFICULTY_PREFIX.length()).trim();
-                Optional<Question.Difficulty> parsed = Question.Difficulty.fromText(value);
-                if (parsed.isPresent()) {
-                    return parsed;
-                }
+            if (withoutHash.toLowerCase().startsWith(prefix)) {
+                return Optional.of(withoutHash.substring(prefix.length()).trim());
             }
         }
         return Optional.empty();

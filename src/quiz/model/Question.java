@@ -11,17 +11,12 @@ import java.util.Optional;
  */
 public class Question {
 
-    /**
-     * Sorunun zorluk seviyesi. Belirtilmemisse ORTA varsayilir.
-     */
     public enum Difficulty {
         KOLAY, ORTA, ZOR;
 
         /**
          * "kolay" / "orta" / "zor" kelimelerinden birini zorluk degerine cevirir.
-         * Buyuk/kucuk harf duyarsizdir. Taniyamazsa bos doner; boylece cagiran
-         * taraf bu metni baska bir amacla (ornegin dogru cevap sayisi) kullanip
-         * kullanmadigina kendisi karar verir.
+         * Taniyamazsa bos doner; cagiran taraf bu metnin ne olduguna kendisi karar verir.
          */
         public static Optional<Difficulty> fromText(String raw) {
             if (raw == null) {
@@ -37,17 +32,13 @@ public class Question {
         }
     }
 
-    private final String text;          // sorunun metni
-    private final String[] options;     // siklar
-    private final int correctIndex;     // dogru sikkin sirasi (0'dan baslar)
-    private final String category;      // hangi paketten geldigi
-    private final String explanation;   // "neden bu cevap" - bos olabilir
-    private final Difficulty difficulty; // zorluk seviyesi - belirtilmemisse ORTA
+    private final String text;
+    private final String[] options;
+    private final int correctIndex;
+    private final String category;
+    private final String explanation;
+    private final Difficulty difficulty;
 
-    /**
-     * Zorluk belirtilmeden soru olusturur; zorluk ORTA kabul edilir.
-     * Eski cagrilarin bozulmamasi icin korunuyor.
-     */
     public Question(String text, String[] options, int correctIndex,
                     String category, String explanation) {
         this(text, options, correctIndex, category, explanation, Difficulty.ORTA);
@@ -55,9 +46,8 @@ public class Question {
 
     public Question(String text, String[] options, int correctIndex,
                     String category, String explanation, Difficulty difficulty) {
-        // --- BEKCI KONTROLLERI ---
-        // Bozuk bir soru asla dogamaz. Hata, quiz calisirken degil,
-        // soru olusturulurken patlar. Boylece hatayi nerede yaptigimizi biliriz.
+        // Bozuk soru quiz calisirken degil, olusturulurken patlamali; boylece
+        // hatanin hangi soru dosyasinda oldugu net olarak gorunur.
         if (text == null || text.isBlank()) {
             throw new IllegalArgumentException("Soru metni bos olamaz.");
         }
@@ -70,7 +60,8 @@ public class Question {
         }
 
         this.text = text;
-        this.options = options.clone();   // savunma amacli kopya (asagida anlatiliyor)
+        // Disaridan gelen diziyi saklariz; sonradan degistirilirse soru bozulmasin.
+        this.options = options.clone();
         this.correctIndex = correctIndex;
         this.category = category == null ? "genel" : category;
         this.explanation = explanation == null ? "" : explanation.trim();
@@ -108,7 +99,6 @@ public class Question {
         return options[correctIndex];
     }
 
-    /** Cevabin nedeni. Bos olabilir; o zaman gosterilmez. */
     public String getExplanation() {
         return explanation;
     }

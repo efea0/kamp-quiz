@@ -40,30 +40,21 @@ public class QuestionGenerator {
     private static final String OPENROUTER_BASE = "https://openrouter.ai/api/v1";
     private static final String OPENROUTER_MODEL = "deepseek/deepseek-chat";
 
-    /** Anahtar dosyalarinin varsayilan yeri. */
     private static final Path KEY_DIR =
             Path.of(System.getProperty("user.home"), ".config", "kamp-quiz");
 
-    /**
-     * Yonerge (prompt) dosyalarinin okundugu klasor. Calisma dizinine gore
-     * gorelidir (questions/ ve sets/ klasorleriyle ayni mantik).
-     */
+    /** Calisma dizinine gorelidir (questions/ ve sets/ ile ayni mantik). */
     private static final Path PROMPTS_DIR = Path.of("prompts");
 
-    /** Hangi servise konusuyoruz. */
     public enum Provider { GEMINI, OPENROUTER }
 
-    /** Tek bir servis tanimi. */
     private record Endpoint(Provider provider, String apiKey, String baseUrl, String model) {
         String label() {
             return (provider == Provider.OPENROUTER ? "OpenRouter" : "Gemini") + " · " + model;
         }
     }
 
-    /**
-     * Denenecek servisler, SIRAYLA. Ilki basarisiz olursa ikincisine gecilir.
-     * Varsayilan sira: once Gemini (ucretsiz kota), sonra OpenRouter.
-     */
+    /** Denenecek servisler, SIRAYLA: once Gemini (ucretsiz kota), sonra OpenRouter. */
     private final List<Endpoint> endpoints;
 
     /** Baslangicta kullaniciya gosterilecek uyarilar (or. dosya izinleri). */
@@ -134,7 +125,6 @@ public class QuestionGenerator {
         return "";
     }
 
-    /** Anahtar dosyasini okur ve izinlerini denetler. */
     private static String readKeyFile(Path path, List<String> warnings, boolean required) {
         try {
             String key = Files.readString(path, StandardCharsets.UTF_8).strip();
@@ -212,7 +202,6 @@ public class QuestionGenerator {
      *   {adet}    -> istenen soru sayisi
      *
      * prompts/soru-uret.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-uret.txt.ornek (uzantisini silip etkinlestirin).
      */
     private static final String DEFAULT_GENERATE_PROMPT = """
             Sen bir bilgi yarismasi soru yazarisin. Turkce, {seviye} seviyesinde,
@@ -241,7 +230,6 @@ public class QuestionGenerator {
      *   {paket}   -> duzenlenecek mevcut soru paketi metni
      *
      * prompts/soru-duzenle.txt dosyasi varsa BUNUN yerine o kullanilir.
-     * Ornek dosya: prompts/soru-duzenle.txt.ornek (uzantisini silip etkinlestirin).
      */
     private static final String DEFAULT_REVISE_PROMPT = """
             Asagida bir bilgi yarismasi soru paketi var. Kullanicinin istegine gore
@@ -283,9 +271,8 @@ public class QuestionGenerator {
 
     /**
      * prompts/&lt;dosyaAdi&gt; dosyasini okur; varsa ve okunabiliyorsa onu
-     * doner (yorum satirlari ayiklanmis halde), yoksa ya da herhangi bir
-     * sebeple okunamazsa SESSIZCE gomulu (builtin) metne duser. Bu yuzden
-     * dosya sistemiyle ilgili hicbir sorun uygulamanin calismasini durdurmaz.
+     * doner, yoksa ya da herhangi bir sebeple okunamazsa SESSIZCE gomulu
+     * metne duser. Dosya sistemi sorunlari uygulamanin calismasini durdurmaz.
      */
     private static String promptText(String fileName, String builtin) {
         Path path = PROMPTS_DIR.resolve(fileName);
@@ -297,7 +284,7 @@ public class QuestionGenerator {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            // Dosya okunamadi (izin, bozuk kodlama, vb.) - gomulu metne dusuluyor.
+            // Dosya okunamadi - gomulu metne dusuluyor.
         }
         return builtin;
     }
@@ -305,7 +292,7 @@ public class QuestionGenerator {
     /**
      * '#' ile baslayan satirlari atlar. Boylece kullanicilar yonerge
      * dosyalarinin basina yer tutuculari aciklayan yorum satirlari
-     * ekleyebilir; bu satirlar modele gonderilen metne dahil edilmez.
+     * ekleyebilir; bu satirlar modele gonderilmez.
      */
     private static String stripCommentLines(String text) {
         StringBuilder result = new StringBuilder();
@@ -320,8 +307,8 @@ public class QuestionGenerator {
 
     /**
      * Tanimli servisleri SIRAYLA dener. Ilki hata verirse (kota dolmus,
-     * servis kapali, model bulunamadi) sessizce ikincisine gecer.
-     * Hepsi basarisiz olursa toplu hata mesaji doner.
+     * servis kapali) sessizce ikincisine gecer. Hepsi basarisiz olursa
+     * toplu hata mesaji doner.
      */
     private String callModel(String prompt) throws IOException {
         if (!isEnabled()) {
