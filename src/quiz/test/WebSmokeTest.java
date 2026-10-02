@@ -9,6 +9,7 @@ import quiz.web.WebServer;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -48,6 +49,7 @@ public final class WebSmokeTest {
             testPublicPages();
             testFreeRoomFlow();
             testSyncRoomFlow();
+            testCsvFormulaInjection();
         } finally {
             WebServer.stopLastStarted();
             // Sonuç ekranı akışı skor dosyası oluşturur; test artığını bırakmasın.
@@ -257,6 +259,33 @@ public final class WebSmokeTest {
     }
 
     // ---------------------------------------------------------------- yardımcı
+
+    /**
+     * Oyuncu adi CSV'ye dogrudan yaziliyordu; "=..." ile baslayan bir isim
+     * Excel/LibreOffice'da FORMUL olarak calistirilir (formul enjeksiyonu).
+     * csvField artik bu karakterleri tirnakli ve tek tirnak onekiyle yaziyor.
+     * Burada o davranisi kilitliyoruz: bir sonraki degisiklikte geri gelirse
+     * test kirmizi verir.
+     */
+    private static void testCsvFormulaInjection() throws IOException, InterruptedException {
+        String name = "=cmd|' /c calc'!A1";
+        String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8);
+        String location = post("/kur", "set="
+                + URLEncoder.encode(firstSetName(), StandardCharsets.UTF_8)
+                + "&mod=serbest&sira=paylasik")
+                .headers().firstValue("Location").orElse("");
+        String room = roomCodeOf(location);
+        check("CSV testi icin oda kuruldu", !room.isEmpty());
+
+        String savedCookie = cookie;
+        cookie = "";
+        post("/katil", "kod=" + room + "&isim=" + encoded);
+        cookie = savedCookie;
+
+        String csv = get("/disaktar/oda?kod=" + room);
+        check("CSV formulu tek tirnak onekiyle korundu", csv.contains("'="));
+        check("Hucre tirnak icinde yazildi", csv.contains("\""));
+    }
 
     private static String firstSetName() {
         List<QuizSet> sets = QuizSetLoader.loadFromDirectory(Path.of("sets"));

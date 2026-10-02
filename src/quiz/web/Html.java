@@ -321,14 +321,56 @@ final class Html {
 
             /* ---------- oda kodu ve projeksiyon ---------- */
 
+            /* Projeksiyonda katilim bilgisi: adres ve kod yan yana, okunakli.
+               Ogrenci perdenen bakip adresi ve kodu birlikte gorur. */
+            .joinbar {
+              display: grid; grid-template-columns: 1fr auto; gap: 14px;
+              align-items: center; margin: 0 0 18px;
+              padding: 14px 18px; border-radius: var(--radius);
+              background: var(--surface); border: 2px solid var(--line);
+            }
+            .joinbar-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .joinbar-cell span {
+              color: var(--muted); font-size: 0.72rem; font-weight: 800;
+              letter-spacing: 1px; text-transform: uppercase;
+            }
+            .joinbar-cell b {
+              font-size: 1.5rem; font-weight: 800; color: var(--blue);
+              font-variant-numeric: tabular-nums;
+              overflow-wrap: anywhere;
+            }
+            @media (max-width: 640px) {
+              .joinbar { grid-template-columns: 1fr; gap: 10px; }
+            }
+
             .joinbox { margin: 22px 0 4px; }
             .joinrow { display: flex; gap: 10px; align-items: stretch; }
             .joinrow input { margin-bottom: 0; }
             .joinrow .btn { width: auto; flex: 0 0 auto; padding-inline: 22px; }
             .codeinput {
-              flex: 0 0 6.5ch; text-align: center;
-              font-weight: 800; font-size: 1.2rem; letter-spacing: 3px;
+              /* Kod alani daha once 6.5ch kadar dar kaldi; telefonda 4 haneyi
+                 yazmak icin okunaksizdi. Simdi daha genis ve belirgin. */
+              flex: 1 1 8.5ch; min-width: 8.5ch; text-align: center;
+              font-weight: 800; font-size: 1.35rem; letter-spacing: 4px;
               font-variant-numeric: tabular-nums;
+            }
+            .joinrow input[name="isim"] { flex: 2 1 auto; min-width: 0; }
+
+            /* Iki alan da dolunca Katil dugmesi canlanir. */
+            .joinrow .btn[disabled] { opacity: .45; cursor: not-allowed; }
+            .joinrow .btn.ready { box-shadow: 0 0 0 3px var(--blue-soft); }
+
+            .joinhint {
+              margin: 10px 0 0; color: var(--muted);
+              font-size: 0.8rem; line-height: 1.45;
+            }
+            .joinhint b { color: var(--text); }
+
+            /* Dar telefonda katilim alanlari alt alta gecer; buton tam genislik. */
+            @media (max-width: 420px) {
+              .joinrow { flex-wrap: wrap; }
+              .joinrow .codeinput, .joinrow input[name="isim"] { flex: 1 1 100%; }
+              .joinrow .btn { width: 100%; flex: 1 1 100%; min-height: 52px; }
             }
 
             .divider {
@@ -458,7 +500,12 @@ final class Html {
               border-top-color: var(--blue); animation: spin 1.1s linear infinite;
             }
             @keyframes spin { to { transform: rotate(360deg); } }
-            @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+            @media (prefers-reduced-motion: reduce) {
+              /* Sistem ayari "hareketi azalt" dediyse tum gecegiler kapanir. */
+              .pulse, .spin { animation: none !important; }
+              .bar.time > i { transition: none !important; }
+              * { scroll-behavior: auto !important; }
+            }
 
             .center { text-align: center; }
             a { color: var(--blue); }

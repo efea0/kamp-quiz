@@ -230,7 +230,7 @@ public final class QuizPages {
                     <div class="choices">
                 %s        </div>
                     <div class="actions">
-                      <button class="btn" type="submit">Cevapla</button>
+                      <button class="btn" type="submit" id="cevapla">Cevapla</button>
                     </div>
                   </form>
                 </div>
@@ -251,6 +251,28 @@ public final class QuizPages {
                         form.submit();   // sure doldu, bos gonder
                       }
                     }, 1000);
+
+                    // Hizli cevap: sik secilir secilmez form gonderilir.
+                    // Cevapla dugmesi de duruyor — JS kapaliysa ya da
+                    // klavye ile gezinen biri orayi kullanir.
+                    var gonderildi = false;
+                    form.addEventListener('change', function (e) {
+                      if (e.target.name === 'cevap' && !gonderildi) {
+                        gonderildi = true;
+                        form.submit();
+                      }
+                    });
+
+                    // Tus takimi: A/B/C/D (veya 1-4) ile sik secme.
+                    document.addEventListener('keydown', function (e) {
+                      if (gonderildi || e.metaKey || e.ctrlKey || e.altKey) { return; }
+                      var tus = e.key.toUpperCase();
+                      var idx = ['A','B','C','D','E','F'].indexOf(tus);
+                      if (idx < 0) { idx = ['1','2','3','4','5','6'].indexOf(tus); }
+                      if (idx < 0) { return; }
+                      var sik = form.querySelectorAll('input[name="cevap"]')[idx];
+                      if (sik) { e.preventDefault(); sik.checked = true; form.submit(); }
+                    });
                   })();
                 </script>
                 """.formatted(

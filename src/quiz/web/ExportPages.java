@@ -129,10 +129,24 @@ public final class ExportPages {
     /**
      * RFC 4180: alanda virgul, cift tirnak ya da satir sonu varsa alan cift
      * tirnaga alinir; icindeki cift tirnaklar ikiye katlanir.
+     *
+     * Ayrica Excel/LibreOffice formul enjeksiyonu engellenir: oyuncu adi
+     * "=..." ya da "+..." ile basliyorsa Excel bunu formul olarak calistirir.
+     * Oyuncu adini bu istenmeyen yan etkiden korumak icin alan tirnakli
+     * yazilir ve bastaki karakterden once tek tirnak isareti konur.
+     *
+     * FORMULA_STARTERS: Excel formulu olarak yorumlanabilecek ilk karakterler.
      */
+    private static final String FORMULA_STARTERS = "=+-@" + "\t" + "\r";
+
     private static String csvField(String raw) {
         String value = raw == null ? "" : raw;
-        boolean needsQuoting = value.contains(",") || value.contains("\"")
+        boolean formula = !value.isEmpty() && FORMULA_STARTERS.indexOf(value.charAt(0)) >= 0;
+        if (formula) {
+            value = "'" + value;
+        }
+        boolean needsQuoting = formula
+                || value.contains(",") || value.contains("\"")
                 || value.contains("\n") || value.contains("\r");
         if (!needsQuoting) {
             return value;

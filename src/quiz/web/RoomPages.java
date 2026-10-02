@@ -217,6 +217,17 @@ public final class RoomPages {
                     </div>
                   </div>
 
+                  <div class="joinbar">
+                    <div class="joinbar-cell">
+                      <span>Telefonda bu adresi aç</span>
+                      <b>%s</b>
+                    </div>
+                    <div class="joinbar-cell">
+                      <span>Sonra kod + adını yaz</span>
+                      <b>%s</b>
+                    </div>
+                  </div>
+
                 %s
                   <div class="rank big">
                 %s      </div>
@@ -228,6 +239,8 @@ public final class RoomPages {
                 room.getCode(),
                 ctx.joinQr(exchange, 108),
                 Html.escape(ctx.joinUrl(exchange)),
+                Html.escape(ctx.joinUrl(exchange)),
+                room.getCode(),
                 reactionsBlock(room, standings),
                 list,
                 room.playerCount(),

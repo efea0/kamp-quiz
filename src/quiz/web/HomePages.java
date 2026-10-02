@@ -69,11 +69,13 @@ public final class HomePages {
                     <label class="field" for="kod">Oda kodun varsa</label>
                     <div class="joinrow">
                       <input type="text" id="kod" name="kod" inputmode="numeric" maxlength="4"
-                             pattern="[0-9]{4}" placeholder="0000" class="codeinput" required>
+                             pattern="[0-9]{4}" placeholder="0000" class="codeinput"
+                             autocomplete="one-time-code" autofocus required>
                       <input type="text" name="isim" maxlength="20" required
                              autocomplete="off" placeholder="Adın">
                       <button class="btn blue" type="submit">Katıl</button>
                     </div>
+                    <p class="joinhint">Kodu yaz, sonra adını — ikisi de dolunca <b>Katıl</b> düğmesi kendiliğinden yanar.</p>
                   </form>
 
                   <p class="divider"><span>ya da tek başına</span></p>
@@ -96,7 +98,40 @@ public final class HomePages {
                 </div>
                 """.formatted(ctx.getAllQuestions().size(), cards);
 
-        ctx.sendHtml(exchange, 200, Html.page("Kamp Quiz", body));
+        ctx.sendHtml(exchange, 200, Html.page("Kamp Quiz",
+                body + """
+                <script>
+                  // Katilim hizini artirir: odak kod alaninda baslar, 4 hane
+                  // dolunca ad alanina gecer ve iki alan da dolunca Katil
+                  // dugmesi etkinlesir. Klavye/fare olmayan akis korunur:
+                  // dugmeye basilmadan form gonderilmez.
+                  (function () {
+                    var kod = document.getElementById('kod');
+                    if (!kod) { return; }
+                    var form = kod.closest('form');
+                    var isim = form.querySelector('input[name="isim"]');
+                    var dugme = form.querySelector('button[type="submit"]');
+                    function hazir() {
+                      var dolu = kod.value.trim().length === 4 && isim.value.trim().length > 0;
+                      dugme.classList.toggle('ready', dolu);
+                      dugme.disabled = !dolu;
+                    }
+                    kod.addEventListener('input', function () {
+                      kod.value = kod.value.replace(/\\D/g, '');
+                      if (kod.value.length === 4) { isim.focus(); }
+                      hazir();
+                    });
+                    isim.addEventListener('input', hazir);
+                    form.addEventListener('submit', function (e) {
+                      if (kod.value.trim().length !== 4 || isim.value.trim().length === 0) {
+                        e.preventDefault();
+                        hazir();
+                      }
+                    });
+                    hazir();
+                  })();
+                </script>
+                """));
     }
 
     /** Kendi kategorini, soru sayini ve sureni sectigin sayfa. */
