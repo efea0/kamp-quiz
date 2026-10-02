@@ -21,8 +21,14 @@ class GameSession {
 
     private final String sessionId;
     private final String playerName;
-    private final Quiz quiz;
     private final String roomCode;   // oda disinda oynayanlarda null
+
+    /**
+     * Oyununun anlik durumu. Oda "ikinci tur" baslatildiginda DEGISTIRILIR
+     * (bkz. Room.startSecondRound). O yuzden final degil; volatile ki
+     * temizlik/yardimci is parcaciklari guncel degeri gorur.
+     */
+    private volatile Quiz quiz;
 
     /** Cevap verildikten sonra gosterilecek sonuc; "Devam" ile temizlenir. */
     private Feedback feedback;
@@ -58,6 +64,13 @@ class GameSession {
 
     Quiz getQuiz() {
         return quiz;
+    }
+
+    /** Ayni odada yeni bir tura gecerken cagrilir. */
+    void replaceQuiz(Quiz quiz) {
+        this.quiz = quiz;
+        this.feedback = null;
+        this.scoreSaved = false;
     }
 
     Feedback getFeedback() {

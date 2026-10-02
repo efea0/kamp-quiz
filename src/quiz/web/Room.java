@@ -134,6 +134,50 @@ class Room {
     }
 
     /**
+     * Test bittikten sonra AYNI odada ikinci tur baslatir.
+     *
+     * Neden var: Oyuncu bitince "Bir tur daha?" goruncesi cikiyor, ama hoca
+     * tarafinda oda yalnizca "test bitti" yaziyordu. Hoca ikinci turu
+     * baslatabilmek icin /kur'a donup YENI oda kurmak zorundaydi; o eski
+     * oyuncular yeni odaya girmiyor, sinif yariya kadar bos kaliyordu.
+     *
+     * Davranis:
+     *  - Her oyuncuya YENI bir Quiz verilir (skor sifirlanir)
+     *  - Paylasik sirada ise sorular yeniden karistirilir; ayni sira tekrar
+     *    etmesin diye. Kisiye-ozel sirada zaten her oyuncu kendi karisimini
+     *    aliyor, dokunulmuyor.
+     *  - Faz LOBI'ye doner: hoca "Baslat" deyince ilk soru gelir
+     *
+     * Onceki turun skoru scores.txt'e YAZILMIS oldugu icin kaybolmaz; sadece
+     * odadaki anlik durum sifirlanir.
+     */
+    synchronized void startSecondRound(List<Question> allQuestions) {
+        // Serbest odada index oyunu yonetmez; oyuncular kendi hizinda
+        // ilerler ve faz BITTI olmaz. "Bitti" durumu everyoneFinished() ile
+        // belirlendigi icin kontrolu displayPhase() ile yapmaliyiz, yoksa
+        // serbest odada bu metot hicbir sey yapmaz.
+        if (displayPhase() != Phase.BITTI) {
+            return;
+        }
+
+        if (sharedOrder) {
+            // Ayni soru sirasi iki kez gelmesin diye yeniden karistir.
+            sharedQuestions = null;
+        }
+
+        for (GameSession player : players) {
+            player.replaceQuiz(newQuiz(allQuestions));
+            player.clearFeedback();
+        }
+
+        index = 0;
+        phase = Phase.LOBI;
+        lastScreenOrder = List.of();
+        questionStartedAt = 0;
+        screenTick.set(0);
+    }
+
+    /**
      * Hoca "Cevabı göster" dedi.
      * Cevap vermeyenler yanlis sayilir; yoksa siradan kopup kalirlar.
      */
@@ -312,5 +356,24 @@ class Room {
             }
         }
         return true;
+    }
+
+    /**
+     * Hoca panelinin gostereceği faz.
+     *
+     * SERBEST modda faz hiçbir zaman BITTI olmaz: herkes kendi hızında
+     * ilerler, "tüm oyuncular bitti" anı oyuncuların Quiz'inde belirir,
+     * odanın index'inde değil. Eski kod sadece index'e bakıyordu, bu yüzden
+     * oyun bitince panel hâlâ "Cevabı göster" diyordu ve ikinci tur
+     * başlatılamıyordu.
+     *
+     * SENKRON modda index oda temposunu yonetir, o yüzden oldugu gibi
+     * durur.
+     */
+    Phase displayPhase() {
+        if (!isSynchronous() && everyoneFinished()) {
+            return Phase.BITTI;
+        }
+        return phase;
     }
 }

@@ -51,6 +51,7 @@ public final class WebSmokeTest {
             testSyncRoomFlow();
             testCsvFormulaInjection();
             testExpiredSessionIsRemoved();
+            testSecondRoundInSameRoom();
         } finally {
             WebServer.stopLastStarted();
             // Sonuç ekranı akışı skor dosyası oluşturur; test artığını bırakmasın.
@@ -260,6 +261,90 @@ public final class WebSmokeTest {
     }
 
     // ---------------------------------------------------------------- yardımcı
+
+    /**
+     * Test bittikten sonra hoca AYNI odada ikinci turu baslatabilmeli.
+     *
+     * Onceden bu mumkun degildi: oda BITTI fazinda kalip panelde sadece
+     * "test bitti" yaziyordu. Hoca ikinci tur icin /kur'a donup yeni oda
+     * kurmak zorundaydi; o eski oyuncular yeni odaya girmedigi icin sinif
+     * yariya kadar bos kaliyordu.
+     *
+     * Test: oyunu bitir -> panelde "tekrar" butonu var mi? -> baslat ->
+     * faz LOBI'ye donuyor mu -> "basla" ile oyun yeniden basliyor mu ->
+     * oyuncu YENI soru aliyor mu?
+     */
+    /**
+     * Test bittikten sonra hoca AYNI odada ikinci turu baslatabilmeli.
+     *
+     * Onceden mumkun degildi. Iki ayri sebep vardi:
+     *
+     *  1) Serbest odada faz hicbir zaman BITTI olmuyordu; oyuncular kendi
+     *     hizinda ilerler, "herkes bitti" ani odanin index'inde degil
+     *     oyuncularin Quiz'inde beliriyor. Panel sadece index'e baktigi icin
+     *     oyun bitince de "Cevabi goster" diyordu. displayPhase() bunu
+     *     everyoneFinished() ile birlestirir.
+     *
+     *  2) hostControls() serbest odada tamamen bos donuyordu. Artik oyun
+     *     bitince "Ayni odada tekrar oyna" butonu gosterir.
+     *
+     * Test izole bir oturum kullanir: paylasilan "cookie" degiskeni onceki
+     * testlerden kalan oyunculari odada tutuyor ve everyoneFinished()'i
+     * false birakiyordu.
+     */
+    private static void testSecondRoundInSameRoom() throws IOException, InterruptedException {
+        String oncekiCookie = cookie;
+        cookie = "";
+
+        String oda = roomCodeOf(post("/kur", "mod=serbest&sira=paylasik&set="
+                + urlEncode(firstSetName()))
+                .headers().firstValue("Location").orElse(""));
+        check("Ikinci tur icin oda kuruldu", !oda.isEmpty());
+
+        HttpResponse<String> joined = post("/katil", "kod=" + oda + "&isim=TurOyuncu");
+        cookie = joined.headers().allValues("Set-Cookie").stream()
+                .filter(value -> value.startsWith("qsid="))
+                .findFirst()
+                .map(value -> value.substring(0, value.indexOf(';')))
+                .orElse("");
+        check("Ikinci tur icin oyuncu katildi ve oturum acildi", !cookie.isEmpty());
+
+        // Turlari bitir. "Hizli Tur" 10 soru; 30 deneme hepsini kapsar.
+        for (int i = 0; i < 30; i++) {
+            post("/cevap", "kod=" + oda + "&cevap=0");
+            post("/devam", "kod=" + oda);
+        }
+
+        // Oyuncu sonuc ekranina ulasin (odanin BITTI sayilmasi icin sart:
+        // everyoneFinished() TUM oyuncularin quiz'inin bitmesini bekler).
+        // /quiz bittikten sonra 303 ile /sonuc'a yonlendirir; opener
+        // redirect'i takip etmedigi icin dogrudan /sonuc okunur.
+        String oyuncu = get("/sonuc");
+        check("Birinci tur bitti, oyuncu sonuc ekraninda",
+                oyuncu.contains("Sonuç") || oyuncu.contains("toplam puan"));
+
+        String panel = get("/oda?kod=" + oda);
+        check("Panelde 'Aynı odada tekrar oyna' butonu var",
+                panel.contains("Aynı odada tekrar oyna"));
+
+        // Ikinci turu baslat
+        post("/oda?kod=" + oda, "islem=tekrar");
+
+        String soru = get("/quiz");
+        check("Ikinci turda oyuncu yeni soru aliyor",
+                soru.contains("Soru 1") && soru.contains("name=\"cevap\""));
+
+        // Skor sifirlanmis olmali: yeni Quiz, eski puan tasinmaz.
+        check("Ikinci turda skor sifirlandi", !soru.contains("toplam puan"));
+
+        // Ikinci tur da oynanabilmeli
+        post("/cevap", "kod=" + oda + "&cevap=1");
+        String cevapli = get("/quiz");
+        check("Ikinci turda cevap verilebiliyor",
+                cevapli.contains("Devam") || cevapli.contains("puan"));
+
+        cookie = oncekiCookie;
+    }
 
     /**
      * Sure dolmus oturum ve odalar gercekten siliniyor mu? (issue #3/#9)

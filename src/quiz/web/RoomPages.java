@@ -104,6 +104,7 @@ public final class RoomPages {
                 case "basla"   -> room.start(ctx.getAllQuestions());
                 case "goster"  -> room.reveal();
                 case "sonraki" -> room.next(ctx.getAllQuestions());
+                case "tekrar"  -> room.startSecondRound(ctx.getAllQuestions());
                 default -> { }
             }
             ctx.redirect(exchange, "/oda?kod=" + room.getCode());
@@ -623,9 +624,22 @@ public final class RoomPages {
         ctx.sendHtml(exchange, 200, Html.page("Yanlış raporu", body));
     }
 
-    /** Senkron odada hocanin akis dugmeleri. Serbest odada bos doner. */
+    /**
+     * Hocanin akis dugmeleri.
+     *
+     * SENKRON odada her zaman gosterilir: baslat / cevabi goster / sonraki.
+     *
+     * SERBEST odada oyuncular kendi hizinda ilerledigi icin ara butonlarin
+     * anlami yok; ama test BITINCE "Ayni odada tekrar oyna" butonu
+     * gosterilir. Onceden bu blok serbest odada tamamen bos donuyordu, bu
+     * yuzden oyun bitince hoca panelinde hicbir sey cikmazdi ve ikinci tur
+     * icin /kur'a donup yeni oda kurmak gerekiyordu.
+     */
     private String hostControls(Room room) {
-        if (!room.isSynchronous()) {
+        boolean serbest = !room.isSynchronous();
+        boolean bitti = room.displayPhase() == Room.Phase.BITTI;
+
+        if (serbest && !bitti) {
             return "";
         }
 
@@ -633,7 +647,7 @@ public final class RoomPages {
         String durum;
         String buton;
 
-        switch (room.getPhase()) {
+        switch (room.displayPhase()) {
             case LOBI -> {
                 durum = "Katılımcılar bekleniyor";
                 buton = "<button class=\"btn\" type=\"submit\" name=\"islem\" value=\"basla\">Başlat</button>";
@@ -648,6 +662,13 @@ public final class RoomPages {
                 boolean son = room.getIndex() + 1 >= total;
                 buton = "<button class=\"btn\" type=\"submit\" name=\"islem\" value=\"sonraki\">"
                         + (son ? "Testi bitir" : "Sonraki soru") + "</button>";
+            }
+            case BITTI -> {
+                durum = "Test bitti · " + room.playerCount() + " katılımcı bekliyor";
+                // Oyuncular "Bir tur daha?" goruncesiyle yeni tur bekliyor;
+                // hoca panelinde de tek tusla ayni odada baslatilabilsin.
+                buton = "<button class=\"btn blue\" type=\"submit\" name=\"islem\" value=\"tekrar\">"
+                        + "Aynı odada tekrar oyna</button>";
             }
             default -> {
                 durum = "Test bitti";
