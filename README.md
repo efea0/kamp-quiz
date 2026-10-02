@@ -171,7 +171,25 @@ javac -version
 Kalıcı yapmak için: **Ayarlar → Sistem → Sistem bilgileri → Gelişmiş sistem ayarları
 → Ortam Değişkenleri** → `Path` içinde yeni JDK satırını yukarı taşı.
 
-Çalıştırma: Windows'ta `run.bat`, macOS/Linux'ta önce bir kez `chmod +x run.sh`, sonra `./run.sh`.
+### Windows'ta "VS Code açılıyor" sorunu
+
+`./run.sh web` yazınca tarayıcı yerine **VS Code açılıyorsa**, `.sh`
+dosyalarının varsayılan uygulaması VS Code olarak ayarlıdır. Windows
+o komutu "çalıştırılabilir dosya" değil, "VS Code ile açılacak belge"
+olarak yorumlar.
+
+Üç çözüm var, hangisi işine yararsa:
+
+| Terminal | Yazılacak komut |
+|---|---|
+| **CMD** | `run.bat web` |
+| **PowerShell** | `.\run.bat web` |
+| **Git Bash** | `bash run.sh web` |
+
+`run.bat` Windows içindir, `run.sh` macOS/Linux içindir; ikisi de aynı işi yapar.
+
+Ayıca: **doğrudan `run.bat` dosyasına çift tıklama** yerine terminalde
+adını yaz. Çift tıklama da aynı dosya-birliği sorununa takılabilir.
 
 Betik kullanmadan:
 
