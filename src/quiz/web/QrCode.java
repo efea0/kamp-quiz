@@ -9,7 +9,7 @@ package quiz.web;
  *
  * Uretilen kod SVG olarak verilir; boylece projeksiyonda buyutulunce bulanmaz.
  */
-final class QrCode {
+public final class QrCode {
 
     /** Surum basina: [hata duzeltme kodsozcugu/blok, blok sayisi, blok basina veri] */
     private static final int[][] ECC_M = {
@@ -36,7 +36,7 @@ final class QrCode {
     // ------------------------------------------------------------------ API
 
     /** Metni QR koda cevirir. Sigmazsa IllegalArgumentException firlatir. */
-    static QrCode encode(String text) {
+    public static QrCode encode(String text) {
         byte[] data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
         int version = -1;
@@ -80,7 +80,7 @@ final class QrCode {
     }
 
     /** QR kodu SVG olarak dondurur. */
-    String toSvg(int pixelSize, String darkColor, String lightColor) {
+    public String toSvg(int pixelSize, String darkColor, String lightColor) {
         int quiet = 4;                       // kenar bosluğu (standart 4 modul)
         int total = size + quiet * 2;
 
@@ -101,6 +101,20 @@ final class QrCode {
     }
 
     // -------------------------------------------------------------- veri
+
+    /**
+     * Yalnızca test: üretilen QR'ın sürüm numarası. Modül sayısı kuralı
+     * boy = 17 + 4*sürüm; sürüm alanı tutmadığımız için buradan türetiyoruz.
+     * Test, "doğru sürüm seçildi mi" diye bunu okur.
+     */
+    public int version() {
+        return (size - 17) / 4;
+    }
+
+    /** Yalnızca test: kare matrisin kenar uzunluğu (modül sayısı). */
+    public int size() {
+        return size;
+    }
 
     private static int totalDataCodewords(int version) {
         return ECC_M[version][1] * ECC_M[version][2];

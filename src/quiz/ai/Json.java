@@ -11,13 +11,13 @@ import java.util.List;
  *   1) gonderecegimiz metni JSON dizesine cevirmek (escape)
  *   2) gelen cevaptan belirli bir anahtarin dize degerlerini cikarmak
  */
-final class Json {
+public final class Json {
 
     private Json() {
     }
 
     /** Bir metni JSON dizesi icine guvenle konacak hale getirir. */
-    static String escape(String text) {
+    public static String escape(String text) {
         StringBuilder out = new StringBuilder(text.length() + 16);
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
@@ -43,7 +43,7 @@ final class Json {
      * JSON metninde "anahtar": "deger" seklindeki tum degerleri toplar.
      * Ic ice yapiyi umursamaz; bize yeten bu.
      */
-    static List<String> valuesOf(String json, String key) {
+    public static List<String> valuesOf(String json, String key) {
         List<String> found = new ArrayList<>();
         String needle = "\"" + key + "\"";
         int i = 0;

@@ -47,6 +47,8 @@ public class SelfTest {
         testDifficultyFilteredSet(questions);
         testCoreDoesNotPrint();
         testQuestionGeneratorSurvivesMissingPromptsDir();
+        testJsonParsing();
+        testQrCodeEncoding();
         WebSmokeTest.run();
 
         System.out.println();
@@ -336,6 +338,166 @@ public class SelfTest {
     }
 
     // --------------------------------------------------------- yardimcilar
+
+    /**
+     * Json.valuesOf, yapay zeka servisinden gelen metinden alan okur.
+     * Servis cevabi bozuk veya beklenmedik gelebilir; ayristirici bunu
+     * PATLATMAMALI, bos liste dondurmeli. Bu test o dayanikliligi kilitler.
+     */
+    private static void testJsonParsing() {
+        // 1) Normal durum
+        List<String> sorular = quiz.ai.Json.valuesOf(
+                "{\"soru\": \"TCP ne ise yarar?\", \"siklar\": [\"a\", \"b\"]}", "soru");
+        check("Json temel alan okuyor", sorular.size() == 1
+                && "TCP ne ise yarar?".equals(sorular.get(0)));
+
+        // 2) Ayni anahtar birden fazla kez geciyor (API liste dondururse)
+        List<String> coklu = quiz.ai.Json.valuesOf(
+                "[{\"soru\": \"bir\"}, {\"soru\": \"iki\"}, {\"soru\": \"uc\"}]", "soru");
+        check("Json ayni anahtari birden fazla kez toplar", coklu.size() == 3);
+        check("Json sirayi korur", coklu.size() == 3
+                && "bir".equals(coklu.get(0)) && "uc".equals(coklu.get(2)));
+
+        // 3) Kacislar: JSONIcinde tirnak kaçisi
+        List<String> kacisli = quiz.ai.Json.valuesOf(
+                "{\"soru\": \"Icinde \\\"tirnak\\\" var\"}", "soru");
+        check("Json tirnak kacisini cozer", kacisli.size() == 1
+                && kacisli.get(0).contains("tirnak"));
+
+        // 4) Anahtar hic yok
+        check("Olmayan anahtar bos liste doner", quiz.ai.Json.valuesOf("{\"baska\": \"x\"}", "soru").isEmpty());
+
+        // 5) BOZUK girdi crash etmemeli
+        String[] bozuklar = {
+                "",
+                "{",
+                "}",
+                "{\"soru\"}",
+                "{\"soru\": }",
+                "{\"soru\": \"acik tirnak}",
+                "null",
+                "[]",
+                "{\"soru\": 123}",            // sayi degil dize
+                "{\"soru\": true}",
+                "{\"soru\" \"deger\"}",      // iki nokta yok
+        };
+        boolean hepsiDayanikli = true;
+        String patlayan = null;
+        for (String bozuk : bozuklar) {
+            try {
+                quiz.ai.Json.valuesOf(bozuk, "soru");
+            } catch (RuntimeException e) {
+                hepsiDayanikli = false;
+                patlayan = "\"" + bozuk + "\" -> " + e;
+            }
+        }
+        check("Json bozuk girdide crash etmiyor", hepsiDayanikli);
+
+        // 6) Uzun metin
+        StringBuilder uzun = new StringBuilder();
+        for (int i = 0; i < 2000; i++) {
+            uzun.append("x");
+        }
+        check("Json uzun degeri okuyor", quiz.ai.Json.valuesOf(
+                "{\"soru\": \"" + uzun + "\"}", "soru").get(0).length() == 2000);
+
+        // 7) escape: tirnak ve satir sonu
+        String esc = quiz.ai.Json.escape("a\"b\nc");
+        check("Json escape tirnagi korur", esc.contains("\\\""));
+        check("Json escape satir sonunu kirar", esc.contains("\\n"));
+        check("Json escape ters slash korur", quiz.ai.Json.escape("a\\b").contains("\\\\"));
+    }
+
+    /**
+     * QR kodlayici sifirdan yazildi; hatali cikarsa ogrenci telefonu
+     * okutamaz ve odaya giremez. Burada uretilen kodun YAPISINI denetliyoruz:
+     * dogru surum, dogru boyut, gecerli SVG, deterministik uretim.
+     *
+     * Icerigin fiziksel olarak okunabilir olup olmadigi bir QR okuyucuyla
+     * (telefon kamerasi) dogrulanir; buradaki testler o kadarini iddia etmez.
+     */
+    private static void testQrCodeEncoding() {
+        String adres = "http://192.168.1.100:8080/";
+
+        // 1) Surum siniri: byte modunda surum 1 = 16 kodsozcuk = 14 bayt metin
+        //    (4 bit mod + 8 bit uzunluk basligi dusulur).
+        quiz.web.QrCode kisa = quiz.web.QrCode.encode("x".repeat(14));
+        check("QR 14 baytlik metin surum 1", kisa.version() == 1);
+        check("QR surum 1 boyutu 21", kisa.size() == 21);
+
+        // 15. baytta surum 2'ye gecmeli (sinir dogru mu?)
+        quiz.web.QrCode birBaytFazla = quiz.web.QrCode.encode("x".repeat(15));
+        check("QR 15 baytta surum 2'ye gecer", birBaytFazla.version() == 2);
+
+        // Gercek katilim adresi 26 bayt -> surum 2
+        quiz.web.QrCode gercek = quiz.web.QrCode.encode(adres);
+        check("QR 26 baytlik adres surum 2", gercek.version() == 2);
+
+        // 2) Daha uzun metin -> daha buyuk surum
+        quiz.web.QrCode uzun = quiz.web.QrCode.encode(adres + "?kod=1234&ad=CokUzunBirOyuncuAdi");
+        check("QR uzun metinde surumu artirir", uzun.version() > kisa.version());
+        check("QR boyut surumle tutarli", uzun.size() == 17 + 4 * uzun.version());
+
+        // 3) Surum siniri: bu kodlayici 1-6 arasi surumu destekliyor
+        boolean sinirIcinde = quiz.web.QrCode.encode(adres).version() <= 6;
+        check("QR desteklenen surum sinirinda kalir", sinirIcinde);
+
+        // 4) Cok uzun metin kontrollu hata firlatir (sessizce bozuk kod degil)
+        boolean dogruHata = false;
+        try {
+            quiz.web.QrCode.encode("x".repeat(5000));
+        } catch (IllegalArgumentException e) {
+            dogruHata = e.getMessage() != null && e.getMessage().contains("sığmıyor");
+        } catch (RuntimeException e) {
+            dogruHata = false;
+        }
+        check("QR cok uzun metinde anlasilir hata verir", dogruHata);
+
+        // 5) Bos metin patlamamali
+        boolean bosCalisti = true;
+        try {
+            quiz.web.QrCode.encode("");
+        } catch (RuntimeException e) {
+            bosCalisti = false;
+        }
+        check("QR bos metinle crash etmiyor", bosCalisti);
+
+        // 6) Turkce karakterler (katilim adresinde olabilir)
+        boolean turkceCalisti = true;
+        try {
+            quiz.web.QrCode.encode("http://192.168.1.5:8080/oda?ad=Çğüşiö");
+        } catch (RuntimeException e) {
+            turkceCalisti = false;
+        }
+        check("QR turkce karakterle calisiyor", turkceCalisti);
+
+        // 7) Deterministik: ayni metin ayni kodu uretir
+        check("QR ayni girdide ayni kodu uretir",
+                gercek.toSvg(120, "#000", "#fff").equals(quiz.web.QrCode.encode(adres).toSvg(120, "#000", "#fff")));
+
+        // 8) SVG ciktisi gecerli ve erisilebilir
+        String svg = gercek.toSvg(120, "#0d1117", "#f0f7fa");
+        check("SVG xmlns iceriyor", svg.contains("xmlns=\"http://www.w3.org/2000/svg\""));
+        check("SVG viewBox tanimli", svg.contains("viewBox="));
+        check("SVG erisilebilirlik etiketi var", svg.contains("aria-label="));
+        check("SVG renkleri uyguluyor", svg.contains("#0d1117") && svg.contains("#f0f7fa"));
+        check("SVG path iceriyor", svg.contains("<path"));
+        check("SVG kenar boslugu birakmis (viewBox = boyut + 8)",
+                viewBoxKenar(svg) == gercek.size() + 8);
+    }
+
+    /** SVG viewBox kenarini dondurur; test icin. */
+    private static int viewBoxKenar(String svg) {
+        int at = svg.indexOf("viewBox=\"0 0 ");
+        if (at < 0) {
+            return -1;
+        }
+        // viewBox="0 0 33 33" -> "0 0 " sonrasi ilk sayi kenar uzunlugu.
+        // 33'ten sonraki bosluğu ararsak yanlis deger buluruz.
+        int bas = at + "viewBox=\"0 0 ".length();
+        int bos = svg.indexOf(' ', bas);
+        return Integer.parseInt(svg.substring(bas, bos));
+    }
 
     /** Tek denetim noktası: WebSmokeTest de buraya yazarak sayacı paylaşır. */
     static void check(String what, boolean condition) {
