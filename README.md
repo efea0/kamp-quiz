@@ -56,7 +56,7 @@ cd kamp-quiz
 | 🖥 **İki arayüz** | Terminalde tek kişilik, tarayıcıda sınıfça — aynı motor |
 | 🤖 **AI ile soru üretimi** | Konu yaz, paket üretsin; düzenle, onayla, kaydet |
 
-**81 soru** · 7 kategori · **6 hazır test** · 216 otomatik denetim · **0 dış bağımlılık**
+**81 soru** · 7 kategori · **6 hazır test** · 300 otomatik denetim · **0 dış bağımlılık**
 
 ---
 
@@ -265,6 +265,13 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 - Tekrar turu oda sıralamasını etkilemez
 - Tüm dosya okuma/yazma UTF-8'e sabitlenmiştir
 - 25 eşzamanlı oyuncuyla denendi: 25/25 tamamlandı, hata yok
+- 40 eşzamanlı oyuncuyla denendi: 0.92 saniyede tamamlandı, hata yok
+- Süresi dolan oturumlar (3 saat) ve boş odalar (1 saat) kendiliğinden silinir
+- Şık seçilir seçilmez cevap gönderilir; A/B/C/D ve 1–4 tuşları da çalışır
+- Oda koduna 4 hane yazılınca odak kendiliğinden ad alanına geçer
+- Oyuncu adı Excel formülü olarak yorumlanmaz (CSV'de `'` ile korunur)
+- Her yanıt güvenlik başlığı taşır: `X-Frame-Options`, CSP, `nosniff`
+- Oturum çerezi `HttpOnly`: sayfa JavaScript'i oturum kimliğini okuyamaz
 </details>
 
 ---
@@ -277,8 +284,13 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 | ✔ | Web arayüzü, oda kodu, projeksiyon ekranı, QR ile katılım |
 | ✔ | Süre sınırı, hız puanı, açıklamalar, tekrar modu, yanlış raporu |
 | ✔ | Hazır test setleri, AI ile soru üretme, kendi kendini test |
-| ☐ | Takım modu |
-| ☐ | Senkron canlı mod — herkes aynı soruda, hoca ilerletir |
+| ✔ | **Senkron canlı mod** — herkes aynı soruda, hoca ilerletir |
+| ✔ | Kişisel ve ortak soru sırası, mükerrer katılım engeli |
+| ✔ | Oturum/oda temizliği, güvenlik başlıkları, CSV formül koruması |
+| ☐ | Takım modu ([#8](https://github.com/efea0/kamp-quiz/issues/8)) |
+| ☐ | Katılımda IP kontrolü, NAT farkındalığıyla ([#4](https://github.com/efea0/kamp-quiz/issues/4)) |
+| ☐ | Senkron bekleme ekranında geri sayım ([#10](https://github.com/efea0/kamp-quiz/issues/10)) |
+| ☐ | Çok yanlış yapılan soruyu otomatik "zor" işaretle ([#13](https://github.com/efea0/kamp-quiz/issues/13)) |
 
 ## Katkı
 
