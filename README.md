@@ -40,6 +40,13 @@ cd kamp-quiz
 | <img src="assets/ekran-projeksiyon.png" alt="Canlı sıralama ekranı" width="380"> | <img src="assets/ekran-rapor.png" alt="Yanlış raporu" width="380"> |
 | Katılım kodu, QR ve canlı sıralama. | Hangi soru kaç kişiyi düşürdü — en çok yanlıştan başlayarak. |
 
+**Hoca paneli — test bitince:**
+
+| |
+|:---:|
+| <img src="assets/ekran-tekrar.png" alt="Hoca paneli, test bitti ve aynı odada tekrar oyna düğmesi görünüyor" width="380"> |
+| Test bitince hoca panelinde **"Aynı odada tekrar oyna"** belirir. Öğrenciler yeni kod yazmadan aynı odada ikinci tura geçer; sorular yeniden karıştırılır. |
+
 ---
 
 ## Ne yapar
@@ -52,22 +59,28 @@ cd kamp-quiz
 | ⏱ **Hız puanı** | Doğru cevap 500 puan, kalan süreye göre 500'e kadar bonus |
 | 💡 **Açıklamalar** | Yanlış yapınca doğrusunu **ve nedenini** gösterir |
 | 🔁 **Tekrar modu** | Sadece yanlışlarından oluşan ikinci bir tur |
+| 🔄 **Aynı odada ikinci tur** | Test bitince hoca tek tuşla yeni turu başlatır; kimse katılmak zorunda kalmaz |
 | 📊 **Yanlış raporu** | Hocaya: hangi konuyu tekrar anlatmalı |
 | 🖥 **İki arayüz** | Terminalde tek kişilik, tarayıcıda sınıfça — aynı motor |
 | 🤖 **AI ile soru üretimi** | Konu yaz, paket üretsin; düzenle, onayla, kaydet |
 
-**81 soru** · 7 kategori · **6 hazır test** · 300 otomatik denetim · **0 dış bağımlılık**
+**81 soru** · 7 kategori · **6 hazır test** · 307 otomatik denetim · **0 dış bağımlılık**
 
 ---
 
-## Sınıfça oynamak — 3 adım
+## Sınıfça oynamak — 4 adım
 
 1. **Oda kur** → `/kur` sayfasından bir test seç, 4 haneli kod üretilir
 2. **Perdeye aç** → `/ekran?kod=1234`, sıralama 3 saniyede bir yenilenir
 3. **Katıl** → öğrenciler kodu yazar ya da ekrandaki QR'ı okutur
+4. **Bitince tekrar** → hoca panelindeki **"Aynı odada tekrar oyna"** ile yeni tur
 
 Herkes aynı testten sorulur ama **soru seçimi ve sırası kişiye özeldir** — yan masadan kopyalanamaz.
 Test bitince `/rapor?kod=1234` en çok yanlış yapılan soruları sıralar.
+
+**4. adım neden önemli:** öğrenciler test bitince "Bir tur daha?" görüntüsünde bekler.
+Hoca ikinci tur için yeni oda kurmak zorunda kalırsa o eski öğrenciler yeni odaya girmez,
+sınıf yarıya kadar boş kalır. Aynı odada tekrar, kimse yeni kod yazmadan devam eder.
 
 ---
 
@@ -269,6 +282,7 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 - Süresi dolan oturumlar (3 saat) ve boş odalar (1 saat) kendiliğinden silinir
 - Şık seçilir seçilmez cevap gönderilir; A/B/C/D ve 1–4 tuşları da çalışır
 - Oda koduna 4 hane yazılınca odak kendiliğinden ad alanına geçer
+- Aynı odada test bitince tekrar oynanabilir; sorular yeniden karıştırılır
 - Oyuncu adı Excel formülü olarak yorumlanmaz (CSV'de `'` ile korunur)
 - Her yanıt güvenlik başlığı taşır: `X-Frame-Options`, CSP, `nosniff`
 - Oturum çerezi `HttpOnly`: sayfa JavaScript'i oturum kimliğini okuyamaz
@@ -287,6 +301,7 @@ Karşılığını web arayüzünü eklerken aldık: terminal ve tarayıcı **ayn
 | ✔ | **Senkron canlı mod** — herkes aynı soruda, hoca ilerletir |
 | ✔ | Kişisel ve ortak soru sırası, mükerrer katılım engeli |
 | ✔ | Oturum/oda temizliği, güvenlik başlıkları, CSV formül koruması |
+| ✔ | Aynı odada ikinci tur — hoca tek tuşla yeni turu başlatır |
 | ☐ | Takım modu ([#8](https://github.com/efea0/kamp-quiz/issues/8)) |
 | ☐ | Katılımda IP kontrolü, NAT farkındalığıyla ([#4](https://github.com/efea0/kamp-quiz/issues/4)) |
 | ☐ | Senkron bekleme ekranında geri sayım ([#10](https://github.com/efea0/kamp-quiz/issues/10)) |
