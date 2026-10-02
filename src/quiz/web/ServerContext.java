@@ -1,5 +1,6 @@
 package quiz.web;
 
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import quiz.ai.QuestionGenerator;
 import quiz.core.QuestionBank;
@@ -216,7 +217,11 @@ final class ServerContext {
 
     void setSessionCookie(HttpExchange exchange, String sessionId) {
         exchange.getResponseHeaders().add("Set-Cookie",
-                COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
+                COOKIE_NAME + "=" + sessionId
+                + "; Path=/; Max-Age=7200; SameSite=Lax; HttpOnly");
+        // HttpOnly: sayfa JS'i oturum kimligini okuyamaz. XSS olsa bile
+        // cerez calgincalamaz; sunucu tarafi oturum tanimlayicisini
+        // yalnizca bu degerden okuyor.
     }
 
     /** Cerezdeki oturum kimligini dondurur. */
@@ -388,6 +393,7 @@ final class ServerContext {
     void redirect(HttpExchange exchange, String location) throws IOException {
         maybeCleanup();
         exchange.getResponseHeaders().set("Location", location);
+        guvenlikBasliklari(exchange.getResponseHeaders());
         exchange.sendResponseHeaders(303, -1);   // 303 = "gordum, simdi suraya git"
         exchange.close();
     }
@@ -400,11 +406,39 @@ final class ServerContext {
     void send(HttpExchange exchange, int status, String contentType, String content)
             throws IOException {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", contentType);
+        Headers headers = exchange.getResponseHeaders();
+        headers.set("Content-Type", contentType);
+        guvenlikBasliklari(headers);
         exchange.sendResponseHeaders(status, bytes.length);
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(bytes);
         }
+    }
+
+    /**
+     * Her yanita guvenlik basligi ekler.
+     *
+     * Sadece guvenmi olamayacagimiz bir agda (sinif, kafe) bile sayfa
+     * bir baska siteye gomulebilir (clickjacking) ya da tarayici icerigi
+     * yanlis yorumlayabilir. Bu basliklar ucuz ve riski kapatir:
+     *
+     *  - X-Frame-Options: DENY        sayfa iframe icine alinamaz
+     *  - X-Content-Type-Options       icerik turu tahmin edilmez
+     *  - Referrer-Policy              dis sayfalara adres sizmaz
+     *  - Content-Security-Policy      yalnizca kendi kaynaklarimiz
+     *
+     * CSP 'unsafe-inline' iceriyor: sayfalarimiz JS'i ic ice gomuyor
+     * (Html.page tek dosyada uretiyor). Harici kaynak ZATEN kullanilmiyor,
+     * yani 'self' + 'unsafe-inline' dar bir izin.
+     */
+    private static void guvenlikBasliklari(Headers headers) {
+        headers.set("X-Frame-Options", "DENY");
+        headers.set("X-Content-Type-Options", "nosniff");
+        headers.set("Referrer-Policy", "no-referrer");
+        headers.set("Content-Security-Policy",
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                + "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                + "form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
     }
 
     // ------------------------------------------------------------- katilim
