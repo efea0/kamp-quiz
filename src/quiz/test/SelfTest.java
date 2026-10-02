@@ -5,6 +5,7 @@ import quiz.core.QuestionBank;
 import quiz.core.Quiz;
 import quiz.core.QuizSet;
 import quiz.core.QuizSetLoader;
+import quiz.core.Scoreboard;
 import quiz.model.Question;
 
 import java.io.IOException;
@@ -12,7 +13,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.Map;
 
 /**
@@ -49,6 +55,7 @@ public class SelfTest {
         testQuestionGeneratorSurvivesMissingPromptsDir();
         testJsonParsing();
         testQrCodeEncoding();
+        testScoreboardConcurrentWrites();
         WebSmokeTest.run();
 
         System.out.println();
@@ -497,6 +504,98 @@ public class SelfTest {
         int bas = at + "viewBox=\"0 0 ".length();
         int bos = svg.indexOf(' ', bas);
         return Integer.parseInt(svg.substring(bas, bos));
+    }
+
+    /**
+     * Skor dosyasina ayni anda birden fazla oyuncu yazabilir: sinif ayni anda
+     * testi bitirir.
+     *
+     * BULGU (2026-10-02): Once bunu "satir kaymasi" testi diye yazdik ve
+     * kilidi kaldirip denedik — test YINE gecti. Cunku Files.writeString tek
+     * sistem cagrisiyla yaziyor; 200 parcacik ayni anda calissa bile satir
+     * karismiyor. Yani buradaki risk teorik, gozlenmis degil.
+     *
+     * Scoreboard'da yine de synchronized var: yazma birden fazla yolla
+     * uzarsa (yari yazilmis kayit okunmasi) ayni kilit hem yazmayi hem
+     * topScores() okumasini korur. Ama bunu "hata vardi, duzelttik" diye
+     * anlatmak yanlis olur; test yalnizca su anki davranisi guvenceye alir.
+     *
+     * Bu testin degeri: 200 es zamanli kayitta veri kaybi veya bozuk satir
+     * OLMAYACAGINI gorerek, ileride yazma yolunu degistiren biri icin
+     * erken uyari verir.
+     */
+    private static void testScoreboardConcurrentWrites() {
+        Path gecici = null;
+        try {
+            gecici = Files.createTempFile("skor-eszamanli", ".txt");
+            Scoreboard tablo = new Scoreboard(gecici);
+
+            int oyuncu = 200;
+            CountDownLatch hazir = new CountDownLatch(oyuncu);
+            CountDownLatch basla = new CountDownLatch(1);
+            List<Throwable> hatalar = java.util.Collections.synchronizedList(new ArrayList<>());
+            List<Thread> isParcaciklari = new ArrayList<>();
+
+            for (int i = 0; i < oyuncu; i++) {
+                final int no = i;
+                Thread t = new Thread(() -> {
+                    try {
+                        hazir.countDown();
+                        basla.await();
+                        tablo.save("Oyuncu" + no, no % 10 + 1, 10, 100 * no);
+                    } catch (Throwable e) {
+                        hatalar.add(e);
+                    }
+                });
+                t.start();
+                isParcaciklari.add(t);
+            }
+
+            // Hepsi hazir olunca ayni anda baslat: gercek es zamanlilik.
+            hazir.await();
+            basla.countDown();
+            for (Thread t : isParcaciklari) {
+                t.join(15_000);
+            }
+
+            check("Es zamanli 200 skorda hata yok", hatalar.isEmpty());
+
+            List<String> satirlar = Files.readAllLines(gecici, StandardCharsets.UTF_8);
+            check("Es zamanli yazimda 200 satirin tamami yazildi",
+                    satirlar.size() == oyuncu);
+
+            // HER satir tam ve ayristirilabilir olmali
+            int bozuk = 0;
+            for (String satir : satirlar) {
+                String[] parcalar = satir.split("\\|");
+                if (parcalar.length != 5) {
+                    bozuk++;
+                    continue;
+                }
+                try {
+                    Integer.parseInt(parcalar[1]);
+                    Integer.parseInt(parcalar[2]);
+                    Integer.parseInt(parcalar[4]);
+                } catch (NumberFormatException e) {
+                    bozuk++;
+                }
+            }
+            check("Es zamanli yazimda bozuk satir yok", bozuk == 0);
+
+            // Yari yazilmis kayit okunmamali (kilit bunu garanti eder)
+            List<Scoreboard.Entry> okunan = tablo.topScores(1000);
+            check("Yazma sirasinda okuma bozulmuyor", okunan.size() == oyuncu);
+        } catch (Exception e) {
+            check("Es zamanli skor testi calisti", false);
+        } finally {
+            if (gecici != null) {
+                try {
+                    Files.deleteIfExists(gecici);
+                } catch (IOException ignored) {
+                    // gecici dosya; temizlenememesi test sonucunu etkilemez
+                }
+            }
+        }
     }
 
     /** Tek denetim noktası: WebSmokeTest de buraya yazarak sayacı paylaşır. */

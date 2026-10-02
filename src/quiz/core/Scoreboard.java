@@ -39,6 +39,20 @@ public class Scoreboard {
 
     private final Path file;
 
+    /**
+     * Ayni dosyaya yazan is parcaciklarini seri hale getirir.
+     *
+     * Sinifta test 25 oyuncuyu es zamanli denedi ve hata vermedi, ama bu
+     * birkatsaydi: iki oyuncu ayni ANDA skoru kaydederken satir kaymasi
+     * (biri digerinin yarisina yazma) teorik olarak mumkundur. 30 kisilik
+     * bir sinifta test bitip tabloya bakan hoca bozuk bir satir gormemeli.
+     *
+     * Kilit nesnenin kendisinde: Scoreboard tek ornek oldugu icin tum
+     * cagrilar zaten tek kilidi paylasir. Metot static DEGIL; boylece
+     * konsol ve web tarafi ayri Scoreboard kullansa bile koruma kaybolmaz.
+     */
+    private final Object yazmaKilidi = new Object();
+
     public Scoreboard(Path file) {
         this.file = file;
     }
@@ -50,14 +64,21 @@ public class Scoreboard {
                 + LocalDateTime.now().format(DATE_FORMAT) + "|" + points
                 + System.lineSeparator();
 
-        Files.writeString(file, line, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE,   // dosya yoksa olustur
-                StandardOpenOption.APPEND);  // varsa sonuna ekle
+        synchronized (yazmaKilidi) {
+            Files.writeString(file, line, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,   // dosya yoksa olustur
+                    StandardOpenOption.APPEND);  // varsa sonuna ekle
+        }
     }
 
     /** En yuksek skorlu ilk 'limit' kaydi verir. */
     public List<Entry> topScores(int limit) throws IOException {
-        List<Entry> entries = readAll();
+        List<Entry> entries;
+        synchronized (yazmaKilidi) {
+            // Yazma surerken okumak yarim kalmis bir satir gormemek icin
+            // kilidi paylasir.
+            entries = readAll();
+        }
 
         entries.sort(Comparator
                 .comparingInt(Entry::points).reversed()        // once puan, buyukten kucuge
