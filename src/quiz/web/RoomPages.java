@@ -92,7 +92,7 @@ public final class RoomPages {
 
     /** Hocanin paneli: kod, katilimcilar ve projeksiyon baglantisi. */
     public void handleHostPanel(HttpExchange exchange) throws IOException {
-        Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
+        Room room = ctx.findRoom(ServerContext.query(exchange, "kod"));
         if (room == null) {
             ctx.redirect(exchange, "/kur");
             return;
@@ -170,7 +170,7 @@ public final class RoomPages {
 
     /** Buyuk ekranda gosterilen canli siralama. Kendi kendine yenilenir. */
     public void handleScreen(HttpExchange exchange) throws IOException {
-        Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
+        Room room = ctx.findRoom(ServerContext.query(exchange, "kod"));
         if (room == null) {
             ctx.redirect(exchange, "/kur");
             return;
@@ -542,7 +542,7 @@ public final class RoomPages {
 
     /** Hoca icin yanlis raporu: hangi soru en cok yanlis yapildi. */
     public void handleReport(HttpExchange exchange) throws IOException {
-        Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
+        Room room = ctx.findRoom(ServerContext.query(exchange, "kod"));
         if (room == null) {
             ctx.redirect(exchange, "/kur");
             return;

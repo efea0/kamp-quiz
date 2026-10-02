@@ -50,6 +50,7 @@ public final class WebSmokeTest {
             testFreeRoomFlow();
             testSyncRoomFlow();
             testCsvFormulaInjection();
+            testExpiredSessionIsRemoved();
         } finally {
             WebServer.stopLastStarted();
             // Sonuç ekranı akışı skor dosyası oluşturur; test artığını bırakmasın.
@@ -259,6 +260,49 @@ public final class WebSmokeTest {
     }
 
     // ---------------------------------------------------------------- yardımcı
+
+    /**
+     * Sure dolmus oturum ve odalar gercekten siliniyor mu? (issue #3/#9)
+     *
+     * Gercek saati beklemek testi yavaslatirdi; bu yuzden cleanup'in zaman
+     * parametresi var ve test "simdi" degerini kendisi veriyor. Boylece
+     * davranis deterministik: 3 saat sonra oturum silinir, yarim saat sonra
+     * SILINMEZ.
+     */
+    private static void testExpiredSessionIsRemoved() throws IOException, InterruptedException {
+        if (WebServer.lastSessionCount() < 0) {
+            check("Temizlik testi icin sunucu baglami alindi", false);
+            return;
+        }
+
+        long simdi = System.currentTimeMillis();
+
+        // 1) Yeni oturum: su an gorulmus sayilmali
+        String savedCookie = cookie;
+        cookie = "";
+        String room = roomCodeOf(post("/kur", "set="
+                + URLEncoder.encode(firstSetName(), StandardCharsets.UTF_8)
+                + "&mod=serbest&sira=paylasik")
+                .headers().firstValue("Location").orElse(""));
+        post("/katil", "kod=" + room + "&isim=Temizlik");
+        cookie = savedCookie;
+        check("Temizlik testi icin oyuncu katildi", WebServer.lastSessionCount() > 0);
+
+        int odaSayisi = WebServer.lastRoomCount();
+
+        // 2) Hemen temizlik: hicbiri silinmemeli
+        int silinen = WebServer.runCleanup(simdi);
+        check("Taze oturum ve oda temizlikte korunur", silinen == 0);
+
+        // 3) 3 saati askin zaman: oturum silinmeli
+        long ucSaatSonra = simdi + WebServer.sessionTimeoutMillis() + 1000;
+        int sonra = WebServer.runCleanup(ucSaatSonra);
+        check("Sure dolmus oturum silinir", sonra >= 1);
+        check("Oturumlar haritasi bosaldi", WebServer.lastSessionCount() == 0);
+
+        // 4) Oda bos oldugu icin de silinmis olmali
+        check("Bos oda da toplandi", WebServer.lastRoomCount() < odaSayisi);
+    }
 
     /**
      * Oyuncu adi CSV'ye dogrudan yaziliyordu; "=..." ile baslayan bir isim

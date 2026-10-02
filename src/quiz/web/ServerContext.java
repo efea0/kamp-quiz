@@ -39,6 +39,15 @@ final class ServerContext {
 
     private static final String COOKIE_NAME = "qsid";
 
+    /** Oturum bu sure (ms) boyunca gorulmezse silinir. 3 saat. */
+    static final long SURE_ASIMIOTURUM_MS = 3 * 60 * 60 * 1000L;
+
+    /** Bos oda bu sure (ms) boyunca dokunulmazsa silinir. 1 saat. */
+    static final long SON_ERISIM_MS = 60 * 60 * 1000L;
+
+    /** Temizlik en sik bu aralikla (ms) calisir. 5 dakika. */
+    private static final long TEMIZLIK_ARALIGI_MS = 5 * 60 * 1000L;
+
     /** Uretilen paket kaydedilince yeniden yuklendigi icin final degil. */
     private volatile List<Question> allQuestions;
     private volatile List<QuizSet> sets;
@@ -54,6 +63,23 @@ final class ServerContext {
 
     /** Acik odalar: kod -> oda. */
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
+
+    /**
+     * Oturum/oda temizliginin en son calistigi an (epoch ms). Sunucu her
+     * istegi saymaz; sure dolmadan once bir kez bakar, boylece kucuk sinifta
+     * bile gereksiz tarama olmaz.
+     */
+    private volatile long lastCleanup = System.currentTimeMillis();
+
+    /**
+     * Oturum silindiginde haber veren kanca. QuizPages kendi ic durumunu
+     * (secilen siklar) bu haritada tutuyor; oturum silinince o da
+     * silinmeli, yoksa ayri bir bellek sizintisi kalir.
+     *
+     * Null olabilir: testler ServerContext'i tek basina kurar ve kancaya
+     * ihtiyac duymaz.
+     */
+    private volatile java.util.function.Consumer<GameSession> onSessionRemoved;
 
     /**
      * Uretim sayfasinin parolasi. QUIZ_ADMIN_KEY tanimliysa /uret kilitlenir.
@@ -141,6 +167,22 @@ final class ServerContext {
         }
     }
 
+    /**
+     * Kodla odayi bulur ve odanin canli oldugunu isaretler.
+     * Odalara erisim TEK noktadan olmali; aksi halde bir rota lastSeen'i
+     * guncellemeyi unutur ve oda yanlis zamanda silinir.
+     */
+    Room findRoom(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        Room room = rooms.get(code.trim());
+        if (room != null) {
+            room.touch();
+        }
+        return room;
+    }
+
     /** Adiyla bir hazir seti bulur. */
     QuizSet findSet(String name) {
         if (name == null || name.isBlank()) {
@@ -167,6 +209,11 @@ final class ServerContext {
 
     // ------------------------------------------------------------ oturumlar
 
+    /** Oturum temizlendiginde haber veren dinleyiciyi kaydeder. */
+    void onSessionRemoved(java.util.function.Consumer<GameSession> listener) {
+        this.onSessionRemoved = listener;
+    }
+
     void setSessionCookie(HttpExchange exchange, String sessionId) {
         exchange.getResponseHeaders().add("Set-Cookie",
                 COOKIE_NAME + "=" + sessionId + "; Path=/; Max-Age=7200; SameSite=Lax");
@@ -189,10 +236,79 @@ final class ServerContext {
         return null;
     }
 
-    /** Tarayicidan gelen cerezle oturumu bulur. */
+    /**
+     * Tarayicidan gelen cerezle oturumu bulur ve canli oldugunu isaretler.
+     * lastSeen burada guncellenir: oyuncu ekranda ne kadar sure geciktirirse
+     * gecsin, arada yenileme yapmiyorsa oturumu silinmemis olur.
+     */
     GameSession currentSession(HttpExchange exchange) {
         String id = currentSessionId(exchange);
-        return id == null ? null : sessions.get(id);
+        if (id == null) {
+            return null;
+        }
+        GameSession session = sessions.get(id);
+        if (session != null) {
+            session.touch();
+        }
+        return session;
+    }
+
+    /**
+     * Sure dolmus oturum ve odalari siler (issue #3/#9).
+     *
+     * Kurallar:
+     *  - Oturum: SURE_ASIMIOTURUM_MS boyunca istek gelmediyse silinir. Cerez
+     *    Max-Age'i 2 saat, biz 3 saat bekliyoruz; yani tarayici kapansa bile
+     *    veri sunucuda bir sure daha durur, sonra toplanir.
+     *  - Oda: SON_ERISIM_MS (1 saat) kimse dokunmadiysa VE oda bos ise silinir.
+     *    Icinde oyuncu varken dokunulmamis olsa bile silinmez; sinif yarida
+     *    kalmasin. Oyuncular ayrilinca oda 1 saat sonra toplanir.
+     *  - Aktif oyuncu ASLA silinmez: yalnizca lastSeen eski olanlar.
+     *
+     * Zaman davranisi test edilebilir olsun diye "simdi" degeri overload ile
+     * verilebilir; test gercek saati beklemek zorunda kalmaz.
+     */
+    int cleanupExpired(long now) {
+        int removedSessions = 0;
+        for (Map.Entry<String, GameSession> entry : sessions.entrySet()) {
+            if (now - entry.getValue().lastSeen() > SURE_ASIMIOTURUM_MS) {
+                // remove() yalnizca o anki deger ayniysa siler; eszamanli
+                // yenileme ile yarisi kaybolmaz.
+                GameSession gone = entry.getValue();
+                if (sessions.remove(entry.getKey(), gone)) {
+                    removedSessions++;
+                    java.util.function.Consumer<GameSession> listener = onSessionRemoved;
+                    if (listener != null) {
+                        listener.accept(gone);
+                    }
+                }
+            }
+        }
+
+        // Oturumlar silindikten sonra odada kalan referanslari temizle.
+        Set<String> yasayanOturumlar = new java.util.HashSet<>(sessions.keySet());
+
+        int removedRooms = 0;
+        for (Map.Entry<String, Room> entry : rooms.entrySet()) {
+            Room room = entry.getValue();
+            int gercekOyuncu = room.activePlayerCount(yasayanOturumlar);
+            if (gercekOyuncu == 0 && now - room.lastSeen() > SON_ERISIM_MS) {
+                if (rooms.remove(entry.getKey(), room)) {
+                    removedRooms++;
+                }
+            }
+        }
+
+        return removedSessions + removedRooms;
+    }
+
+    /** Zamanin geldigini gorur, o zaman temizligi calistirir. */
+    private void maybeCleanup() {
+        long now = System.currentTimeMillis();
+        if (now - lastCleanup >= TEMIZLIK_ARALIGI_MS) {
+            lastCleanup = now;
+            cleanupExpired(now);
+        }
     }
 
     /** Cerezdeki yonetici belirteci gecerli mi? */
@@ -270,12 +386,14 @@ final class ServerContext {
     // ---------------------------------------------------------------- yanit
 
     void redirect(HttpExchange exchange, String location) throws IOException {
+        maybeCleanup();
         exchange.getResponseHeaders().set("Location", location);
         exchange.sendResponseHeaders(303, -1);   // 303 = "gordum, simdi suraya git"
         exchange.close();
     }
 
     void sendHtml(HttpExchange exchange, int status, String html) throws IOException {
+        maybeCleanup();
         send(exchange, status, "text/html; charset=UTF-8", html);
     }
 

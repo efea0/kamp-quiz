@@ -36,7 +36,7 @@ public final class ExportPages {
 
     /** Bir odanin oyuncu sonuclarini CSV olarak indirir. */
     public void handleRoomCsv(HttpExchange exchange) throws IOException {
-        Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
+        Room room = ctx.findRoom(ServerContext.query(exchange, "kod"));
         if (room == null) {
             sendNotFound(exchange);
             return;
@@ -62,7 +62,7 @@ public final class ExportPages {
 
     /** Soru bazli yanlis analizini CSV olarak indirir; en cok yanlis basta. */
     public void handleQuestionsCsv(HttpExchange exchange) throws IOException {
-        Room room = ctx.getRooms().get(ServerContext.query(exchange, "kod"));
+        Room room = ctx.findRoom(ServerContext.query(exchange, "kod"));
         if (room == null) {
             sendNotFound(exchange);
             return;

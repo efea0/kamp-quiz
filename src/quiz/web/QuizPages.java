@@ -33,14 +33,27 @@ public final class QuizPages {
      * Bu turda hangi sik hangi soruda isaretlendi; quiz.getHistory() ile ayni
      * sirada tutulur. Quiz.AnswerResult isaretlenen sikki tasimiyor (yalnizca
      * dogru/yanlis, sure ve soruyu), ama sonuc ekraninda "senin cevabin"i
-     * gostermek icin buna ihtiyacimiz var. Anahtar Quiz NESNESININ KENDISI
-     * (Quiz equals/hashCode override etmiyor, yani kimlik bazli); her yeni
-     * Quiz (orn. /tekrar ile baslayan tur) kendi bos listesiyle baslar.
+     * gostermek icin buna ihtiyacimiz var.
+     *
+     * ANAHTAR: GameSession nesnesi. Daha once Quiz nesnesiydi ve bu bir bellek
+     * sizintisiydi: /tekrar ile her tur yeni bir Quiz uretir, anahtar da oyle
+     * kalirdi; eski tur listeleri hic silinmedigi icin sunucu acik kaldikca
+     * buyuyordu. Simdi anahtar oturum; oturum temizlenirken liste de onunla
+     * birlikte atilir (bkz. forgetSession).
      */
-    private final Map<Quiz, List<Integer>> chosenAnswers = new ConcurrentHashMap<>();
+    private final Map<GameSession, List<Integer>> chosenAnswers = new ConcurrentHashMap<>();
 
     public QuizPages(ServerContext ctx) {
         this.ctx = ctx;
+    }
+
+    /**
+     * Oturum silindiginde secim listesi de silinir. ServerContext temizligi
+     * cagirir; liste oturumla birlikte oluzup oluzup olmez, yoksa bellek
+     * sizintisi geri gelir.
+     */
+    void forgetSession(GameSession session) {
+        chosenAnswers.remove(session);
     }
 
     /** Sirdaki soruyu ya da az once verilen cevabin sonucunu gosterir. */
@@ -52,7 +65,11 @@ public final class QuizPages {
         }
 
         // Senkron odada akisi oda yonetir; serbest akis kurallari isletilmez.
-        Room room = session.getRoomCode() == null ? null : ctx.getRooms().get(session.getRoomCode());
+        // Burada lastSeen'e dokunmuyoruz: oyuncu sorusunu okurken odanin
+        // "dokunulmamis" sayilmasi dogru, cunku oda bos degil zaten.
+        Room room = session.getRoomCode() == null
+                ? null
+                : ctx.getRooms().get(session.getRoomCode());
         if (room != null && room.isSynchronous()) {
             sendSyncScreen(exchange, session, room);
             return;
@@ -96,7 +113,7 @@ public final class QuizPages {
         Question question = quiz.currentQuestion();
         int answer = ServerContext.parseIntOr(ctx.readForm(exchange).get("cevap"), -1);
         Quiz.AnswerResult result = quiz.submitAnswer(answer);
-        chosenAnswers.computeIfAbsent(quiz, k -> new CopyOnWriteArrayList<>()).add(answer);
+        chosenAnswers.computeIfAbsent(session, k -> new CopyOnWriteArrayList<>()).add(answer);
 
         session.setFeedback(new GameSession.Feedback(
                 result.correct(), result.timedOut(), result.earnedPoints(), question, answer));
@@ -158,7 +175,7 @@ public final class QuizPages {
                 verdictTitle(quiz.getPercentage()),
                 quiz.getPoints(),
                 quiz.getScore(), quiz.getTotal(), quiz.getPercentage(),
-                categoryBreakdown(quiz), speedSummary(quiz), wrongReview(quiz),
+                categoryBreakdown(quiz), speedSummary(quiz), wrongReview(session),
                 retryButton(quiz));
 
         ctx.sendHtml(exchange, 200, Html.page("Sonuç", body));
@@ -188,7 +205,8 @@ public final class QuizPages {
         retry.setTimeLimitSeconds(previous.getQuiz().getTimeLimitSeconds());
 
         // Tekrar turu odanin siralamasina KATILMAZ; yoksa oda tablosu bozulurdu.
-        ctx.getSessions().put(sessionId, new GameSession(previous.getPlayerName(), retry, null));
+        ctx.getSessions().put(sessionId,
+                new GameSession(sessionId, previous.getPlayerName(), retry, null));
         ctx.redirect(exchange, "/quiz");
     }
 
@@ -583,9 +601,10 @@ public final class QuizPages {
      * Yanlis yapilan her sorunun kalip okunacak gozden gecirmesi: soru,
      * isaretlenen sik, dogru sik, aciklama. Yanlis yoksa bos doner.
      */
-    private String wrongReview(Quiz quiz) {
+    private String wrongReview(GameSession session) {
+        Quiz quiz = session.getQuiz();
         List<Quiz.AnswerResult> history = quiz.getHistory();
-        List<Integer> chosen = chosenAnswers.getOrDefault(quiz, List.of());
+        List<Integer> chosen = chosenAnswers.getOrDefault(session, List.of());
 
         StringBuilder cards = new StringBuilder();
         int wrongCount = 0;

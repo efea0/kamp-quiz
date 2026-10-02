@@ -29,6 +29,13 @@ public class WebServer {
     /** Duman testinin başlattığı sunucuyu kapatabilmesi için son örnek. */
     private static volatile HttpServer lastStarted;
 
+    /**
+     * Son başlatılan sunucunun bağlamı. Duman testi oturum/oda temizliğini
+     * dışarıdan ölçebilsin diye: HTTP üzerinden "şu oturum eski" denemez,
+     * doğrudan harita verisine bakmak gerekir.
+     */
+    private static volatile ServerContext lastContext;
+
     private final ServerContext ctx;
 
     public WebServer(List<Question> allQuestions, List<QuizSet> sets,
@@ -45,6 +52,10 @@ public class WebServer {
         BoardPage boardPage = new BoardPage(ctx);
         GeneratePages generatePages = new GeneratePages(ctx);
         ExportPages exportPages = new ExportPages(ctx);
+
+        // Oturum temizligi QuizPages'in kendi haritasini da bosaltsin;
+        // aksi halde secilen sik listesi oturumdan sonra da kalir.
+        ctx.onSessionRemoved(quizPages::forgetSession);
 
         // ---- rota tablosu: hangi URL hangi sayfaya gidiyor ----
         server.createContext("/", homePages::handleHome);
@@ -76,6 +87,7 @@ public class WebServer {
         server.setExecutor(Executors.newFixedThreadPool(16));
         server.start();
         lastStarted = server;
+        lastContext = ctx;
 
         printAddresses();
         printAiStatus();
@@ -87,7 +99,44 @@ public class WebServer {
         if (running != null) {
             running.stop(0);
             lastStarted = null;
+            lastContext = null;
         }
+    }
+
+    /**
+     * Yalnızca testler kullanır: son başlatılan sunucunun paylaşılan durumunu
+     * verir. Oturum/oda temizliği HTTP üzerinden gözlenemez; test haritaya
+     * doğrudan bakmak zorunda.
+     */
+    public static ServerContext lastStartedContext() {
+        return lastContext;
+    }
+
+    // --- Aşağıdakiler yalnızca duman testi içindir ---------------------------
+    // ServerContext package-private; test quiz.test paketinde olduğu için
+    // erişemiyor. Bu köprüler ölçümü dışarı taşır, iç mantığı değiştirmez.
+
+    /** Yalnızca test: şu anki oturum sayısı. */
+    public static int lastSessionCount() {
+        ServerContext c = lastContext;
+        return c == null ? -1 : c.getSessions().size();
+    }
+
+    /** Yalnızca test: şu anki oda sayısı. */
+    public static int lastRoomCount() {
+        ServerContext c = lastContext;
+        return c == null ? -1 : c.getRooms().size();
+    }
+
+    /** Yalnızca test: temizliği verilen "şimdi" ile çalıştırır, silineni döner. */
+    public static int runCleanup(long now) {
+        ServerContext c = lastContext;
+        return c == null ? 0 : c.cleanupExpired(now);
+    }
+
+    /** Yalnızca test: oturumun kaç ms sonra silineceği. */
+    public static long sessionTimeoutMillis() {
+        return ServerContext.SURE_ASIMIOTURUM_MS;
     }
 
     /** Baglanti adreslerini ekrana basar; katilimcilar bunu telefona yazacak. */

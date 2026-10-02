@@ -51,6 +51,13 @@ class Room {
     private volatile long questionStartedAt = 0;
     private final long createdAt = System.currentTimeMillis();
 
+    /**
+     * Odaya son bakildigi an (epoch ms). ServerContext, oda bos kaldigi sure
+     * dolunca bu odayi silmek icin kullanir. volatile: temizlik baska bir
+     * is parcacigindan okur.
+     */
+    private volatile long lastSeen = System.currentTimeMillis();
+
     /** Paylasik sirada herkesin aldigi tek liste; ilk oyuncuda uretilir. */
     private volatile List<Question> sharedQuestions;
 
@@ -214,11 +221,34 @@ class Room {
         return name.trim().toLowerCase(java.util.Locale.forLanguageTag("tr"));
     }
 
+    /** Odaya her bakildiginda (ekran, panel, katilim) cagrilir. */
+    void touch() {
+        lastSeen = System.currentTimeMillis();
+    }
+
+    long lastSeen() {
+        return lastSeen;
+    }
+
     void addPlayer(GameSession session) {
         players.add(session);
     }
 
     int playerCount() {
+        return players.size();
+    }
+
+    /**
+     * Artik var olmayan oturumlari oyuncu listesinden cikarir ve kalan
+     * oyuncu sayisini doner.
+     *
+     * Neden gerekli: temizlikte oturum once silinir; odadaki liste ise o
+     * oturumu hala tutuyor olur. "Oda bos mu?" sorusu bu yuzden "listedeki
+     * herkes hala sessions haritasinda mi?" diye sorulmali. Aksi halde hicbir
+     * oda hicbir zaman bos sayilmaz ve temizlik hicbir seyi silmez.
+     */
+    int activePlayerCount(java.util.Set<String> livingSessionIds) {
+        players.removeIf(player -> !livingSessionIds.contains(player.sessionId()));
         return players.size();
     }
 

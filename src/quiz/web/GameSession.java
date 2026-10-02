@@ -19,6 +19,7 @@ class GameSession {
                     Question question, int chosenIndex) {
     }
 
+    private final String sessionId;
     private final String playerName;
     private final Quiz quiz;
     private final String roomCode;   // oda disinda oynayanlarda null
@@ -27,10 +28,24 @@ class GameSession {
     private Feedback feedback;
     private boolean scoreSaved;
 
-    GameSession(String playerName, Quiz quiz, String roomCode) {
+    /**
+     * Son istegin geldigi an (epoch ms). Sunucu bunu kullanarak, uzun suredir
+     * kimsenin dokunmadigi oturumlari siler. Alan volatile: oturum haritasi
+     * eszamanli (ConcurrentHashMap) ve temizlik baska bir is parcacigindan
+     * calisiyor; gorunurluk garantisi olmazsa eski deger okunabilir.
+     */
+    private volatile long lastSeen = System.currentTimeMillis();
+
+    GameSession(String sessionId, String playerName, Quiz quiz, String roomCode) {
+        this.sessionId = sessionId;
         this.playerName = playerName;
         this.quiz = quiz;
         this.roomCode = roomCode;
+    }
+
+    /** Oturum kimligi; sunucu bunu sessions haritasinin anahtari olarak kullanir. */
+    String sessionId() {
+        return sessionId;
     }
 
     String getPlayerName() {
@@ -63,5 +78,14 @@ class GameSession {
 
     void markScoreSaved() {
         scoreSaved = true;
+    }
+
+    /** Her istekte cagrilir; oturumun canli oldugunu belirtir. */
+    void touch() {
+        lastSeen = System.currentTimeMillis();
+    }
+
+    long lastSeen() {
+        return lastSeen;
     }
 }

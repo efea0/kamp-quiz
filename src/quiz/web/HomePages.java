@@ -226,7 +226,7 @@ public final class HomePages {
         quiz.setTimeLimitSeconds(seconds);
 
         String sessionId = UUID.randomUUID().toString();
-        ctx.getSessions().put(sessionId, new GameSession(name, quiz, null));
+        ctx.getSessions().put(sessionId, new GameSession(sessionId, name, quiz, null));
         ctx.setSessionCookie(exchange, sessionId);
         ctx.redirect(exchange, "/quiz");
     }
@@ -239,7 +239,7 @@ public final class HomePages {
         }
 
         Map<String, String> form = ctx.readForm(exchange);
-        Room room = ctx.getRooms().get(form.getOrDefault("kod", "").trim());
+        Room room = ctx.findRoom(form.get("kod"));
         if (room == null) {
             ctx.sendHtml(exchange, 404, Html.page("Oda bulunamadı", """
                     <div class="screen">
@@ -275,10 +275,10 @@ public final class HomePages {
             return;
         }
 
-        GameSession session = new GameSession(name, room.newQuiz(ctx.getAllQuestions()), room.getCode());
-        room.addPlayer(session);
-
         String sessionId = UUID.randomUUID().toString();
+        GameSession session = new GameSession(sessionId, name,
+                room.newQuiz(ctx.getAllQuestions()), room.getCode());
+        room.addPlayer(session);
         ctx.getSessions().put(sessionId, session);
         ctx.setSessionCookie(exchange, sessionId);
         ctx.redirect(exchange, "/quiz");
